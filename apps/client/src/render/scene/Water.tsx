@@ -35,7 +35,6 @@ void main() {
 const fragmentShader = /* glsl */ `
 uniform vec3 uShallow;
 uniform vec3 uDeep;
-uniform vec3 uGlint;
 uniform vec3 uFoam;
 uniform float uTime;
 uniform float uFullDepth;
@@ -46,23 +45,24 @@ ${VALUE_NOISE_GLSL}
 void main() {
   float depth = max(vDepth, 0.0);
   float deep = smoothstep(0.0, uFullDepth, depth);
+  // Calm open water: just the depth gradient, no surface pattern.
   vec3 color = mix(uShallow, uDeep, deep);
 
-  // Highlight streaks: noise stretched ~9:1 along X gives thin ripple lines that drift
-  // slowly. A second, broad mask shows them only in some areas, and they stay faint.
+  // Thin foam line along the shore. Its position (in depth) breathes slowly in and
+  // out, phase-shifted along the shore, like lapping water. It never travels along
+  // its own length, and broken segments keep it from looking ruled.
   vec2 p = vWorld.xz;
-  vec2 sp = vec2(p.x * 0.3 + uTime * 0.12, p.y * 2.8 + sin(p.x * 0.18 + uTime * 0.4) * 0.6);
-  float streak = smoothstep(0.76, 0.84, roeNoise(sp)) * smoothstep(0.5, 0.8, roeNoise(p * 0.07 + uTime * 0.02));
-  color = mix(color, uGlint, streak * 0.12);
-  // Very slow, broad brightness swell so the surface never looks frozen.
-  color *= 0.96 + 0.08 * roeNoise(p * 0.08 + uTime * 0.03);
+  float phase = roeNoise(p * 0.12) * 6.2832;
+  float edge = 0.07 + 0.035 * sin(uTime * 0.9 + phase);
+  float line = 1.0 - smoothstep(0.0, 0.055, abs(depth - edge));
+  float broken = smoothstep(0.25, 0.6, roeNoise(p * 0.7));
+  float foam = line * mix(0.55, 1.0, broken);
+  color = mix(color, uFoam, foam * 0.5);
 
-  // Light band along the shoreline.
-  float foam = 1.0 - smoothstep(0.05, 0.22, depth);
-  color = mix(color, uFoam, foam * 0.3);
-
-  // Fade out over the last 0.25 units of depth, hiding the jagged terrain intersection.
+  // Fade out over the last 0.25 units of depth, hiding the jagged terrain intersection;
+  // the foam line stays visible on top of that fade.
   float alpha = mix(0.62, 0.93, deep) * smoothstep(0.0, 0.25, depth);
+  alpha = max(alpha, foam * 0.55);
   gl_FragColor = vec4(color, alpha);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -122,7 +122,7 @@ interface WaterProps {
   heights: HeightField;
 }
 
-/** Stylized low-poly water: color by depth, soft shore band, faint drifting highlight streaks. */
+/** Stylized low-poly water: calm depth gradient and a thin, gently moving shoreline foam line. */
 export function Water({ lakes, heights }: WaterProps) {
   const geometry = useMemo(() => buildWaterGeometry(lakes, heights), [lakes, heights]);
   const material = useMemo(
@@ -135,7 +135,6 @@ export function Water({ lakes, heights }: WaterProps) {
           {
             uShallow: { value: new Color('#4f9c95') },
             uDeep: { value: new Color('#1d4f63') },
-            uGlint: { value: new Color('#d8f1ee') },
             uFoam: { value: new Color('#cfe3d6') },
             uTime: { value: 0 },
             uFullDepth: { value: FULL_DEPTH },

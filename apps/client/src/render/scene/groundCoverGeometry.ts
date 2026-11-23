@@ -5,30 +5,43 @@ function triangle(out: number[], a: number[], b: number[], c: number[]) {
   out.push(...a, ...b, ...c);
 }
 
+/** Small deterministic generator, so the shared geometry is identical on every load. */
+function sequence(seed: number) {
+  let state = seed;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
 /**
- * A grass tuft: `blades` thin triangles fanned around the center, leaning outward.
- * About 1 unit tall at scale 1. Non-indexed, so flat shading gives each blade one tone.
+ * A grass patch in world units: `blades` short, thin triangles spread over a disc,
+ * each 0.25–0.45 units tall and leaning slightly. Many blades per instance make the
+ * ground read as a meadow carpet rather than single spikes. Non-indexed, so flat
+ * shading gives each blade one tone.
  */
-export function createTuftGeometry(blades = 4): BufferGeometry {
+export function createGrassPatchGeometry(blades = 10, radius = 0.55): BufferGeometry {
+  const rand = sequence(0x9e3779b9);
   const positions: number[] = [];
   for (let i = 0; i < blades; i++) {
-    const angle = (i / blades) * Math.PI + i * 0.35;
-    const dx = Math.cos(angle);
-    const dz = Math.sin(angle);
-    // Perpendicular for the blade's width.
-    const px = -dz;
-    const pz = dx;
-    const baseOffset = 0.06;
-    const width = 0.09 + (i % 2) * 0.03;
-    const lean = 0.22 + (i % 3) * 0.06;
-    const height = 0.75 + ((i * 37) % 5) * 0.06;
-    const bx = dx * baseOffset;
-    const bz = dz * baseOffset;
+    const distance = Math.sqrt(rand()) * radius;
+    const placement = rand() * Math.PI * 2;
+    const x = Math.cos(placement) * distance;
+    const z = Math.sin(placement) * distance;
+
+    const facing = rand() * Math.PI;
+    const px = Math.cos(facing);
+    const pz = Math.sin(facing);
+    const halfWidth = 0.022 + rand() * 0.014;
+    const height = 0.25 + rand() * 0.2;
+    const leanAngle = rand() * Math.PI * 2;
+    const lean = 0.04 + rand() * 0.06;
+
     triangle(
       positions,
-      [bx - px * width, 0, bz - pz * width],
-      [bx + px * width, 0, bz + pz * width],
-      [dx * lean, height, dz * lean],
+      [x - px * halfWidth, 0, z - pz * halfWidth],
+      [x + px * halfWidth, 0, z + pz * halfWidth],
+      [x + Math.cos(leanAngle) * lean, height, z + Math.sin(leanAngle) * lean],
     );
   }
   const geometry = new BufferGeometry();
@@ -38,20 +51,20 @@ export function createTuftGeometry(blades = 4): BufferGeometry {
 }
 
 /**
- * A flower cluster: small upward-pointing pyramids (blossoms) at varied heights.
+ * A flower cluster: tiny upward-pointing pyramids (blossoms) just above the grass.
  * Blossoms only; the surrounding grass reads as their stems.
  */
 export function createFlowerGeometry(): BufferGeometry {
   const positions: number[] = [];
   const blossoms = [
     [0, 0.42, 0],
-    [0.22, 0.34, 0.08],
-    [-0.16, 0.38, 0.18],
-    [-0.12, 0.3, -0.2],
-    [0.14, 0.46, -0.16],
-    [0.3, 0.28, -0.05],
+    [0.18, 0.36, 0.07],
+    [-0.13, 0.4, 0.15],
+    [-0.1, 0.33, -0.16],
+    [0.12, 0.45, -0.13],
+    [0.24, 0.31, -0.04],
   ];
-  const r = 0.15;
+  const r = 0.055;
   for (const [x = 0, y = 0, z = 0] of blossoms) {
     const top = [x, y + r * 0.9, z];
     const bottom = [x, y - r * 0.5, z];

@@ -94,9 +94,9 @@ export function createGroundCover(input: GroundCoverInput): GroundCover {
     for (let gz = -half; gz < half; gz += TUFT_CELL) {
       const x = gx + rng() * TUFT_CELL;
       const z = gz + rng() * TUFT_CELL;
-      const density = (0.22 + 0.78 * meadowAt(x, z)) * openness(x, z);
+      const density = (0.4 + 0.6 * meadowAt(x, z)) * openness(x, z);
       if (rng() >= density) continue;
-      tufts.push(place(x, z, 0.6, 1.05, Math.floor(rng() * TUFT_VARIANTS)));
+      tufts.push(place(x, z, 0.85, 1.15, Math.floor(rng() * TUFT_VARIANTS)));
     }
   }
 
@@ -110,12 +110,12 @@ export function createGroundCover(input: GroundCoverInput): GroundCover {
         0.72,
         fractalNoise2D(map.seed + SEED_OFFSET.flowers, x / 14, z / 14, 2),
       );
-      if (rng() >= patch * meadowAt(x, z) * openness(x, z)) continue;
+      if (rng() >= patch * meadowAt(x, z) * 0.85 * openness(x, z)) continue;
       // Each flower patch keeps one dominant color, so meadows read as white, yellow or purple.
       const colorNoise = fractalNoise2D(map.seed + SEED_OFFSET.flowerColor, x / 10, z / 10, 1);
       const spread = smoothstep(0.25, 0.75, colorNoise);
       const variant = Math.min(FLOWER_VARIANTS - 1, Math.floor(spread * FLOWER_VARIANTS));
-      flowers.push(place(x, z, 0.8, 1.2, variant));
+      flowers.push(place(x, z, 0.85, 1.15, variant));
     }
   }
 
