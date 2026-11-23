@@ -1,0 +1,25 @@
+{
+  "name": "@roe/game-data",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static game configuration: maps, races, buildings, units, spells.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@roe/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@roe/shared": "workspace:*"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "realms-of-eternia",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser-based 3D fantasy real-time strategy game.",
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @roe/client dev",
+    "dev:server": "pnpm --filter @roe/server dev",
+    "dev:all": "pnpm --parallel --filter @roe/client --filter @roe/server dev",
+    "build": "pnpm -r build",
+    "preview": "pnpm --filter @roe/client preview",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check",
+    "clean": "pnpm -r clean"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.8",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.74.0"
+  }
+}

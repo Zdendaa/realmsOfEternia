@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10 blocks dependency install scripts by default; allow only what we need.
+onlyBuiltDependencies:
+  - esbuild
+
+# Optional native msgpack accelerator used by Colyseus; the JS fallback is fine.
+ignoredBuiltDependencies:
+  - msgpackr-extract

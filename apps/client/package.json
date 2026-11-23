@@ -1,0 +1,32 @@
+{
+  "name": "@roe/client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser game client (React + React Three Fiber).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
+    "@roe/game-data": "workspace:*",
+    "@roe/shared": "workspace:*",
+    "react": "~19.3.1",
+    "react-dom": "~19.3.1",
+    "three": "~0.187.0",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "~19.3.0",
+    "@types/react-dom": "~19.3.0",
+    "@types/three": "~0.187.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "vite": "^8.3.8"
+  }
+}

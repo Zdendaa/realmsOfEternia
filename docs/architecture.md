@@ -1,0 +1,109 @@
+# Architecture
+
+This document explains how the codebase is structured and why. Read it before you add a new package or a new kind of game system.
+
+## Goals
+
+1. **Multiplayer from day one.** Every gameplay rule must be able to run on the server.
+2. **Clear separation.** Rendering, game logic, UI, networking and game data live in separate places.
+3. **Data-driven content.** Races, buildings, units, upgrades and spells are defined as data, not hard-coded in logic.
+4. **Small, working increments.** Add an abstraction when a second real use appears, not before.
+
+## Packages
+
+| Package          | Runs in          | May depend on         | Must not contain                               |
+| ---------------- | ---------------- | --------------------- | ---------------------------------------------- |
+| `@roe/shared`    | browser and Node | nothing               | DOM, Node APIs, React, three.js, `Math.random` |
+| `@roe/game-data` | browser and Node | `@roe/shared` (types) | logic beyond simple derived values             |
+| `@roe/client`    | browser          | `shared`, `game-data` | authoritative game decisions                   |
+| `@roe/server`    | Node             | `shared`, `game-data` | rendering or UI code                           |
+
+### `@roe/shared`: types and rules
+
+Pure functions and types: IDs, vectors, constants (`SIMULATION_TICK_RATE`, `MAX_PLAYERS`), the seeded RNG (`createRng`), and rule functions such as `scatterDecorations`.
+
+Determinism is required. With the same input, a rule function must return the same output on every machine. Always use `createRng(seed)` and never `Math.random()`.
+
+### `@roe/game-data`: definitions
+
+Static configuration written as typed object literals with `as const satisfies SomeDefinition`. That keeps literal types while still checking the shape. The only content so far is `PROTOTYPE_MAP`. Races, buildings with upgrade tiers, units and spells will go here.
+
+### `@roe/client`: the game client
+
+```
+src/
+  main.tsx, App.tsx    bootstrapping and layout (canvas plus HUD overlay)
+  render/              everything inside the <Canvas>
+    GameCanvas.tsx     renderer, camera and scene root
+    camera/            RTS camera (MapControls, key panning, bounds clamp)
+    scene/             World, Terrain, Lighting, Trees, Rocks
+  ui/                  HTML/CSS overlay; never imports three.js
+  input/               input hooks (keyboard now; selection and commands later)
+  state/               Zustand stores
+```
+
+Rules:
+
+- **`render/` only visualizes.** It reads state and draws it. It does not compute gameplay outcomes.
+- **`ui/` is plain React DOM** that sits over the canvas. It talks to the scene only through stores.
+- **Per-frame values never go through React state.** Camera movement, animation and similar values are mutated inside `useFrame` or kept in refs, which avoids re-renders. Zustand stores hold values that change at human speed, such as settings, selection and menus.
+- **Large numbers of identical props use instancing** (Drei `<Instances>`), so each prop type costs one draw call.
+
+### `@roe/server`: the authoritative server
+
+A Colyseus server. It uses only `@colyseus/core`, `@colyseus/ws-transport` and `@colyseus/schema`, not the `colyseus` meta-package, which would pull in Redis, the monitor and other extras. `MatchRoom` is a placeholder 2–4 player room whose synchronized `MatchState` holds the map id and the player list.
+
+## Multiplayer model (planned)
+
+```
+client input ──► command ──► server validates (shared rules) ──► applies to state
+                                                                       │
+client renders ◄──────────── state patches (Colyseus schema) ◄─────────┘
+```
+
+- Clients send **commands** ("build X at Y", "move units to Z") and never send state.
+- The server checks every command against `@roe/shared` rules: resources, placement, ownership and cooldowns.
+- The simulation runs at a fixed tick (`SIMULATION_TICK_RATE`).
+- The client may predict locally using the same shared rules, then reconcile with the server state.
+- Procedural content such as map decorations is generated from seeds, so it never has to be sent over the network.
+
+PostgreSQL will store persistent player data (accounts, profiles, match history). Live match state stays in memory in the room.
+
+## Workspace package resolution
+
+Workspace packages are consumed **directly from their TypeScript sources** during development and type checking. A custom export condition makes this possible:
+
+```jsonc
+// packages/shared/package.json
+"exports": {
+  ".": {
+    "@roe/source": "./src/index.ts",   // dev / typecheck
+    "types": "./dist/index.d.ts",      // compiled consumers
+    "default": "./dist/index.js"
+  }
+}
+```
+
+| Consumer                | How it enables `@roe/source`                         |
+| ----------------------- | ---------------------------------------------------- |
+| TypeScript (`tsc`, IDE) | `customConditions` in `tsconfig.base.json`           |
+| Vite (client)           | `resolve.conditions` in `apps/client/vite.config.ts` |
+| tsx (server dev)        | `--conditions=@roe/source` in the `dev` script       |
+| Node (server prod)      | not enabled, so it uses the compiled `dist/`         |
+
+Each package's `tsconfig.build.json` clears `customConditions`, so production builds compile against the other packages' `dist/` output. `pnpm build` (`pnpm -r build`) builds packages in dependency order.
+
+What this gives you: hot reload across packages, go-to-definition that lands in source, and no build step before `pnpm dev`.
+
+## Adding a new package
+
+1. Create `packages/<name>/` with `package.json` (name `@roe/<name>`, the `exports` map above, and `build`, `typecheck` and `clean` scripts).
+2. Copy `tsconfig.json` and `tsconfig.build.json` from `packages/shared`.
+3. Add it as a dependency with `"@roe/<name>": "workspace:*"` and run `pnpm install`.
+
+## Code conventions
+
+- Strict TypeScript, including `noUncheckedIndexedAccess`, with `verbatimModuleSyntax` (always `import type` for types).
+- Relative imports in `shared`, `game-data` and `server` use the `.js` extension (NodeNext resolution). The client uses bundler resolution without extensions.
+- One React component per file, named after the component.
+- Formatting is handled by Prettier only; ESLint does not check style.
