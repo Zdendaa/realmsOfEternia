@@ -1,10 +1,10 @@
 import { Stats } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { PROTOTYPE_MAP } from '@roe/game-data';
-import { createHeightField } from '@roe/shared';
+import { PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT } from '@roe/game-data';
 import { useMemo } from 'react';
 import { ACESFilmicToneMapping } from 'three';
 import { useSettingsStore } from '../state/settingsStore';
+import { createWorld } from '../world/createWorld';
 import { RtsCameraControls } from './camera/RtsCameraControls';
 import { ATMOSPHERE } from './scene/atmosphere';
 import { World } from './scene/World';
@@ -15,7 +15,7 @@ const CAMERA_START: [number, number, number] = [25, 42, 25];
 /** Root of the 3D viewport. Owns the renderer, camera and scene graph. */
 export function GameCanvas() {
   const showStats = useSettingsStore((s) => s.showStats);
-  const heights = useMemo(() => createHeightField(PROTOTYPE_MAP), []);
+  const world = useMemo(() => createWorld(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT), []);
 
   return (
     <Canvas
@@ -29,8 +29,8 @@ export function GameCanvas() {
       }}
       onContextMenu={(event) => event.preventDefault()}
     >
-      <World map={PROTOTYPE_MAP} heights={heights} />
-      <RtsCameraControls bounds={PROTOTYPE_MAP.size / 2} heights={heights} />
+      <World world={world} />
+      <RtsCameraControls bounds={PROTOTYPE_MAP.size / 2} heights={world.heights} />
       {showStats && <Stats className="fps-stats" />}
     </Canvas>
   );

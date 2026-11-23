@@ -23,14 +23,21 @@ This document explains how the codebase is structured and why. Read it before yo
 Pure functions and types: IDs, vectors, constants (`SIMULATION_TICK_RATE`, `MAX_PLAYERS`), the seeded RNG (`createRng`), stateless value noise (`fractalNoise2D`), and map generation:
 
 - `createHeightField(map).getHeightAt(x, z)` returns the terrain height at any point. The heightmap is never stored or sent over the network; it is recomputed from the map seed. Use it for everything that sits on the ground: the terrain mesh, decorations, units, buildings and the camera focus.
-- `scatterDecorations(map)` places trees and rocks. Trees cluster into forests through a noise mask, and the central settlement area (`map.settlement`) stays flat and empty.
+- `flattenHeightField(heights, footprints)` wraps a height field so the ground under each placed footprint is perfectly flat (levelled to the original height at its center) and blends back to the terrain within a few units. A building's own footprint always wins over a neighbour's blend band. Settlement buildings use it now; player construction will reuse it.
+- `scatterDecorations(map, { heights, isBlocked })` places trees and rocks. Trees cluster into forests through a noise mask, and the central settlement area (`map.settlement`) stays empty. `heights` lets them sit on flattened terrain, and `isBlocked` keeps them off buildings and paths.
+- `sampleCatmullRom(points, spacing)` and `distanceToPolyline(...)` define path shapes the same way on every machine.
 - Map layout, from the center outward: the flat settlement plateau, rolling hills across the playable square (`map.size`), then a non-playable border ring (`map.border`) of forested mountains. The mountains continue past the ring and fade into the fog, so the world never visibly ends. `isInPlayableArea(map, x, z)` tells the two zones apart. Border trees are scenery only.
 
 Determinism is required. With the same input, a rule function must return the same output on every machine. Always use `createRng(seed)` and never `Math.random()`.
 
 ### `@roe/game-data`: definitions
 
-Static configuration written as typed object literals with `as const satisfies SomeDefinition`. That keeps literal types while still checking the shape. The only content so far is `PROTOTYPE_MAP`. Races, buildings with upgrade tiers, units and spells will go here.
+Static configuration written as typed object literals with `as const satisfies SomeDefinition`. That keeps literal types while still checking the shape. Races, upgrade tiers, units and spells will go here too. Current contents:
+
+- `PROTOTYPE_MAP`: terrain, forest and border settings.
+- `BUILDINGS`: id, name, `modelPath`, `footprint` (world units), `scale` and `rotationOffset`. Footprints are measured from model bounding boxes. By convention every building's entrance faces local +Z.
+- `PROTOTYPE_SETTLEMENT`: the hand-authored starting settlement, with building placements and dirt paths given as spline control points that end at building entrances.
+- `MEDIEVAL_PACK`: the KayKit asset pack's folder, its world scale (pack unit × 3) and material color overrides by material name. The overrides are applied when models load, so the GLB files stay untouched.
 
 ### `@roe/client`: the game client
 
@@ -52,6 +59,8 @@ Rules:
 - **`ui/` is plain React DOM** that sits over the canvas. It talks to the scene only through stores.
 - **Per-frame values never go through React state.** Camera movement, animation and similar values are mutated inside `useFrame` or kept in refs, which avoids re-renders. Zustand stores hold values that change at human speed, such as settings, selection and menus.
 - **Static props use chunked instancing.** `StaticInstances` uploads instance matrices once. Trees are split into 60×60 world-space chunks, each its own instanced mesh with its own bounding sphere, so chunks outside the camera or shadow frustum are skipped. Chunks share one geometry and material per part.
+- **`world/createWorld.ts` composes the static world** from map data in a fixed order: buildings flatten the terrain, paths are sampled, then decorations are placed on the flattened ground away from buildings and paths. Every renderer and the camera use the resulting `world.heights`. When the server needs the same world, this composition should move into a shared layer.
+- **Buildings are instanced per model part.** `Settlement` groups placements by type. `BuildingInstances` loads the GLB with `useGLTF` (preloaded, no Draco), applies the material overrides, and draws each mesh of the model as one instanced mesh, so six houses cost the same draw calls as one.
 - **The sun follows the camera.** The directional light and its target track the camera focus point. The shadow frustum scales with zoom in steps of 10 units, and its position is snapped to whole shadow-map texels so shadow edges don't shimmer while panning.
 
 ### `@roe/server`: the authoritative server

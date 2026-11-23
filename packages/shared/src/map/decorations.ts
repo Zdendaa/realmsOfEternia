@@ -1,6 +1,6 @@
 import { fractalNoise2D, smoothstep } from '../noise.js';
 import { createRng, randomRange, type Rng } from '../random.js';
-import { createHeightField, isInSettlementArea } from './terrain.js';
+import { createHeightField, isInSettlementArea, type HeightField } from './terrain.js';
 import type { Decoration, DecorationRule, MapDefinition } from './types.js';
 
 /** Distance kept free on both sides of the playable-area edge. */
@@ -83,7 +83,7 @@ function tryPlace(
   map: MapDefinition,
   rule: DecorationRule,
   rng: Rng,
-  heights: ReturnType<typeof createHeightField>,
+  heights: HeightField,
   half: number,
 ): Decoration | null {
   const x = randomRange(rng, -half, half);
@@ -93,13 +93,21 @@ function tryPlace(
   return { kind: rule.kind, x, y, z, rotation: 0, scale: 0 };
 }
 
+export interface ScatterOptions {
+  /** Terrain to place decorations on. Defaults to the map's unmodified height field. */
+  heights?: HeightField;
+  /** Return true where nothing may be placed (buildings, roads...). */
+  isBlocked?: (x: number, z: number) => boolean;
+}
+
 /**
  * Deterministically places decorations across a map.
  * Identical input always yields identical output, so the server and all clients agree.
  */
-export function scatterDecorations(map: MapDefinition): Decoration[] {
+export function scatterDecorations(map: MapDefinition, options: ScatterOptions = {}): Decoration[] {
   const rng = createRng(map.seed);
-  const heights = createHeightField(map);
+  const heights = options.heights ?? createHeightField(map);
+  const isBlocked = options.isBlocked ?? (() => false);
   const result: Decoration[] = [];
 
   for (const rule of map.decorations) {
@@ -110,7 +118,8 @@ export function scatterDecorations(map: MapDefinition): Decoration[] {
 
     for (let attempt = 0; attempt < maxAttempts && placed < rule.count; attempt++) {
       const candidate = tryPlace(map, rule, rng, heights, half);
-      if (!candidate || !grid.isFree(candidate.x, candidate.z)) continue;
+      if (!candidate || isBlocked(candidate.x, candidate.z)) continue;
+      if (!grid.isFree(candidate.x, candidate.z)) continue;
 
       grid.add(candidate.x, candidate.z);
       candidate.rotation = randomRange(rng, 0, Math.PI * 2);
