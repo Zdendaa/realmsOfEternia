@@ -7,7 +7,7 @@ A browser-based 3D fantasy real-time strategy game. It combines:
 - free-form walls, towers and castles
 - real-time multiplayer for 2–4 players
 
-> **Status:** Phase 2 (the visual world) is complete. The prototype map has terrain, forests, a lake and a starting village, but no gameplay yet. See [docs/status.md](docs/status.md) for details and known limitations.
+> **Status:** Phase 3 (building placement) is complete. You can place buildings on the prototype map; there is no economy, units or multiplayer match yet. See [docs/status.md](docs/status.md) for details and known limitations.
 
 ---
 
@@ -52,22 +52,33 @@ pnpm dev:all
 | Right mouse drag | Rotate |
 | Mouse wheel      | Zoom   |
 
+### Building
+
+| Input                      | Action                                          |
+| -------------------------- | ----------------------------------------------- |
+| Construction menu (bottom) | Pick a building (costs are shown, not yet paid) |
+| Left click                 | Place it where the preview is green             |
+| Shift + left click         | Place and keep building the same type           |
+| R                          | Rotate 90°                                      |
+| Esc or right click         | Cancel                                          |
+
 ## Scripts
 
 Run these from the repository root.
 
-| Command           | Description                                            |
-| ----------------- | ------------------------------------------------------ |
-| `pnpm dev`        | Start the client dev server (Vite, hot reload)         |
-| `pnpm dev:server` | Start the game server in watch mode (tsx)              |
-| `pnpm dev:all`    | Start client and server in parallel                    |
-| `pnpm build`      | Production build of every package, in dependency order |
-| `pnpm preview`    | Serve the production client build locally              |
-| `pnpm typecheck`  | Strict TypeScript check of every package               |
-| `pnpm lint`       | Run ESLint over the whole repo (`lint:fix` auto-fixes) |
-| `pnpm format`     | Format with Prettier (`format:check` only verifies)    |
-| `pnpm check`      | Run typecheck, lint and format check (use this in CI)  |
-| `pnpm clean`      | Remove build output                                    |
+| Command           | Description                                                  |
+| ----------------- | ------------------------------------------------------------ |
+| `pnpm dev`        | Start the client dev server (Vite, hot reload)               |
+| `pnpm dev:server` | Start the game server in watch mode (tsx)                    |
+| `pnpm dev:all`    | Start client and server in parallel                          |
+| `pnpm build`      | Production build of every package, in dependency order       |
+| `pnpm preview`    | Serve the production client build locally                    |
+| `pnpm typecheck`  | Strict TypeScript check of every package                     |
+| `pnpm lint`       | Run ESLint over the whole repo (`lint:fix` auto-fixes)       |
+| `pnpm format`     | Format with Prettier (`format:check` only verifies)          |
+| `pnpm test`       | Unit tests (vitest) for the simulation rules                 |
+| `pnpm check`      | Run typecheck, lint, format check and tests (use this in CI) |
+| `pnpm clean`      | Remove build output                                          |
 
 To run a script in one package: `pnpm --filter @roe/client <script>`.
 

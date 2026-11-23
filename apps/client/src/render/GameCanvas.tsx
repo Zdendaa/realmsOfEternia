@@ -1,12 +1,13 @@
 import { Stats } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT } from '@roe/game-data';
+import { PROTOTYPE_SETTLEMENT } from '@roe/game-data';
 import { useMemo } from 'react';
 import { ACESFilmicToneMapping } from 'three';
+import { useGameStore } from '../state/gameStore';
 import { useSettingsStore } from '../state/settingsStore';
-import { createWorld } from '@roe/sim';
 import { decorateWorld } from '../world/decorateWorld';
 import { RtsCameraControls } from './camera/RtsCameraControls';
+import { PlacementPreview } from './placement/PlacementPreview';
 import { ATMOSPHERE } from './scene/atmosphere';
 import { World } from './scene/World';
 
@@ -16,10 +17,10 @@ const CAMERA_START: [number, number, number] = [25, 42, 25];
 /** Root of the 3D viewport. Owns the renderer, camera and scene graph. */
 export function GameCanvas() {
   const showStats = useSettingsStore((s) => s.showStats);
-  const world = useMemo(
-    () => decorateWorld(createWorld(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT), PROTOTYPE_SETTLEMENT),
-    [],
-  );
+  const simWorld = useGameStore((s) => s.world);
+  const heights = useGameStore((s) => s.heights);
+  const buildings = useGameStore((s) => s.state.buildings);
+  const world = useMemo(() => decorateWorld(simWorld, PROTOTYPE_SETTLEMENT), [simWorld]);
 
   return (
     <Canvas
@@ -33,8 +34,9 @@ export function GameCanvas() {
       }}
       onContextMenu={(event) => event.preventDefault()}
     >
-      <World world={world} />
-      <RtsCameraControls bounds={PROTOTYPE_MAP.size / 2} heights={world.heights} />
+      <World world={world} heights={heights} buildings={buildings} />
+      <PlacementPreview />
+      <RtsCameraControls bounds={world.map.size / 2} heights={heights} />
       {showStats && <Stats className="fps-stats" />}
     </Canvas>
   );

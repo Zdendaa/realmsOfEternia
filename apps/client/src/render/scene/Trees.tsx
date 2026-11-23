@@ -1,4 +1,5 @@
 import type { Decoration } from '@roe/shared';
+import { boundsOverlap, GENERATED_GROUND, type GroundLevel } from './groundLevel';
 import { useEffect, useMemo } from 'react';
 import { Color, ConeGeometry, CylinderGeometry, MeshStandardMaterial } from 'three';
 import { groupIntoChunks, packColors, packMatrices } from './instanceData';
@@ -15,6 +16,8 @@ const CHUNK_SIZE = 60;
 
 interface TreesProps {
   items: readonly Decoration[];
+  /** Ground height lookup; trees are re-seated when it changes (flattening near new buildings). */
+  groundLevel: GroundLevel;
 }
 
 function useTreeAssets() {
@@ -31,35 +34,60 @@ function useTreeAssets() {
   return assets;
 }
 
+function packTrees(items: readonly Decoration[], ground: GroundLevel) {
+  const groundY = (t: Decoration) => ground.at(t.x, t.z, t.y) - GROUND_SINK;
+  return {
+    trunks: packMatrices(items, (t) => ({
+      position: [t.x, groundY(t) + (TRUNK_HEIGHT / 2) * t.scale, t.z],
+      scale: t.scale,
+    })),
+    crowns: packMatrices(items, (t) => ({
+      position: [t.x, groundY(t) + (TRUNK_HEIGHT + CROWN_HEIGHT / 2 - 0.2) * t.scale, t.z],
+      rotation: [0, t.rotation, 0],
+      scale: t.scale,
+    })),
+  };
+}
+
 /**
  * Placeholder conifers. Trees are split into world-space chunks; each chunk is two
  * instanced meshes (trunks + crowns) sharing one geometry and material per part.
+ * After a placement only chunks touching the changed terrain are re-seated.
  */
-export function Trees({ items }: TreesProps) {
+export function Trees({ items, groundLevel }: TreesProps) {
   const assets = useTreeAssets();
+
+  const base = useMemo(
+    () =>
+      groupIntoChunks(items, CHUNK_SIZE).map((chunk) => {
+        const xs = chunk.items.map((t) => t.x);
+        const zs = chunk.items.map((t) => t.z);
+        return {
+          key: chunk.key,
+          items: chunk.items,
+          bounds: {
+            minX: Math.min(...xs),
+            maxX: Math.max(...xs),
+            minZ: Math.min(...zs),
+            maxZ: Math.max(...zs),
+          },
+          ...packTrees(chunk.items, GENERATED_GROUND),
+          crownColors: packColors(chunk.items, (t, c) =>
+            c.copy(CROWN_DARK).lerp(CROWN_LIGHT, t.rotation / (Math.PI * 2)),
+          ),
+        };
+      }),
+    [items],
+  );
 
   const chunks = useMemo(
     () =>
-      groupIntoChunks(items, CHUNK_SIZE).map((chunk) => ({
-        key: chunk.key,
-        trunks: packMatrices(chunk.items, (t) => ({
-          position: [t.x, t.y - GROUND_SINK + (TRUNK_HEIGHT / 2) * t.scale, t.z],
-          scale: t.scale,
-        })),
-        crowns: packMatrices(chunk.items, (t) => ({
-          position: [
-            t.x,
-            t.y - GROUND_SINK + (TRUNK_HEIGHT + CROWN_HEIGHT / 2 - 0.2) * t.scale,
-            t.z,
-          ],
-          rotation: [0, t.rotation, 0],
-          scale: t.scale,
-        })),
-        crownColors: packColors(chunk.items, (t, c) =>
-          c.copy(CROWN_DARK).lerp(CROWN_LIGHT, t.rotation / (Math.PI * 2)),
-        ),
-      })),
-    [items],
+      base.map((chunk) =>
+        groundLevel.changed.some((area) => boundsOverlap(area, chunk.bounds))
+          ? { ...chunk, ...packTrees(chunk.items, groundLevel) }
+          : chunk,
+      ),
+    [base, groundLevel],
   );
 
   return (

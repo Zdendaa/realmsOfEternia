@@ -1,7 +1,9 @@
 import { useFrame } from '@react-three/fiber';
+import { distanceToFootprint, footprintBounds, type PlacedFootprint } from '@roe/shared';
 import { useEffect, useMemo, useRef } from 'react';
-import { DoubleSide, MeshStandardMaterial, Vector3, type Group } from 'three';
+import { Color, DoubleSide, MeshStandardMaterial, Vector3, type Group } from 'three';
 import type { GroundCover as GroundCoverData, GroundCoverItem } from '../../world/groundCover';
+import { boundsOverlap, FLATTEN_REACH, GENERATED_GROUND, type GroundLevel } from './groundLevel';
 import { createFlowerGeometry, createGrassPatchGeometry } from './groundCoverGeometry';
 import { groupIntoChunks, packColors, packMatrices } from './instanceData';
 import { StaticInstances } from './StaticInstances';
@@ -21,6 +23,7 @@ const FLOWER_COLORS = ['#f3f0e4', '#f2cd42', '#a77bd8'];
 /** One wind clock for all ground cover (module-level, so no hook state is mutated). */
 const windTime = { value: 0 };
 const chunkCenter = new Vector3();
+const WHITE = new Color('#ffffff');
 
 /**
  * Standard material plus two cheap vertex-shader effects: wind sway proportional to
@@ -54,42 +57,91 @@ function createGroundCoverMaterial(cacheKey: string, sway: number) {
   return material;
 }
 
-function useChunks(items: readonly GroundCoverItem[], colors: readonly string[]) {
-  return useMemo(
-    () =>
-      groupIntoChunks(items, CHUNK_SIZE).map((chunk) => {
-        const xs = chunk.items.map((t) => t.x);
-        const zs = chunk.items.map((t) => t.z);
-        const ys = chunk.items.map((t) => t.y);
-        const center = {
-          x: (Math.min(...xs) + Math.max(...xs)) / 2,
-          y: (Math.min(...ys) + Math.max(...ys)) / 2,
-          z: (Math.min(...zs) + Math.max(...zs)) / 2,
-        };
-        return {
-          key: chunk.key,
-          center,
-          radius: Math.hypot(Math.max(...xs) - center.x, Math.max(...zs) - center.z) + 1,
-          matrices: packMatrices(chunk.items, (t) => ({
-            position: [t.x, t.y - 0.02, t.z],
-            rotation: [0, t.rotation, 0],
-            scale: t.scale,
-          })),
-          colors: packColors(chunk.items, (t, c) =>
-            c.set(colors[t.variant] ?? '#ffffff').multiplyScalar(0.92 + (t.scale - 0.85) * 0.25),
-          ),
-        };
-      }),
-    [items, colors],
-  );
+function packChunk(
+  items: readonly GroundCoverItem[],
+  palette: readonly Color[],
+  groundLevel: GroundLevel,
+) {
+  return {
+    matrices: packMatrices(items, (t) => ({
+      position: [t.x, groundLevel.at(t.x, t.z, t.y) - 0.02, t.z],
+      rotation: [0, t.rotation, 0],
+      scale: t.scale,
+    })),
+    colors: packColors(items, (t, c) =>
+      c.copy(palette[t.variant] ?? WHITE).multiplyScalar(0.92 + (t.scale - 0.85) * 0.25),
+    ),
+  };
+}
+
+/**
+ * Chunks are packed once from the generated world. After a placement only the chunks
+ * that a new building's flattening area touches are rebuilt (removing cover under the
+ * building and re-seating the rest); all other chunks keep their exact objects, so
+ * their GPU buffers aren't re-uploaded.
+ */
+function useChunks(
+  items: readonly GroundCoverItem[],
+  colors: readonly string[],
+  groundLevel: GroundLevel,
+  blockers: readonly PlacedFootprint[],
+) {
+  const base = useMemo(() => {
+    const palette = colors.map((c) => new Color(c));
+    return groupIntoChunks(items, CHUNK_SIZE).map((chunk) => {
+      const xs = chunk.items.map((t) => t.x);
+      const zs = chunk.items.map((t) => t.z);
+      const ys = chunk.items.map((t) => t.y);
+      const bounds = {
+        minX: Math.min(...xs),
+        maxX: Math.max(...xs),
+        minZ: Math.min(...zs),
+        maxZ: Math.max(...zs),
+      };
+      const center = {
+        x: (bounds.minX + bounds.maxX) / 2,
+        y: (Math.min(...ys) + Math.max(...ys)) / 2,
+        z: (bounds.minZ + bounds.maxZ) / 2,
+      };
+      return {
+        key: chunk.key,
+        items: chunk.items,
+        palette,
+        bounds,
+        center,
+        radius: Math.hypot(bounds.maxX - center.x, bounds.maxZ - center.z) + 1,
+        ...packChunk(chunk.items, palette, GENERATED_GROUND),
+      };
+    });
+  }, [items, colors]);
+
+  return useMemo(() => {
+    const changes = blockers.map((f) => ({
+      footprint: f,
+      area: footprintBounds(f, FLATTEN_REACH),
+    }));
+    return base.map((chunk) => {
+      const touching = changes.filter((c) => boundsOverlap(c.area, chunk.bounds));
+      if (touching.length === 0) return chunk;
+      // Nothing grows under buildings placed after the world was generated.
+      const kept = chunk.items.filter(
+        (t) => !touching.some((c) => distanceToFootprint(c.footprint, t.x, t.z, 0.4) === 0),
+      );
+      return { ...chunk, ...packChunk(kept, chunk.palette, groundLevel) };
+    });
+  }, [base, blockers, groundLevel]);
 }
 
 interface GroundCoverProps {
   cover: GroundCoverData;
+  /** Ground height lookup; ground cover is re-seated when it changes. */
+  groundLevel: GroundLevel;
+  /** Footprints of buildings placed after world generation; ground cover under them is removed. */
+  blockers: readonly PlacedFootprint[];
 }
 
 /** Instanced grass patches and flower clusters, chunked and distance-culled; no shadows. */
-export function GroundCover({ cover }: GroundCoverProps) {
+export function GroundCover({ cover, groundLevel, blockers }: GroundCoverProps) {
   const assets = useMemo(
     () => ({
       grassGeometry: createGrassPatchGeometry(10, 0.55),
@@ -101,8 +153,8 @@ export function GroundCover({ cover }: GroundCoverProps) {
   );
   useEffect(() => () => Object.values(assets).forEach((asset) => asset.dispose()), [assets]);
 
-  const grassChunks = useChunks(cover.tufts, TUFT_COLORS);
-  const flowerChunks = useChunks(cover.flowers, FLOWER_COLORS);
+  const grassChunks = useChunks(cover.tufts, TUFT_COLORS, groundLevel, blockers);
+  const flowerChunks = useChunks(cover.flowers, FLOWER_COLORS, groundLevel, blockers);
   const chunks = useMemo(
     () => [
       ...grassChunks.map((c) => ({ ...c, geometry: 'grass' as const })),

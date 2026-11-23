@@ -1,4 +1,5 @@
 import { GameCanvas } from './render/GameCanvas';
+import { ConstructionMenu } from './ui/ConstructionMenu';
 import { Hud } from './ui/Hud';
 
 export function App() {
@@ -6,6 +7,7 @@ export function App() {
     <div className="app">
       <GameCanvas />
       <Hud />
+      <ConstructionMenu />
     </div>
   );
 }

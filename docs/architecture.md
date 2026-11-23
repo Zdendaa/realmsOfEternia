@@ -66,11 +66,12 @@ src/
     camera/            RTS camera (MapControls, key panning, bounds clamp)
     scene/             World, Terrain, Water, Paths, Lighting, Trees, Rocks, Sky
     scene/settlement/  Settlement, ModelInstances (GLB loading, overrides, instancing)
+    placement/         PlacementPreview (ghost model, validity), groundPick (ray vs height field)
     shaders/           shared GLSL snippets (value noise)
   world/               decorateWorld: cosmetic layers (props, worn ground, grass) on top of the sim world
   ui/                  HTML/CSS overlay; never imports three.js
-  input/               input hooks (keyboard now; selection and commands later)
-  state/               Zustand stores
+  input/               input hooks (keyboard, placement clicks vs camera drags)
+  state/               Zustand stores: gameStore (simulation), placementStore and settings (UI only)
 ```
 
 Rules:
@@ -83,11 +84,16 @@ Rules:
 - **Buildings are instanced per model part.** `Settlement` groups buildings and props by model file. `ModelInstances` loads the GLB with `useGLTF` (preloaded, no Draco), applies the material overrides, and draws each mesh of the model as one instanced mesh, so six houses cost the same draw calls as one. Paths are one soft-edged (vertex alpha) ribbon mesh; worn ground is baked into the terrain vertex colors.
 - **Ground cover is cosmetic and instanced.** `world/groundCover.ts` places grass tufts and flower clusters on a jittered grid: some grass everywhere, lush in noise-masked meadows, thinning near paths, and none on paths, buildings, fields, worn ground or water. Each grass instance is a small patch of 10 short blades (0.25–0.45 units tall), so the ground reads as a carpet. `GroundCover` draws them in 40×40 chunks without shadow casting. In the vertex shader, a shared wind clock drives a cheap sway, and ground cover shrinks into the ground between 100 and 140 units from the camera; chunks entirely beyond that are hidden on the CPU.
 - **Shaders are small and procedural.** The terrain keeps its vertex-color zones (grass, dirt, rock, worn ground, sand, lake bed) as the base; an `onBeforeCompile` patch on its standard material adds subtle world-space noise detail that fades with camera distance. Visible grass detail comes from the instanced ground cover. Water is a custom `ShaderMaterial` (color and opacity by depth, a thin shoreline foam line that gently moves in and out, fog; the open surface is deliberately calm). No textures are downloaded.
+- **Simulation state vs. rendering.** `gameStore` holds the `@roe/sim` world, the `GameState` and the matching state heights. Its `dispatch(command)` runs `applyCommand` with the local player as issuer; later it will also send the command to the server. Rendering only reads this state: `World` turns building instances into placed models, and terrain, trees, grass, paths and water follow `heights`. UI-only state (the selected building, rotation, preview validity) lives in `placementStore` and is never sent anywhere.
+- **Placing buildings.** The construction menu (HTML) picks a buildable type. `PlacementPreview` casts the mouse ray against the shared height field, snaps to the 1-unit grid, and colors a ghost green or red using the same `checkPlacement` the server runs (re-checked only when the cell, rotation or state changes). A click without movement places the building, Shift keeps the tool active, R rotates by 90°, and Esc or a right click cancels. Camera drags still work, because only near-motionless presses count as clicks.
+- **Incremental updates after a placement.** Only terrain vertices within 7 units of the new footprint are re-sampled. Trees, grass and props keep their generated heights outside the changed areas (`GroundLevel`), and only chunks touching those areas are rebuilt, so unchanged instance buffers aren't re-uploaded. Grass and props under the new building are removed.
 - **The sun follows the camera.** The directional light and its target track the camera focus point. The shadow frustum scales with zoom in steps of 10 units, and its position is snapped to whole shadow-map texels so shadow edges don't shimmer while panning.
 
 ### `@roe/server`: the authoritative server
 
 A Colyseus server. It uses only `@colyseus/core`, `@colyseus/ws-transport` and `@colyseus/schema`, not the `colyseus` meta-package, which would pull in Redis, the monitor and other extras. `MatchRoom` is a placeholder 2–4 player room whose synchronized `MatchState` holds the map id and the player list.
+
+The room accepts `command` messages: it parses the payload with `parseCommand`, takes the issuer from `client.sessionId` (never from the message), runs `applyCommand` on its own copy of the game state, and replies with `commandResult`. Syncing that state to clients comes with the multiplayer phase.
 
 ## Multiplayer model (planned)
 

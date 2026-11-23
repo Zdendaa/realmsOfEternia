@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-23._
 
-**Current state:** Phase 2 (the visual world) is complete. The game renders a living prototype map with a starting village, but there is no gameplay yet: no units, construction, economy or multiplayer matches.
+**Current state:** Phase 3 (building placement) is complete. Players can place buildings on the prototype map with validated rules; there is no economy, units or multiplayer match yet.
 
 ## Phases
 
@@ -18,7 +18,8 @@ _Last updated: 2026-11-23._
 | 2.3c  | Meadow-scale grass carpet, smaller flowers, calm water with a shoreline foam line | ✅ Done |
 | 3.1   | `@roe/sim` package; world creation moved out of the client                        | ✅ Done |
 | 3.2   | Placement rules, commands, game state, unit tests                                 | ✅ Done |
-| 3.3   | Construction menu, placement preview and placing                                  | ⏳ Next |
+| 3.3   | Construction menu, placement preview and placing                                  | ✅ Done |
+| 4     | Economy (resources, costs paid, production)                                       | ⏳ Next |
 
 ## What works today
 
@@ -30,6 +31,7 @@ _Last updated: 2026-11-23._
   - chunked instancing for trees (5,700) and ground cover, and per-model instancing for buildings
   - procedural terrain detail and stylized water, with no texture downloads
 - **Camera:** WASD and arrow keys or left drag to pan, right drag to rotate, mouse wheel to zoom. The focus point stays inside the playable area and on the ground.
+- **Building placement:** a construction menu lists the six buildable types with their costs (display only). A ghost follows the mouse, snapped to a 1-unit grid, rotating in 90° steps, green or red by the shared placement rules (area, water, slope, buildings, paths, trees, rocks). Placed buildings flatten the terrain and clear grass under them.
 - **Shared rules ready for Phase 3:** `createHeightField`, `flattenHeightField`, `entrancePoint`, `createBuildRules().isBuildable` and `createWaterMap().isWater`.
 - **Server:** a Colyseus server with a placeholder 2–4 player match room. The client doesn't connect to it yet.
 - **Performance:** a steady 60 FPS on an Apple M1 Pro in Chrome. Uncapped, frames take about 2.4 ms at the default view and 2.8 ms fully zoomed out.
@@ -38,6 +40,7 @@ _Last updated: 2026-11-23._
 
 ### Rendering
 
+- **Placement hitch:** placing a building costs one frame of about 50 ms in the dev build, mostly from recomputing all terrain normals; region-only normals would remove most of it.
 - **R3F warning:** React Three Fiber 9.8 logs a harmless `THREE.Clock` deprecation warning with three r187. It goes away when R3F updates.
 - **Shadow distance:** the shadow frustum is capped at 220×220 units, so distant trees have no shadows when fully zoomed out.
 - **Water:** it doesn't receive shadows and has no reflections. The open surface is intentionally calm (depth gradient plus a shoreline foam line), with no waves.
@@ -55,6 +58,10 @@ _Last updated: 2026-11-23._
 
 ### Architecture
 
+- **Multiplayer isn't wired yet:** the client applies commands locally. The server validates commands with the same rules but keeps its game state privately (no state sync, no client connection yet).
+- **No persistence:** placed buildings disappear on reload (by design for now).
+- **Construction is instant and free:** costs are shown but not paid, and there are no construction sites or builders.
+- **Placed buildings get no paths and no worn ground** at their entrances.
 - **Cosmetic layers are client-only by design:** props, worn ground and grass live in the client (`decorateWorld`); everything gameplay-relevant comes from `@roe/sim`.
 - **Settlement data is hand-authored** for one map. There are no generators or editors yet.
 - **Footprints are bounding boxes,** slightly larger than the buildings. Selection and collision will need finer shapes.

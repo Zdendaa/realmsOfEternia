@@ -3,6 +3,7 @@ import {
   lakeDistance,
   smoothstep,
   type HeightField,
+  type Bounds2D,
   type Lake,
   type MapDefinition,
 } from '@roe/shared';
@@ -64,39 +65,28 @@ function createGridMapping(map: MapDefinition) {
  * Builds the terrain mesh from the shared height field: playable area, border ring
  * and far surroundings, all in one seamless geometry with per-vertex colors.
  */
-export function buildTerrainGeometry(
+export type TerrainColorizer = (
+  x: number,
+  y: number,
+  z: number,
+  flatness: number,
+  target: Color,
+) => Color;
+
+/**
+ * Vertex color of the ground at a point: grass, dry hilltops, dirt and rock on slopes,
+ * worn ground, sandy banks and lake beds. `flatness` is the normal's Y component.
+ */
+export function createTerrainColorizer(
   map: MapDefinition,
-  heights: HeightField,
   wornPatches: readonly WornPatch[] = [],
   lakes: readonly Lake[] = [],
-): PlaneGeometry {
+): TerrainColorizer {
   const wearAt = createWearSampler(map, wornPatches);
-  const grid = createGridMapping(map);
-  const segments = 2 * grid.rowsPerSide;
-  const geometry = new PlaneGeometry(1, 1, segments, segments);
-  geometry.rotateX(-Math.PI / 2);
-
-  const positions = geometry.getAttribute('position');
-  for (let i = 0; i < positions.count; i++) {
-    const x = grid.toWorld(Math.round(positions.getX(i) * segments));
-    const z = grid.toWorld(Math.round(positions.getZ(i) * segments));
-    positions.setXYZ(i, x, heights.getHeightAt(x, z), z);
-  }
-  geometry.computeVertexNormals();
-  geometry.computeBoundingSphere();
-
-  const normals = geometry.getAttribute('normal');
-  const colors = new Float32Array(positions.count * 3);
-  const color = new Color();
   const { hillHeight } = map.terrain;
   const { mountainHeight } = map.border;
 
-  for (let i = 0; i < positions.count; i++) {
-    const x = positions.getX(i);
-    const y = positions.getY(i);
-    const z = positions.getZ(i);
-    const flatness = normals.getY(i);
-
+  return (x, y, z, flatness, color) => {
     // Mid-green base with only gentle variation; grass tufts provide the detail.
     const patches = fractalNoise2D(map.seed + 101, x / 22, z / 22, 3);
     const detail = fractalNoise2D(map.seed + 202, x / 3, z / 3, 2);
@@ -120,10 +110,70 @@ export function buildTerrainGeometry(
       color.lerp(SAND, smoothstep(lake.level + 0.9, lake.level + 0.15, y) * nearShore * 0.7);
       color.lerp(LAKE_BED, smoothstep(lake.level - 0.1, lake.level - 1.2, y));
     }
+    return color;
+  };
+}
 
+export function buildTerrainGeometry(
+  map: MapDefinition,
+  heights: HeightField,
+  colorize: TerrainColorizer,
+): PlaneGeometry {
+  const grid = createGridMapping(map);
+  const segments = 2 * grid.rowsPerSide;
+  const geometry = new PlaneGeometry(1, 1, segments, segments);
+  geometry.rotateX(-Math.PI / 2);
+
+  const positions = geometry.getAttribute('position');
+  for (let i = 0; i < positions.count; i++) {
+    const x = grid.toWorld(Math.round(positions.getX(i) * segments));
+    const z = grid.toWorld(Math.round(positions.getZ(i) * segments));
+    positions.setXYZ(i, x, heights.getHeightAt(x, z), z);
+  }
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
+
+  const normals = geometry.getAttribute('normal');
+  const colors = new Float32Array(positions.count * 3);
+  const color = new Color();
+  for (let i = 0; i < positions.count; i++) {
+    colorize(positions.getX(i), positions.getY(i), positions.getZ(i), normals.getY(i), color);
     color.toArray(colors, i * 3);
   }
   geometry.setAttribute('color', new BufferAttribute(colors, 3));
 
   return geometry;
+}
+
+/**
+ * Re-samples heights and colors for all vertices inside `bounds` (e.g. around a newly
+ * placed building) instead of rebuilding the whole mesh.
+ */
+export function updateTerrainRegion(
+  geometry: PlaneGeometry,
+  heights: HeightField,
+  bounds: Bounds2D,
+  colorize: TerrainColorizer,
+): void {
+  const positions = geometry.getAttribute('position');
+  const touched: number[] = [];
+  for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i);
+    const z = positions.getZ(i);
+    if (x < bounds.minX || x > bounds.maxX || z < bounds.minZ || z > bounds.maxZ) continue;
+    positions.setY(i, heights.getHeightAt(x, z));
+    touched.push(i);
+  }
+  if (touched.length === 0) return;
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+
+  const normals = geometry.getAttribute('normal');
+  const colors = geometry.getAttribute('color');
+  const color = new Color();
+  for (const i of touched) {
+    colorize(positions.getX(i), positions.getY(i), positions.getZ(i), normals.getY(i), color);
+    colors.setXYZ(i, color.r, color.g, color.b);
+  }
+  colors.needsUpdate = true;
 }

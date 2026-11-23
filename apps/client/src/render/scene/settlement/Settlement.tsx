@@ -5,6 +5,7 @@ import type { PlacedBuilding } from '@roe/sim';
 import type { PlacedProp } from '../../../world/decorateWorld';
 import { ModelInstances, type ModelInstance } from './ModelInstances';
 import { publicUrl } from './modelAssets';
+import { tileOffsets } from './tiling';
 
 // Start downloading every settlement model as soon as this module loads.
 for (const { modelPath } of [...Object.values(BUILDINGS), ...Object.values(PROPS)]) {
@@ -23,26 +24,15 @@ interface SettlementProps {
 function buildingInstances(b: PlacedBuilding): ModelInstance[] {
   const { definition } = b;
   const rotation = b.rotation + definition.rotationOffset;
-  const tiling = definition.modelTiling;
-  if (!tiling) return [{ x: b.x, y: b.y, z: b.z, rotation, scale: definition.scale }];
-
   const cos = Math.cos(b.rotation);
   const sin = Math.sin(b.rotation);
-  const tiles: ModelInstance[] = [];
-  for (let c = 0; c < tiling.cols; c++) {
-    for (let r = 0; r < tiling.rows; r++) {
-      const lx = (c - (tiling.cols - 1) / 2) * tiling.stepX;
-      const lz = (r - (tiling.rows - 1) / 2) * tiling.stepZ;
-      tiles.push({
-        x: b.x + lx * cos + lz * sin,
-        y: b.y,
-        z: b.z - lx * sin + lz * cos,
-        rotation,
-        scale: definition.scale,
-      });
-    }
-  }
-  return tiles;
+  return tileOffsets(definition).map((t) => ({
+    x: b.x + t.x * cos + t.z * sin,
+    y: b.y,
+    z: b.z - t.x * sin + t.z * cos,
+    rotation,
+    scale: definition.scale,
+  }));
 }
 
 /** Groups instances by model file, so each model is drawn instanced once. */
