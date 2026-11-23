@@ -12,7 +12,7 @@ TypeScript 6.0 (strict) · React 19 · Vite 8 · three.js r187 · React Three Fi
 
 pnpm isn't installed globally and Corepack can't download it (custom npm registry). Always use `npx pnpm@10`:
 
-- `npx pnpm@10 dev` – client at http://localhost:5173 (`dev:server` → ws://localhost:2567, `dev:all` → both)
+- `npx pnpm@10 dev` – client at <http://localhost:5173> (`dev:server` → ws://localhost:2567, `dev:all` → both)
 - `npx pnpm@10 check` – typecheck + lint + format check + tests; `npx pnpm@10 build` – production build
 - Stale Vite servers silently move to ports 5174+; kill old ones before browser checks.
 
@@ -53,4 +53,4 @@ pnpm isn't installed globally and Corepack can't download it (custom npm registr
 
 ## Working with the user
 
-React/TypeScript frontend developer, not a game developer: explain important technical decisions, not basic programming. For each milestone: inspect → plan → explain key decisions → implement → test → browser check if visual → report exactly what changed, how to run/test it, limitations and next steps. With several good options, recommend one and say why. Prefer concrete, actionable answers. Reply in the user's language (Czech or English). Commit when asked; push only when asked.
+React/TypeScript frontend developer, not a game developer: explain important technical decisions, not basic programming. For each milestone: inspect → plan → explain key decisions → implement → test → browser check if visual → report exactly what changed, how to run/test it, limitations and next steps. With several good options, recommend one and say why. Prefer concrete, actionable answers. Reply in the user's language (Czech or English). Commit after each verified step, push after each commit. Never force-push.
