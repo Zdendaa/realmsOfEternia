@@ -16,6 +16,7 @@
     "@react-three/fiber": "^9.8.2",
     "@roe/game-data": "workspace:*",
     "@roe/shared": "workspace:*",
+    "@roe/sim": "workspace:*",
     "react": "~19.3.1",
     "react-dom": "~19.3.1",
     "three": "~0.187.0",

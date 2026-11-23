@@ -7,7 +7,7 @@ import {
   type MapDefinition,
 } from '@roe/shared';
 import { BufferAttribute, Color, PlaneGeometry } from 'three';
-import type { WornPatch } from '../../world/createWorld';
+import type { WornPatch } from '../../world/decorateWorld';
 import { createWearSampler } from '../../world/wear';
 
 /** Grid spacing in the border ring; mountains don't need playable-area detail. */

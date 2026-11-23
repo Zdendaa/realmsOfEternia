@@ -4,7 +4,8 @@ import { PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT } from '@roe/game-data';
 import { useMemo } from 'react';
 import { ACESFilmicToneMapping } from 'three';
 import { useSettingsStore } from '../state/settingsStore';
-import { createWorld } from '../world/createWorld';
+import { createWorld } from '@roe/sim';
+import { decorateWorld } from '../world/decorateWorld';
 import { RtsCameraControls } from './camera/RtsCameraControls';
 import { ATMOSPHERE } from './scene/atmosphere';
 import { World } from './scene/World';
@@ -15,7 +16,10 @@ const CAMERA_START: [number, number, number] = [25, 42, 25];
 /** Root of the 3D viewport. Owns the renderer, camera and scene graph. */
 export function GameCanvas() {
   const showStats = useSettingsStore((s) => s.showStats);
-  const world = useMemo(() => createWorld(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT), []);
+  const world = useMemo(
+    () => decorateWorld(createWorld(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT), PROTOTYPE_SETTLEMENT),
+    [],
+  );
 
   return (
     <Canvas

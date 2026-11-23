@@ -1,0 +1,115 @@
+import { BUILDINGS, type BuildingDefinition, type SettlementLayout } from '@roe/game-data';
+import {
+  createBaseHeightField,
+  createHeightField,
+  createWaterMap,
+  distanceToFootprint,
+  distanceToPolyline,
+  flattenHeightField,
+  sampleCatmullRom,
+  scatterDecorations,
+  type Decoration,
+  type HeightField,
+  type MapDefinition,
+  type PlacedFootprint,
+  type Vec2,
+  type WaterMap,
+} from '@roe/shared';
+
+/** Free space kept between buildings and trees/rocks. */
+const BUILDING_CLEARANCE = 3;
+/** Free space kept on each side of a path, beyond its half-width. */
+const PATH_CLEARANCE = 1;
+const PATH_SAMPLE_SPACING = 0.5;
+
+export interface PlacedBuilding extends PlacedFootprint {
+  definition: BuildingDefinition;
+  /** Ground height under the building (its flattened level). */
+  y: number;
+}
+
+export interface Bounds {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+/**
+ * The static, gameplay-relevant world derived deterministically from map data.
+ * Identical on client and server; cosmetic layers (props, grass...) live in the client.
+ */
+export interface SimWorld {
+  map: MapDefinition;
+  /** Natural terrain with lakes carved in, before any building flattening. */
+  terrain: HeightField;
+  /** Terrain flattened under the starting settlement. */
+  heights: HeightField;
+  water: WaterMap;
+  /** The starting settlement. */
+  buildings: PlacedBuilding[];
+  /** Sampled path center lines. */
+  paths: Vec2[][];
+  pathWidth: number;
+  /** Trees and rocks, with stable ids. */
+  decorations: Decoration[];
+}
+
+export function boundsOf(points: readonly Vec2[], margin: number): Bounds {
+  const xs = points.map((p) => p.x);
+  const zs = points.map((p) => p.z);
+  return {
+    minX: Math.min(...xs) - margin,
+    maxX: Math.max(...xs) + margin,
+    minZ: Math.min(...zs) - margin,
+    maxZ: Math.max(...zs) + margin,
+  };
+}
+
+export const inBounds = (b: Bounds, x: number, z: number) =>
+  x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ;
+
+/**
+ * Composes terrain, settlement and decorations. Order matters: buildings flatten the
+ * terrain first, then paths are sampled and decorations are placed on the flattened
+ * ground, keeping clear of buildings and paths.
+ */
+export function createWorld(map: MapDefinition, settlement: SettlementLayout): SimWorld {
+  const footprints = settlement.buildings.map((placement) => {
+    const definition = BUILDINGS[placement.building];
+    return {
+      definition,
+      x: placement.x,
+      z: placement.z,
+      rotation: placement.rotation,
+      footprint: definition.footprint,
+    };
+  });
+
+  const terrain = createHeightField(map);
+  const heights = flattenHeightField(terrain, footprints);
+  const buildings = footprints.map((f) => ({ ...f, y: heights.getHeightAt(f.x, f.z) }));
+  const paths = settlement.paths.map((points) => sampleCatmullRom(points, PATH_SAMPLE_SPACING));
+
+  // Roads cross the whole map, so each path gets its own bounding box for a cheap reject.
+  const pathReach = settlement.pathWidth / 2 + PATH_CLEARANCE;
+  const pathChecks = paths.map((path) => ({ path, bounds: boundsOf(path, pathReach) }));
+  const buildingBounds = boundsOf(footprints, 12);
+  const isBlocked = (x: number, z: number) =>
+    (inBounds(buildingBounds, x, z) &&
+      footprints.some((f) => distanceToFootprint(f, x, z, BUILDING_CLEARANCE) === 0)) ||
+    pathChecks.some(
+      ({ path, bounds }) => inBounds(bounds, x, z) && distanceToPolyline(path, x, z) < pathReach,
+    );
+
+  return {
+    map,
+    terrain,
+    heights,
+    water: createWaterMap(map, createBaseHeightField(map)),
+    buildings,
+    paths,
+    pathWidth: settlement.pathWidth,
+    decorations: scatterDecorations(map, { heights, isBlocked }),
+  };
+}

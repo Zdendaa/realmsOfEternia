@@ -1,6 +1,6 @@
 import type { HeightField, Lake, MapDefinition } from '@roe/shared';
 import { useEffect, useMemo } from 'react';
-import type { WornPatch } from '../../world/createWorld';
+import type { WornPatch } from '../../world/decorateWorld';
 import { buildTerrainGeometry } from './terrainGeometry';
 import { createTerrainMaterial } from './terrainMaterial';
 

@@ -1,5 +1,5 @@
 import { Suspense, useMemo } from 'react';
-import type { World as WorldData } from '../../world/createWorld';
+import type { ClientWorld } from '../../world/decorateWorld';
 import { ATMOSPHERE } from './atmosphere';
 import { Lighting } from './Lighting';
 import { Paths } from './Paths';
@@ -12,7 +12,7 @@ import { Trees } from './Trees';
 import { Water } from './Water';
 
 interface WorldProps {
-  world: WorldData;
+  world: ClientWorld;
 }
 
 export function World({ world }: WorldProps) {
@@ -33,9 +33,9 @@ export function World({ world }: WorldProps) {
         map={world.map}
         heights={world.heights}
         wornPatches={world.wornPatches}
-        lakes={world.lakes}
+        lakes={world.water.lakes}
       />
-      <Water lakes={world.lakes} heights={world.heights} />
+      <Water lakes={world.water.lakes} heights={world.heights} />
       <Paths
         paths={world.paths}
         width={world.pathWidth}

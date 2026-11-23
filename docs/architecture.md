@@ -11,12 +11,13 @@ This document explains how the codebase is structured and why. Read it before yo
 
 ## Packages
 
-| Package          | Runs in          | May depend on         | Must not contain                               |
-| ---------------- | ---------------- | --------------------- | ---------------------------------------------- |
-| `@roe/shared`    | browser and Node | nothing               | DOM, Node APIs, React, three.js, `Math.random` |
-| `@roe/game-data` | browser and Node | `@roe/shared` (types) | logic beyond simple derived values             |
-| `@roe/client`    | browser          | `shared`, `game-data` | authoritative game decisions                   |
-| `@roe/server`    | Node             | `shared`, `game-data` | rendering or UI code                           |
+| Package          | Runs in          | May depend on                | Must not contain                                 |
+| ---------------- | ---------------- | ---------------------------- | ------------------------------------------------ |
+| `@roe/shared`    | browser and Node | nothing                      | DOM, Node APIs, React, three.js, `Math.random`   |
+| `@roe/game-data` | browser and Node | `@roe/shared` (types)        | logic beyond simple derived values               |
+| `@roe/sim`       | browser and Node | `shared`, `game-data`        | rendering, UI, cosmetic-only data (grass, props) |
+| `@roe/client`    | browser          | `shared`, `game-data`, `sim` | authoritative game decisions                     |
+| `@roe/server`    | Node             | `shared`, `game-data`, `sim` | rendering or UI code                             |
 
 ### `@roe/shared`: types and rules
 
@@ -42,6 +43,13 @@ Static configuration written as typed object literals with `as const satisfies S
 - `PROPS`: small pack details (rocks, garden trees). The pack has no standalone village clutter; barrels, crates and fences are baked into the building models.
 - `MEDIEVAL_PACK`: the KayKit asset pack's folder, its world scale (pack unit × 3) and material overrides (color, roughness) by material name. The overrides are applied when models load, so the GLB files stay untouched.
 
+### `@roe/sim`: game simulation
+
+Game rules that need both primitives (`shared`) and content (`game-data`). `shared` can't import `game-data`, because `game-data` already depends on `shared`, so this layer sits on top of both. Client and server import it and run exactly the same code.
+
+- `createWorld(map, settlement)` builds the static, gameplay-relevant world: the terrain with lakes (`terrain`), the terrain flattened under the starting settlement (`heights`), the water map, the starting buildings, sampled paths, and trees and rocks with stable ids.
+- Commands, game state and placement rules are added here in Phase 3.
+
 ### `@roe/client`: the game client
 
 ```text
@@ -53,7 +61,7 @@ src/
     scene/             World, Terrain, Water, Paths, Lighting, Trees, Rocks, Sky
     scene/settlement/  Settlement, ModelInstances (GLB loading, overrides, instancing)
     shaders/           shared GLSL snippets (value noise)
-  world/               createWorld: composes the static world from map data
+  world/               decorateWorld: cosmetic layers (props, worn ground, grass) on top of the sim world
   ui/                  HTML/CSS overlay; never imports three.js
   input/               input hooks (keyboard now; selection and commands later)
   state/               Zustand stores
@@ -65,7 +73,7 @@ Rules:
 - **`ui/` is plain React DOM** that sits over the canvas. It talks to the scene only through stores.
 - **Per-frame values never go through React state.** Camera movement, animation and similar values are mutated inside `useFrame` or kept in refs, which avoids re-renders. Zustand stores hold values that change at human speed, such as settings, selection and menus.
 - **Static props use chunked instancing.** `StaticInstances` uploads instance matrices once. Trees are split into 60×60 world-space chunks, each its own instanced mesh with its own bounding sphere, so chunks outside the camera or shadow frustum are skipped. Chunks share one geometry and material per part.
-- **`world/createWorld.ts` composes the static world** from map data in a fixed order: buildings flatten the terrain, paths are sampled, then props (behind and beside buildings, never in front of entrances), worn-ground patches and decorations are placed on the flattened ground, away from buildings and paths. Every renderer and the camera use the resulting `world.heights`. When the server needs the same world, this composition should move into a shared layer.
+- **The world comes from `@roe/sim`.** `createWorld` (sim) builds the gameplay world, and the client's `decorateWorld` adds the cosmetic layers: props behind and beside buildings, worn-ground patches and ground cover. Every renderer and the camera sample the same `world.heights`.
 - **Buildings are instanced per model part.** `Settlement` groups buildings and props by model file. `ModelInstances` loads the GLB with `useGLTF` (preloaded, no Draco), applies the material overrides, and draws each mesh of the model as one instanced mesh, so six houses cost the same draw calls as one. Paths are one soft-edged (vertex alpha) ribbon mesh; worn ground is baked into the terrain vertex colors.
 - **Ground cover is cosmetic and instanced.** `world/groundCover.ts` places grass tufts and flower clusters on a jittered grid: some grass everywhere, lush in noise-masked meadows, thinning near paths, and none on paths, buildings, fields, worn ground or water. Each grass instance is a small patch of 10 short blades (0.25–0.45 units tall), so the ground reads as a carpet. `GroundCover` draws them in 40×40 chunks without shadow casting. In the vertex shader, a shared wind clock drives a cheap sway, and ground cover shrinks into the ground between 100 and 140 units from the camera; chunks entirely beyond that are hidden on the CPU.
 - **Shaders are small and procedural.** The terrain keeps its vertex-color zones (grass, dirt, rock, worn ground, sand, lake bed) as the base; an `onBeforeCompile` patch on its standard material adds subtle world-space noise detail that fades with camera distance. Visible grass detail comes from the instanced ground cover. Water is a custom `ShaderMaterial` (color and opacity by depth, a thin shoreline foam line that gently moves in and out, fog; the open surface is deliberately calm). No textures are downloaded.

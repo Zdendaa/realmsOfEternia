@@ -1,5 +1,5 @@
 import { fractalNoise2D, smoothstep, type MapDefinition } from '@roe/shared';
-import type { WornPatch } from './createWorld';
+import type { WornPatch } from './decorateWorld';
 
 /** Wear amount (0–1) at a point: strongest at patch centers, ragged at the edges. */
 export function createWearSampler(map: MapDefinition, patches: readonly WornPatch[]) {

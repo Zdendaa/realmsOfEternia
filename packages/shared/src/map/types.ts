@@ -83,6 +83,8 @@ export interface MapDefinition {
 }
 
 export interface Decoration {
+  /** Stable id: the index in the deterministic placement order of its map. */
+  id: number;
   kind: DecorationKind;
   x: number;
   /** Ground height at (x, z). */

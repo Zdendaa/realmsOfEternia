@@ -98,7 +98,7 @@ function tryPlace(
   const z = randomRange(rng, -half, half);
   const y = heights.getHeightAt(x, z);
   if (rng() >= placementChance(map, rule, x, y, z)) return null;
-  return { kind: rule.kind, x, y, z, rotation: 0, scale: 0 };
+  return { id: -1, kind: rule.kind, x, y, z, rotation: 0, scale: 0 };
 }
 
 export interface ScatterOptions {
@@ -132,6 +132,7 @@ export function scatterDecorations(map: MapDefinition, options: ScatterOptions =
       if (!grid.isFree(candidate.x, candidate.z)) continue;
 
       grid.add(candidate.x, candidate.z);
+      candidate.id = result.length;
       candidate.rotation = randomRange(rng, 0, Math.PI * 2);
       candidate.scale = randomRange(rng, rule.minScale, rule.maxScale);
       result.push(candidate);

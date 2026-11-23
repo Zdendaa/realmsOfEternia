@@ -16,7 +16,8 @@
     "@colyseus/schema": "^5.0.50",
     "@colyseus/ws-transport": "^0.18.0",
     "@roe/game-data": "workspace:*",
-    "@roe/shared": "workspace:*"
+    "@roe/shared": "workspace:*",
+    "@roe/sim": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -1,0 +1,26 @@
+{
+  "name": "@roe/sim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Game simulation: world creation, game state, commands and rules. Runs on client and server.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@roe/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@roe/game-data": "workspace:*",
+    "@roe/shared": "workspace:*"
+  }
+}

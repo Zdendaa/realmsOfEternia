@@ -1,7 +1,8 @@
 import { useGLTF } from '@react-three/drei';
 import { BUILDINGS, PROPS } from '@roe/game-data';
 import { useMemo } from 'react';
-import type { PlacedBuilding, PlacedProp } from '../../../world/createWorld';
+import type { PlacedBuilding } from '@roe/sim';
+import type { PlacedProp } from '../../../world/decorateWorld';
 import { ModelInstances, type ModelInstance } from './ModelInstances';
 import { publicUrl } from './modelAssets';
 

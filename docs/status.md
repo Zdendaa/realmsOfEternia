@@ -53,7 +53,7 @@ _Last updated: 2026-11-23._
 
 ### Architecture
 
-- **World composition is client-only:** `createWorld` (flattening, paths, props, decorations) lives in the client. When the server needs the same world, it must move to a layer that can import both `shared` and `game-data`.
+- **Cosmetic layers are client-only by design:** props, worn ground and grass live in the client (`decorateWorld`); everything gameplay-relevant comes from `@roe/sim`.
 - **Settlement data is hand-authored** for one map. There are no generators or editors yet.
 - **Footprints are bounding boxes,** slightly larger than the buildings. Selection and collision will need finer shapes.
 - **No automated tests yet.** Rules were verified with ad-hoc scripts and browser checks.

@@ -90,6 +90,7 @@ realms-of-eternia/
 │       └── src/rooms/          match rooms and networked state schemas
 ├── packages/
 │   ├── shared/                 @roe/shared: types and deterministic game rules
+│   ├── sim/                    @roe/sim: world creation, game state, commands, rules
 │   └── game-data/              @roe/game-data: maps and, later, races, units, buildings
 ├── docs/                       technical documentation
 ├── eslint.config.js            one flat ESLint config for the repo
@@ -102,12 +103,13 @@ realms-of-eternia/
 Packages depend on each other in one direction only:
 
 ```
-@roe/shared  ←  @roe/game-data  ←  @roe/client
-                                ←  @roe/server
+@roe/shared  ←  @roe/game-data  ←  @roe/sim  ←  @roe/client
+                                         ←  @roe/server
 ```
 
 - **`@roe/shared`** contains pure, deterministic TypeScript: types, constants, the seeded RNG and rule functions. It has no DOM, Node, React or three.js imports, so the client and the server run exactly the same code.
 - **`@roe/game-data`** contains declarative definitions of maps and, later, races, buildings, units and spells. It holds data, not logic.
+- **`@roe/sim`** contains the game simulation: world creation, and (from Phase 3) game state, commands and their validation. The client and the server run the same code.
 - **`@roe/client`** renders the game state and collects player input. It never decides gameplay outcomes on its own.
 - **`@roe/server`** owns the authoritative match state. It will validate player commands against the rules in `@roe/shared`.
 
