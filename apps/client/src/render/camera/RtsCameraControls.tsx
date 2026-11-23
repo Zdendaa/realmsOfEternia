@@ -1,6 +1,6 @@
 import { MapControls } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { clamp } from '@roe/shared';
+import { clamp, type HeightField } from '@roe/shared';
 import { useRef, type ComponentRef } from 'react';
 import { Vector3 } from 'three';
 import { usePressedKeys } from '../../input/usePressedKeys';
@@ -8,7 +8,12 @@ import { usePressedKeys } from '../../input/usePressedKeys';
 type MapControlsImpl = ComponentRef<typeof MapControls>;
 
 const MIN_DISTANCE = 15;
-const MAX_DISTANCE = 130;
+const MAX_DISTANCE = 120;
+/** Polar angle limits, measured from straight down (0) toward the horizon. */
+const MIN_POLAR_ANGLE = 0.2;
+const MAX_POLAR_ANGLE = 1.1;
+/** How quickly the focus point follows the terrain height (per second). */
+const HEIGHT_FOLLOW_RATE = 6;
 /** Keyboard pan speed as a fraction of the current camera distance per second. */
 const KEY_PAN_SPEED = 0.8;
 
@@ -24,14 +29,16 @@ function axis(keys: ReadonlySet<string>, positive: string[], negative: string[])
 interface RtsCameraControlsProps {
   /** Half-size of the area the camera focus point may move within. */
   bounds: number;
+  /** Terrain height lookup; the focus point stays on the ground. */
+  heights: HeightField;
 }
 
 /**
  * RTS-style camera: mouse pan / rotate / zoom via MapControls,
  * WASD + arrow key panning relative to the view direction,
- * and the focus point is clamped to the map.
+ * the focus point is clamped to the map and follows the terrain height.
  */
-export function RtsCameraControls({ bounds }: RtsCameraControlsProps) {
+export function RtsCameraControls({ bounds, heights }: RtsCameraControlsProps) {
   const controlsRef = useRef<MapControlsImpl>(null);
   const keys = usePressedKeys();
 
@@ -63,6 +70,12 @@ export function RtsCameraControls({ bounds }: RtsCameraControlsProps) {
       target.add(offset);
       camera.position.add(offset);
     }
+
+    // Glide the focus point (and the camera with it) onto the terrain surface.
+    const groundY = heights.getHeightAt(target.x, target.z);
+    const dy = (groundY - target.y) * Math.min(1, delta * HEIGHT_FOLLOW_RATE);
+    target.y += dy;
+    camera.position.y += dy;
   });
 
   return (
@@ -74,8 +87,8 @@ export function RtsCameraControls({ bounds }: RtsCameraControlsProps) {
       screenSpacePanning={false}
       minDistance={MIN_DISTANCE}
       maxDistance={MAX_DISTANCE}
-      minPolarAngle={0.25}
-      maxPolarAngle={1.15}
+      minPolarAngle={MIN_POLAR_ANGLE}
+      maxPolarAngle={MAX_POLAR_ANGLE}
     />
   );
 }

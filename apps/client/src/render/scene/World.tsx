@@ -1,17 +1,18 @@
-import { scatterDecorations, type MapDefinition } from '@roe/shared';
+import { scatterDecorations, type HeightField, type MapDefinition } from '@roe/shared';
 import { useMemo } from 'react';
+import { ATMOSPHERE } from './atmosphere';
 import { Lighting } from './Lighting';
 import { Rocks } from './Rocks';
+import { Sky } from './Sky';
 import { Terrain } from './Terrain';
 import { Trees } from './Trees';
 
-const SKY_COLOR = '#b9d3e6';
-
 interface WorldProps {
   map: MapDefinition;
+  heights: HeightField;
 }
 
-export function World({ map }: WorldProps) {
+export function World({ map, heights }: WorldProps) {
   const { trees, rocks } = useMemo(() => {
     const decorations = scatterDecorations(map);
     return {
@@ -22,10 +23,10 @@ export function World({ map }: WorldProps) {
 
   return (
     <>
-      <color attach="background" args={[SKY_COLOR]} />
-      <fog attach="fog" args={[SKY_COLOR, 160, 420]} />
+      <fog attach="fog" args={[ATMOSPHERE.skyHorizon, ATMOSPHERE.fogNear, ATMOSPHERE.fogFar]} />
+      <Sky />
       <Lighting />
-      <Terrain size={map.size} />
+      <Terrain map={map} heights={heights} />
       <Trees items={trees} />
       <Rocks items={rocks} />
     </>

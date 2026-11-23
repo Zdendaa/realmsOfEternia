@@ -114,3 +114,13 @@ body,
   margin: 0;
   color: var(--hud-muted);
 }
+
+/* stats.js positions itself inline at top-left; move it to the free bottom-right corner. */
+.fps-stats {
+  top: auto !important;
+  left: auto !important;
+  right: 12px;
+  bottom: 12px;
+  border-radius: 4px;
+  overflow: hidden;
+}

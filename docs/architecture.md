@@ -20,7 +20,10 @@ This document explains how the codebase is structured and why. Read it before yo
 
 ### `@roe/shared`: types and rules
 
-Pure functions and types: IDs, vectors, constants (`SIMULATION_TICK_RATE`, `MAX_PLAYERS`), the seeded RNG (`createRng`), and rule functions such as `scatterDecorations`.
+Pure functions and types: IDs, vectors, constants (`SIMULATION_TICK_RATE`, `MAX_PLAYERS`), the seeded RNG (`createRng`), stateless value noise (`fractalNoise2D`), and map generation:
+
+- `createHeightField(map).getHeightAt(x, z)` returns the terrain height at any point. The heightmap is never stored or sent over the network; it is recomputed from the map seed. Use it for everything that sits on the ground: the terrain mesh, decorations, units, buildings and the camera focus.
+- `scatterDecorations(map)` places trees and rocks. Trees cluster into forests through a noise mask, and the central settlement area (`map.settlement`) stays flat and empty.
 
 Determinism is required. With the same input, a rule function must return the same output on every machine. Always use `createRng(seed)` and never `Math.random()`.
 
@@ -30,7 +33,7 @@ Static configuration written as typed object literals with `as const satisfies S
 
 ### `@roe/client`: the game client
 
-```
+```text
 src/
   main.tsx, App.tsx    bootstrapping and layout (canvas plus HUD overlay)
   render/              everything inside the <Canvas>
@@ -55,7 +58,7 @@ A Colyseus server. It uses only `@colyseus/core`, `@colyseus/ws-transport` and `
 
 ## Multiplayer model (planned)
 
-```
+```text
 client input ──► command ──► server validates (shared rules) ──► applies to state
                                                                        │
 client renders ◄──────────── state patches (Colyseus schema) ◄─────────┘
