@@ -36,8 +36,9 @@ Static configuration written as typed object literals with `as const satisfies S
 
 - `PROTOTYPE_MAP`: terrain, forest and border settings.
 - `BUILDINGS`: id, name, `modelPath`, `footprint` (world units), `scale` and `rotationOffset`. Footprints are measured from model bounding boxes. By convention every building's entrance faces local +Z.
-- `PROTOTYPE_SETTLEMENT`: the hand-authored starting settlement, with building placements and dirt paths given as spline control points that end at building entrances.
-- `MEDIEVAL_PACK`: the KayKit asset pack's folder, its world scale (pack unit × 3) and material color overrides by material name. The overrides are applied when models load, so the GLB files stay untouched.
+- `PROTOTYPE_SETTLEMENT`: the hand-authored starting village around a central square. Fields are tiled `farm_plot` instances built with `field()`. Paths are spline control points whose endpoints come from `entrancePoint()`, so moving a building keeps its path attached; every path ends at an entrance or runs off toward the map edge as a road. The layout also lists squares (worn ground) and prop rules.
+- `PROPS`: small pack details (rocks, garden trees). The pack has no standalone village clutter; barrels, crates and fences are baked into the building models.
+- `MEDIEVAL_PACK`: the KayKit asset pack's folder, its world scale (pack unit × 3) and material overrides (color, roughness) by material name. The overrides are applied when models load, so the GLB files stay untouched.
 
 ### `@roe/client`: the game client
 
@@ -59,8 +60,8 @@ Rules:
 - **`ui/` is plain React DOM** that sits over the canvas. It talks to the scene only through stores.
 - **Per-frame values never go through React state.** Camera movement, animation and similar values are mutated inside `useFrame` or kept in refs, which avoids re-renders. Zustand stores hold values that change at human speed, such as settings, selection and menus.
 - **Static props use chunked instancing.** `StaticInstances` uploads instance matrices once. Trees are split into 60×60 world-space chunks, each its own instanced mesh with its own bounding sphere, so chunks outside the camera or shadow frustum are skipped. Chunks share one geometry and material per part.
-- **`world/createWorld.ts` composes the static world** from map data in a fixed order: buildings flatten the terrain, paths are sampled, then decorations are placed on the flattened ground away from buildings and paths. Every renderer and the camera use the resulting `world.heights`. When the server needs the same world, this composition should move into a shared layer.
-- **Buildings are instanced per model part.** `Settlement` groups placements by type. `BuildingInstances` loads the GLB with `useGLTF` (preloaded, no Draco), applies the material overrides, and draws each mesh of the model as one instanced mesh, so six houses cost the same draw calls as one.
+- **`world/createWorld.ts` composes the static world** from map data in a fixed order: buildings flatten the terrain, paths are sampled, then props (behind and beside buildings, never in front of entrances), worn-ground patches and decorations are placed on the flattened ground, away from buildings and paths. Every renderer and the camera use the resulting `world.heights`. When the server needs the same world, this composition should move into a shared layer.
+- **Buildings are instanced per model part.** `Settlement` groups buildings and props by model file. `ModelInstances` loads the GLB with `useGLTF` (preloaded, no Draco), applies the material overrides, and draws each mesh of the model as one instanced mesh, so six houses cost the same draw calls as one. Paths are one soft-edged (vertex alpha) ribbon mesh; worn ground is baked into the terrain vertex colors.
 - **The sun follows the camera.** The directional light and its target track the camera focus point. The shadow frustum scales with zoom in steps of 10 units, and its position is snapped to whole shadow-map texels so shadow edges don't shimmer while panning.
 
 ### `@roe/server`: the authoritative server

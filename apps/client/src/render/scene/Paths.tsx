@@ -9,7 +9,7 @@ interface PathsProps {
   seed: number;
 }
 
-/** Dirt paths: flat ribbons following the terrain, drawn in one call. */
+/** Dirt paths: soft-edged ribbons following the terrain, drawn in one call. */
 export function Paths({ paths, width, heights, seed }: PathsProps) {
   const geometry = useMemo(
     () => buildPathGeometry(paths, width, heights, seed),
@@ -21,6 +21,8 @@ export function Paths({ paths, width, heights, seed }: PathsProps) {
     <mesh geometry={geometry} receiveShadow>
       <meshStandardMaterial
         vertexColors
+        transparent
+        depthWrite={false}
         roughness={1}
         polygonOffset
         polygonOffsetFactor={-1}

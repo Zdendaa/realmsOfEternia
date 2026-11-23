@@ -1,7 +1,7 @@
-import { MEDIEVAL_PACK } from '@roe/game-data';
+import { MEDIEVAL_PACK, type MaterialOverride } from '@roe/game-data';
 import {
-  Color,
   Mesh,
+  MeshStandardMaterial,
   type BufferGeometry,
   type Material,
   type Matrix4,
@@ -13,10 +13,10 @@ export function publicUrl(path: string): string {
   return `${import.meta.env.BASE_URL}${path}`;
 }
 
-/** Recolors materials by name. Idempotent; GLB files on disk are never modified. */
-export function applyMaterialColorOverrides(
+/** Applies color/roughness overrides by material name. Idempotent; GLB files are never modified. */
+export function applyMaterialOverrides(
   root: Object3D,
-  overrides: Readonly<Record<string, string>> = MEDIEVAL_PACK.materialColorOverrides,
+  overrides: Readonly<Record<string, MaterialOverride>> = MEDIEVAL_PACK.materialOverrides,
 ): void {
   root.traverse((object) => {
     if (!(object instanceof Mesh)) return;
@@ -24,10 +24,10 @@ export function applyMaterialColorOverrides(
       ? object.material
       : [object.material];
     for (const material of materials) {
-      const color = overrides[material.name];
-      if (color && 'color' in material && material.color instanceof Color) {
-        material.color.set(color);
-      }
+      const override = overrides[material.name];
+      if (!override || !(material instanceof MeshStandardMaterial)) continue;
+      if (override.color) material.color.set(override.color);
+      if (override.roughness !== undefined) material.roughness = override.roughness;
     }
   });
 }

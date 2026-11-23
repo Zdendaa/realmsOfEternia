@@ -1,5 +1,6 @@
 import { fractalNoise2D, smoothstep, type HeightField, type MapDefinition } from '@roe/shared';
 import { BufferAttribute, Color, PlaneGeometry } from 'three';
+import type { WornPatch } from '../../world/createWorld';
 
 /** Grid spacing in the border ring; mountains don't need playable-area detail. */
 const BORDER_SPACING = 2;
@@ -17,6 +18,8 @@ const GRASS_LIGHT = new Color('#588a35');
 const GRASS_DRY = new Color('#86924a');
 const DIRT = new Color('#6e5d3d');
 const ROCK = new Color('#7a776c');
+/** Trampled ground around entrances and squares; close to the path color, a bit greener. */
+const WORN = new Color('#76694c');
 
 /**
  * Maps a grid row offset from the center to a world coordinate. Rows are 1 unit apart
@@ -50,7 +53,27 @@ function createGridMapping(map: MapDefinition) {
  * Builds the terrain mesh from the shared height field: playable area, border ring
  * and far surroundings, all in one seamless geometry with per-vertex colors.
  */
-export function buildTerrainGeometry(map: MapDefinition, heights: HeightField): PlaneGeometry {
+/** Wear amount (0–1) at a point: strongest at patch centers, ragged at the edges. */
+function createWearSampler(map: MapDefinition, patches: readonly WornPatch[]) {
+  return (x: number, z: number): number => {
+    let wear = 0;
+    for (const p of patches) {
+      const distance = Math.hypot(x - p.x, z - p.z);
+      if (distance < p.radius)
+        wear = Math.max(wear, 1 - smoothstep(p.radius * 0.35, p.radius, distance));
+    }
+    if (wear === 0) return 0;
+    const ragged = fractalNoise2D(map.seed + 404, x / 1.6, z / 1.6, 2);
+    return smoothstep(0.15, 0.75, wear * (0.55 + ragged * 0.9));
+  };
+}
+
+export function buildTerrainGeometry(
+  map: MapDefinition,
+  heights: HeightField,
+  wornPatches: readonly WornPatch[] = [],
+): PlaneGeometry {
+  const wearAt = createWearSampler(map, wornPatches);
   const grid = createGridMapping(map);
   const segments = 2 * grid.rowsPerSide;
   const geometry = new PlaneGeometry(1, 1, segments, segments);
@@ -90,6 +113,7 @@ export function buildTerrainGeometry(map: MapDefinition, heights: HeightField): 
       smoothstep(0.75, 0.55, flatness),
     );
     color.lerp(ROCK, rockiness * 0.85);
+    color.lerp(WORN, wearAt(x, z) * 0.6);
 
     color.toArray(colors, i * 3);
   }

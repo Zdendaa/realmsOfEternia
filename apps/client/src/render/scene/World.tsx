@@ -27,7 +27,7 @@ export function World({ world }: WorldProps) {
       <fog attach="fog" args={[ATMOSPHERE.skyHorizon, ATMOSPHERE.fogNear, ATMOSPHERE.fogFar]} />
       <Sky />
       <Lighting />
-      <Terrain map={world.map} heights={world.heights} />
+      <Terrain map={world.map} heights={world.heights} wornPatches={world.wornPatches} />
       <Paths
         paths={world.paths}
         width={world.pathWidth}
@@ -37,7 +37,7 @@ export function World({ world }: WorldProps) {
       <Trees items={trees} />
       <Rocks items={rocks} />
       <Suspense fallback={null}>
-        <Settlement buildings={world.buildings} />
+        <Settlement buildings={world.buildings} props={world.props} />
       </Suspense>
     </>
   );

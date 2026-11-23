@@ -1,3 +1,10 @@
+export interface MaterialOverride {
+  /** sRGB hex color. */
+  color?: string;
+  /** PBR roughness (0 = glossy, 1 = matte). */
+  roughness?: number;
+}
+
 /**
  * KayKit Medieval Builder Pack 1.0 (CC0, Kay Lousberg).
  * Files live in apps/client/public/assets/models/medieval/.
@@ -7,15 +14,16 @@ export const MEDIEVAL_PACK = {
   modelDir: 'assets/models/medieval/objects/',
   /**
    * Pack units → world units. A pack house is ~1.69 units wide; ×3 makes it ~5 units,
-   * which fits our trees (3.5–6.5 units tall) and terrain.
+   * which fits our trees and terrain.
    */
   worldScale: 3,
   /**
-   * Material colors replaced at load time, by material name (sRGB hex). The pack's
-   * teal greens are pulled toward our terrain and tree palette. GLB files stay untouched.
+   * Material changes applied at load time, by material name. The pack's teal greens are
+   * pulled toward our terrain and tree palette, and foliage is made matte like our own
+   * trees (the pack uses roughness 0.4). GLB files stay untouched.
    */
-  materialColorOverrides: {
-    GreenDark: '#2d5c2c',
-    Green: '#5a8a37',
-  } as Readonly<Record<string, string>>,
+  materialOverrides: {
+    GreenDark: { color: '#2d5c2c', roughness: 0.85 },
+    Green: { color: '#5a8a37', roughness: 0.9 },
+  } as Readonly<Record<string, MaterialOverride>>,
 } as const;

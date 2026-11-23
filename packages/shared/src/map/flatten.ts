@@ -122,3 +122,15 @@ export function flattenHeightField(
     },
   };
 }
+
+/**
+ * Point in front of a footprint's entrance (local +Z side), `offset` units beyond its
+ * front edge. Paths, worn ground and later unit pathing all aim at this point.
+ */
+export function entrancePoint(area: PlacedFootprint, offset: number): { x: number; z: number } {
+  const distance = area.footprint.d / 2 + offset;
+  return {
+    x: area.x + Math.sin(area.rotation) * distance,
+    z: area.z + Math.cos(area.rotation) * distance,
+  };
+}
