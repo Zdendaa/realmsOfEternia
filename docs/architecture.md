@@ -22,10 +22,12 @@ This document explains how the codebase is structured and why. Read it before yo
 
 Pure functions and types: IDs, vectors, constants (`SIMULATION_TICK_RATE`, `MAX_PLAYERS`), the seeded RNG (`createRng`), stateless value noise (`fractalNoise2D`), and map generation:
 
-- `createHeightField(map).getHeightAt(x, z)` returns the terrain height at any point. The heightmap is never stored or sent over the network; it is recomputed from the map seed. Use it for everything that sits on the ground: the terrain mesh, decorations, units, buildings and the camera focus.
+- `createHeightField(map).getHeightAt(x, z)` returns the terrain height at any point, with lakes already carved in (`createBaseHeightField` is the natural terrain before water). The heightmap is never stored or sent over the network; it is recomputed from the map seed. Use it for everything that sits on the ground: the terrain mesh, decorations, units, buildings and the camera focus.
 - `flattenHeightField(heights, footprints)` wraps a height field so the ground under each placed footprint is perfectly flat (levelled to the original height at its center) and blends back to the terrain within a few units. A building's own footprint always wins over a neighbour's blend band. Settlement buildings use it now; player construction will reuse it.
 - `scatterDecorations(map, { heights, isBlocked })` places trees and rocks. Trees cluster into forests through a noise mask, and the central settlement area (`map.settlement`) stays empty. `heights` lets them sit on flattened terrain, and `isBlocked` keeps them off buildings and paths.
 - `sampleCatmullRom(points, spacing)` and `distanceToPolyline(...)` define path shapes the same way on every machine.
+- Water: lakes are hand-authored in `map.water` (center, radius, depth, shoreline irregularity). `resolveLakes` derives each water level from the natural terrain, just below the lowest point of its shoreline, so water can never spill. `carveLakes` cuts the basin and banks into the height field. `createWaterMap(...).isWater(x, z)` is the shared water lookup: decorations never spawn in water.
+- `createBuildRules(map).isBuildable(x, z)` is the construction rule for Phase 3: inside the playable area and not in or right next to water.
 - Map layout, from the center outward: the flat settlement plateau, rolling hills across the playable square (`map.size`), then a non-playable border ring (`map.border`) of forested mountains. The mountains continue past the ring and fade into the fog, so the world never visibly ends. `isInPlayableArea(map, x, z)` tells the two zones apart. Border trees are scenery only.
 
 Determinism is required. With the same input, a rule function must return the same output on every machine. Always use `createRng(seed)` and never `Math.random()`.
@@ -34,7 +36,7 @@ Determinism is required. With the same input, a rule function must return the sa
 
 Static configuration written as typed object literals with `as const satisfies SomeDefinition`. That keeps literal types while still checking the shape. Races, upgrade tiers, units and spells will go here too. Current contents:
 
-- `PROTOTYPE_MAP`: terrain, forest and border settings.
+- `PROTOTYPE_MAP`: terrain, forest, border and water (one lake) settings.
 - `BUILDINGS`: id, name, `modelPath`, `footprint` (world units), `scale` and `rotationOffset`. Footprints are measured from model bounding boxes. By convention every building's entrance faces local +Z.
 - `PROTOTYPE_SETTLEMENT`: the hand-authored starting village around a central square. Fields are tiled `farm_plot` instances built with `field()`. Paths are spline control points whose endpoints come from `entrancePoint()`, so moving a building keeps its path attached; every path ends at an entrance or runs off toward the map edge as a road. The layout also lists squares (worn ground) and prop rules.
 - `PROPS`: small pack details (rocks, garden trees). The pack has no standalone village clutter; barrels, crates and fences are baked into the building models.
@@ -48,7 +50,10 @@ src/
   render/              everything inside the <Canvas>
     GameCanvas.tsx     renderer, camera and scene root
     camera/            RTS camera (MapControls, key panning, bounds clamp)
-    scene/             World, Terrain, Lighting, Trees, Rocks
+    scene/             World, Terrain, Water, Paths, Lighting, Trees, Rocks, Sky
+    scene/settlement/  Settlement, ModelInstances (GLB loading, overrides, instancing)
+    shaders/           shared GLSL snippets (value noise)
+  world/               createWorld: composes the static world from map data
   ui/                  HTML/CSS overlay; never imports three.js
   input/               input hooks (keyboard now; selection and commands later)
   state/               Zustand stores
@@ -62,6 +67,7 @@ Rules:
 - **Static props use chunked instancing.** `StaticInstances` uploads instance matrices once. Trees are split into 60×60 world-space chunks, each its own instanced mesh with its own bounding sphere, so chunks outside the camera or shadow frustum are skipped. Chunks share one geometry and material per part.
 - **`world/createWorld.ts` composes the static world** from map data in a fixed order: buildings flatten the terrain, paths are sampled, then props (behind and beside buildings, never in front of entrances), worn-ground patches and decorations are placed on the flattened ground, away from buildings and paths. Every renderer and the camera use the resulting `world.heights`. When the server needs the same world, this composition should move into a shared layer.
 - **Buildings are instanced per model part.** `Settlement` groups buildings and props by model file. `ModelInstances` loads the GLB with `useGLTF` (preloaded, no Draco), applies the material overrides, and draws each mesh of the model as one instanced mesh, so six houses cost the same draw calls as one. Paths are one soft-edged (vertex alpha) ribbon mesh; worn ground is baked into the terrain vertex colors.
+- **Shaders are small and procedural.** The terrain keeps its vertex-color zones (grass, dirt, rock, worn ground, sand, lake bed) as the base; an `onBeforeCompile` patch on its standard material adds world-space noise detail. Broad patches always show, and fine tufts fade with camera distance so the RTS view stays calm. Water is a custom `ShaderMaterial` (color and opacity by depth, a shoreline band, drifting glints, fog). No textures are downloaded.
 - **The sun follows the camera.** The directional light and its target track the camera focus point. The shadow frustum scales with zoom in steps of 10 units, and its position is snapped to whole shadow-map texels so shadow edges don't shimmer while panning.
 
 ### `@roe/server`: the authoritative server

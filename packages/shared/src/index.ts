@@ -6,5 +6,7 @@ export * from './random.js';
 export * from './types.js';
 export * from './map/types.js';
 export * from './map/terrain.js';
+export * from './map/water.js';
+export * from './map/buildable.js';
 export * from './map/flatten.js';
 export * from './map/decorations.js';

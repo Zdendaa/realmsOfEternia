@@ -25,5 +25,7 @@ export const MEDIEVAL_PACK = {
   materialOverrides: {
     GreenDark: { color: '#2d5c2c', roughness: 0.85 },
     Green: { color: '#5a8a37', roughness: 0.9 },
+    // farm_plot crops: the pack's saturated orange-yellow (#ff8105 linear) → muted wheat.
+    Yellow: { color: '#c9a55c', roughness: 0.85 },
   } as Readonly<Record<string, MaterialOverride>>,
 } as const;

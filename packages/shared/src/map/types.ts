@@ -50,6 +50,22 @@ export interface BorderSettings {
   mountainHeight: number;
 }
 
+/** A hand-authored lake. Its water level is derived from the surrounding terrain. */
+export interface LakeDefinition {
+  x: number;
+  z: number;
+  /** Average shoreline radius, in world units. */
+  radius: number;
+  /** Depth below the water surface at the center. */
+  depth: number;
+  /** Shoreline wobble, 0 = perfect circle, ~0.25 = natural. */
+  irregularity: number;
+}
+
+export interface WaterSettings {
+  lakes: readonly LakeDefinition[];
+}
+
 export interface MapDefinition {
   id: string;
   name: string;
@@ -61,6 +77,8 @@ export interface MapDefinition {
   settlement: SettlementArea;
   forest: ForestSettings;
   border: BorderSettings;
+  /** Lakes. Water is never buildable and never gets decorations. */
+  water?: WaterSettings;
   decorations: readonly DecorationRule[];
 }
 

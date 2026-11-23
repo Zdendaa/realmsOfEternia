@@ -1,6 +1,12 @@
 import { fractalNoise2D, smoothstep } from '../noise.js';
 import { createRng, randomRange, type Rng } from '../random.js';
-import { createHeightField, isInSettlementArea, type HeightField } from './terrain.js';
+import {
+  createBaseHeightField,
+  createHeightField,
+  isInSettlementArea,
+  type HeightField,
+} from './terrain.js';
+import { createWaterMap } from './water.js';
 import type { Decoration, DecorationRule, MapDefinition } from './types.js';
 
 /** Distance kept free on both sides of the playable-area edge. */
@@ -12,6 +18,8 @@ const BORDER_BASE_DENSITY = 0.45;
 /** Relative mountain height where the treeline starts and where trees stop. */
 const TREELINE_START = 0.75;
 const TREELINE_END = 0.95;
+/** Keep trees and rocks off the shoreline (in lake-radius fractions). */
+const WATER_MARGIN = 0.08;
 
 function forestMask(map: MapDefinition, x: number, z: number): number {
   const { scale, threshold } = map.forest;
@@ -108,6 +116,7 @@ export function scatterDecorations(map: MapDefinition, options: ScatterOptions =
   const rng = createRng(map.seed);
   const heights = options.heights ?? createHeightField(map);
   const isBlocked = options.isBlocked ?? (() => false);
+  const water = createWaterMap(map, createBaseHeightField(map));
   const result: Decoration[] = [];
 
   for (const rule of map.decorations) {
@@ -119,6 +128,7 @@ export function scatterDecorations(map: MapDefinition, options: ScatterOptions =
     for (let attempt = 0; attempt < maxAttempts && placed < rule.count; attempt++) {
       const candidate = tryPlace(map, rule, rng, heights, half);
       if (!candidate || isBlocked(candidate.x, candidate.z)) continue;
+      if (water.isWater(candidate.x, candidate.z, WATER_MARGIN)) continue;
       if (!grid.isFree(candidate.x, candidate.z)) continue;
 
       grid.add(candidate.x, candidate.z);

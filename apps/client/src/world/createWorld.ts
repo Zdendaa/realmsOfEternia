@@ -7,6 +7,8 @@ import {
 } from '@roe/game-data';
 import {
   createHeightField,
+  createBaseHeightField,
+  createWaterMap,
   createRng,
   distanceToFootprint,
   distanceToPolyline,
@@ -17,6 +19,7 @@ import {
   scatterDecorations,
   type Decoration,
   type HeightField,
+  type Lake,
   type MapDefinition,
   type PlacedFootprint,
   type Vec2,
@@ -63,6 +66,8 @@ export interface World {
   paths: Vec2[][];
   pathWidth: number;
   wornPatches: WornPatch[];
+  /** Lakes with resolved water levels (already carved into `heights`). */
+  lakes: readonly Lake[];
   decorations: Decoration[];
 }
 
@@ -194,6 +199,7 @@ export function createWorld(map: MapDefinition, settlement: SettlementLayout): W
     paths,
     pathWidth: settlement.pathWidth,
     wornPatches: createWornPatches(buildings, settlement.squares),
+    lakes: createWaterMap(map, createBaseHeightField(map)).lakes,
     decorations: scatterDecorations(map, { heights, isBlocked }),
   };
 }

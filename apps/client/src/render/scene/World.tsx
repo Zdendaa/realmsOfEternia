@@ -8,6 +8,7 @@ import { Settlement } from './settlement/Settlement';
 import { Sky } from './Sky';
 import { Terrain } from './Terrain';
 import { Trees } from './Trees';
+import { Water } from './Water';
 
 interface WorldProps {
   world: WorldData;
@@ -27,7 +28,13 @@ export function World({ world }: WorldProps) {
       <fog attach="fog" args={[ATMOSPHERE.skyHorizon, ATMOSPHERE.fogNear, ATMOSPHERE.fogFar]} />
       <Sky />
       <Lighting />
-      <Terrain map={world.map} heights={world.heights} wornPatches={world.wornPatches} />
+      <Terrain
+        map={world.map}
+        heights={world.heights}
+        wornPatches={world.wornPatches}
+        lakes={world.lakes}
+      />
+      <Water lakes={world.lakes} heights={world.heights} />
       <Paths
         paths={world.paths}
         width={world.pathWidth}

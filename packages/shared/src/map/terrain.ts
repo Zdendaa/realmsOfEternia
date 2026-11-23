@@ -1,4 +1,5 @@
 import { fractalNoise2D, smoothstep, valueNoise2D } from '../noise.js';
+import { carveLakes, resolveLakes } from './water.js';
 import type { MapDefinition } from './types.js';
 
 /** Seed offsets so each noise layer is independent. */
@@ -29,7 +30,17 @@ function distanceFromCenter(x: number, z: number): number {
  * Layout, from the center outward: flat settlement plateau, rolling hills in the
  * playable area, then mountains rising across the border ring and continuing beyond.
  */
+/**
+ * The final terrain: natural height field with lakes carved in. Everything that samples
+ * terrain should use this.
+ */
 export function createHeightField(map: MapDefinition): HeightField {
+  const base = createBaseHeightField(map);
+  return carveLakes(base, resolveLakes(map, base));
+}
+
+/** Natural terrain before water is carved in (hills, settlement plateau, border). */
+export function createBaseHeightField(map: MapDefinition): HeightField {
   const { hillHeight, hillScale } = map.terrain;
   const { halfSize, blend } = map.settlement;
   const { width: borderWidth, mountainHeight } = map.border;

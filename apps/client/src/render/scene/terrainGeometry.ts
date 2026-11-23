@@ -1,4 +1,11 @@
-import { fractalNoise2D, smoothstep, type HeightField, type MapDefinition } from '@roe/shared';
+import {
+  fractalNoise2D,
+  lakeDistance,
+  smoothstep,
+  type HeightField,
+  type Lake,
+  type MapDefinition,
+} from '@roe/shared';
 import { BufferAttribute, Color, PlaneGeometry } from 'three';
 import type { WornPatch } from '../../world/createWorld';
 
@@ -20,6 +27,9 @@ const DIRT = new Color('#6e5d3d');
 const ROCK = new Color('#7a776c');
 /** Trampled ground around entrances and squares; close to the path color, a bit greener. */
 const WORN = new Color('#76694c');
+/** Sandy banks just above the water line, and muddy lake beds below it. */
+const SAND = new Color('#a3956d');
+const LAKE_BED = new Color('#4d5038');
 
 /**
  * Maps a grid row offset from the center to a world coordinate. Rows are 1 unit apart
@@ -72,6 +82,7 @@ export function buildTerrainGeometry(
   map: MapDefinition,
   heights: HeightField,
   wornPatches: readonly WornPatch[] = [],
+  lakes: readonly Lake[] = [],
 ): PlaneGeometry {
   const wearAt = createWearSampler(map, wornPatches);
   const grid = createGridMapping(map);
@@ -114,6 +125,15 @@ export function buildTerrainGeometry(
     );
     color.lerp(ROCK, rockiness * 0.85);
     color.lerp(WORN, wearAt(x, z) * 0.6);
+
+    for (const lake of lakes) {
+      const d = lakeDistance(lake, x, z);
+      if (d > 1.6) continue;
+      // Sand only in a narrow band along the shoreline, not on every low-lying field.
+      const nearShore = 1 - smoothstep(1.02, 1.16, d);
+      color.lerp(SAND, smoothstep(lake.level + 0.9, lake.level + 0.15, y) * nearShore * 0.7);
+      color.lerp(LAKE_BED, smoothstep(lake.level - 0.1, lake.level - 1.2, y));
+    }
 
     color.toArray(colors, i * 3);
   }

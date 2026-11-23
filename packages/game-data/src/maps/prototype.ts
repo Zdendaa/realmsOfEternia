@@ -10,6 +10,10 @@ export const PROTOTYPE_MAP = {
   settlement: { halfSize: 20, blend: 14 },
   forest: { scale: 55, threshold: 0.52, strayChance: 0.02 },
   border: { width: 60, mountainHeight: 34 },
+  water: {
+    // A lake in the flat south-western lowland, away from the village and both roads.
+    lakes: [{ x: -46, z: 42, radius: 15, depth: 2.4, irregularity: 0.22 }],
+  },
   decorations: [
     {
       kind: 'tree',

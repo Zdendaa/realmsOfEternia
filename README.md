@@ -7,7 +7,7 @@ A browser-based 3D fantasy real-time strategy game. It combines:
 - free-form walls, towers and castles
 - real-time multiplayer for 2–4 players
 
-> **Status:** technical foundation. The client renders a prototype 3D scene with RTS camera controls, and the server runs a placeholder multiplayer room. There is no gameplay yet.
+> **Status:** Phase 2 (the visual world) is complete. The prototype map has terrain, forests, a lake and a starting village, but no gameplay yet. See [docs/status.md](docs/status.md) for details and known limitations.
 
 ---
 
@@ -113,7 +113,7 @@ Packages depend on each other in one direction only:
 
 The client also separates rendering (`render/`), UI (`ui/`), input (`input/`) and state (`state/`). Networking will get its own `net/` folder when it is added.
 
-For the full rationale, including the multiplayer model and how workspace packages are resolved, see [docs/architecture.md](docs/architecture.md).
+For the full rationale, including the multiplayer model and how workspace packages are resolved, see [docs/architecture.md](docs/architecture.md). For the current progress and known limitations, see [docs/status.md](docs/status.md).
 
 ## Tech stack
 
