@@ -40,7 +40,6 @@ _Last updated: 2026-11-23._
 
 ### Rendering
 
-- **Placement hitch:** placing a building costs one frame of about 50 ms in the dev build, mostly from recomputing all terrain normals; region-only normals would remove most of it.
 - **R3F warning:** React Three Fiber 9.8 logs a harmless `THREE.Clock` deprecation warning with three r187. It goes away when R3F updates.
 - **Shadow distance:** the shadow frustum is capped at 220×220 units, so distant trees have no shadows when fully zoomed out.
 - **Water:** it doesn't receive shadows and has no reflections. The open surface is intentionally calm (depth gradient plus a shoreline foam line), with no waves.

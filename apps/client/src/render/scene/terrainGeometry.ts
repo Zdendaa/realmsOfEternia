@@ -7,7 +7,7 @@ import {
   type Lake,
   type MapDefinition,
 } from '@roe/shared';
-import { BufferAttribute, Color, PlaneGeometry } from 'three';
+import { BufferAttribute, Color, PlaneGeometry, Vector3, type BufferGeometry } from 'three';
 import type { WornPatch } from '../../world/decorateWorld';
 import { createWearSampler } from '../../world/wear';
 
@@ -141,13 +141,89 @@ export function buildTerrainGeometry(
     color.toArray(colors, i * 3);
   }
   geometry.setAttribute('color', new BufferAttribute(colors, 3));
+  // Prepare the adjacency used by region updates now, not during the first placement.
+  getVertexFaces(geometry);
 
   return geometry;
 }
 
+/** For each vertex, the triangles that use it (compressed rows: offsets + face ids). */
+interface VertexFaces {
+  offsets: Uint32Array;
+  faces: Uint32Array;
+}
+
+const vertexFacesCache = new WeakMap<BufferGeometry, VertexFaces>();
+
+/** Builds (once per geometry) the vertex → triangle adjacency of an indexed mesh. */
+function getVertexFaces(geometry: BufferGeometry): VertexFaces {
+  const cached = vertexFacesCache.get(geometry);
+  if (cached) return cached;
+  const index = geometry.getIndex();
+  if (!index) throw new Error('Terrain geometry must be indexed');
+  const vertexCount = geometry.getAttribute('position').count;
+  const offsets = new Uint32Array(vertexCount + 1);
+  for (let i = 0; i < index.count; i++) {
+    const slot = index.getX(i) + 1;
+    offsets[slot] = (offsets[slot] ?? 0) + 1;
+  }
+  for (let v = 0; v < vertexCount; v++) offsets[v + 1] = (offsets[v + 1] ?? 0) + (offsets[v] ?? 0);
+  const faces = new Uint32Array(index.count);
+  const fill = offsets.slice(0, vertexCount);
+  for (let i = 0; i < index.count; i++) {
+    const vertex = index.getX(i);
+    const slot = fill[vertex] ?? 0;
+    fill[vertex] = slot + 1;
+    faces[slot] = Math.floor(i / 3);
+  }
+  const result = { offsets, faces };
+  vertexFacesCache.set(geometry, result);
+  return result;
+}
+
+const pA = new Vector3();
+const pB = new Vector3();
+const pC = new Vector3();
+const cb = new Vector3();
+const ab = new Vector3();
+const sum = new Vector3();
+
 /**
- * Re-samples heights and colors for all vertices inside `bounds` (e.g. around a newly
- * placed building) instead of rebuilding the whole mesh.
+ * Recomputes normals for the given vertices only, with the same area-weighted face
+ * normals as `BufferGeometry.computeVertexNormals`, so the result matches a full pass.
+ */
+function recomputeNormals(geometry: BufferGeometry, vertices: Iterable<number>): void {
+  const index = geometry.getIndex();
+  if (!index) return;
+  const positions = geometry.getAttribute('position');
+  const normals = geometry.getAttribute('normal');
+  const { offsets, faces } = getVertexFaces(geometry);
+  for (const v of vertices) {
+    sum.set(0, 0, 0);
+    for (let k = offsets[v] ?? 0, end = offsets[v + 1] ?? 0; k < end; k++) {
+      const face = faces[k] ?? 0;
+      pA.fromBufferAttribute(positions, index.getX(face * 3));
+      pB.fromBufferAttribute(positions, index.getX(face * 3 + 1));
+      pC.fromBufferAttribute(positions, index.getX(face * 3 + 2));
+      cb.subVectors(pC, pB);
+      ab.subVectors(pA, pB);
+      sum.add(cb.cross(ab));
+    }
+    sum.normalize();
+    normals.setXYZ(v, sum.x, sum.y, sum.z);
+  }
+}
+
+/** Uploads only the changed span of an attribute instead of the whole buffer. */
+function markRangeDirty(attribute: BufferAttribute, first: number, last: number): void {
+  attribute.addUpdateRange(first * attribute.itemSize, (last - first + 1) * attribute.itemSize);
+  attribute.needsUpdate = true;
+}
+
+/**
+ * Re-samples heights, normals and colors around a newly placed building instead of
+ * rebuilding the mesh. Normals change for the re-sampled vertices and their direct
+ * neighbours (they share triangles), so exactly those are recomputed and recolored.
  */
 export function updateTerrainRegion(
   geometry: PlaneGeometry,
@@ -155,7 +231,10 @@ export function updateTerrainRegion(
   bounds: Bounds2D,
   colorize: TerrainColorizer,
 ): void {
-  const positions = geometry.getAttribute('position');
+  const positions = geometry.getAttribute('position') as BufferAttribute;
+  const index = geometry.getIndex();
+  if (!index) return;
+
   const touched: number[] = [];
   for (let i = 0; i < positions.count; i++) {
     const x = positions.getX(i);
@@ -165,15 +244,28 @@ export function updateTerrainRegion(
     touched.push(i);
   }
   if (touched.length === 0) return;
-  positions.needsUpdate = true;
-  geometry.computeVertexNormals();
 
-  const normals = geometry.getAttribute('normal');
-  const colors = geometry.getAttribute('color');
+  // Every vertex sharing a triangle with a moved vertex gets a new normal.
+  const { offsets, faces } = getVertexFaces(geometry);
+  const affected = new Set<number>();
+  for (const v of touched) {
+    for (let k = offsets[v] ?? 0, end = offsets[v + 1] ?? 0; k < end; k++) {
+      const face = faces[k] ?? 0;
+      for (let corner = 0; corner < 3; corner++) affected.add(index.getX(face * 3 + corner));
+    }
+  }
+  recomputeNormals(geometry, affected);
+
+  const normals = geometry.getAttribute('normal') as BufferAttribute;
+  const colors = geometry.getAttribute('color') as BufferAttribute;
   const color = new Color();
-  for (const i of touched) {
+  let first = Infinity;
+  let last = -Infinity;
+  for (const i of affected) {
     colorize(positions.getX(i), positions.getY(i), positions.getZ(i), normals.getY(i), color);
     colors.setXYZ(i, color.r, color.g, color.b);
+    first = Math.min(first, i);
+    last = Math.max(last, i);
   }
-  colors.needsUpdate = true;
+  for (const attribute of [positions, normals, colors]) markRangeDirty(attribute, first, last);
 }
