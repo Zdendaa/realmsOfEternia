@@ -3,16 +3,20 @@ import { createRng, randomRange, type Rng } from '../random.js';
 import { createHeightField, isInSettlementArea } from './terrain.js';
 import type { Decoration, DecorationRule, MapDefinition } from './types.js';
 
-/** Distance kept free along the map border. */
-const BORDER_MARGIN = 4;
+/** Distance kept free on both sides of the playable-area edge. */
+const EDGE_MARGIN = 3;
 /** Seed offset so the forest mask is independent of the hill noise. */
 const FOREST_SEED_OFFSET = 0x5f0e57;
+/** Border forest density outside the forest mask (it is dense everywhere). */
+const BORDER_BASE_DENSITY = 0.45;
+/** Relative mountain height where the treeline starts and where trees stop. */
+const TREELINE_START = 0.75;
+const TREELINE_END = 0.95;
 
-/** Forest density (0–1) at a point, from a low-frequency noise mask. */
-function forestDensity(map: MapDefinition, x: number, z: number): number {
-  const { scale, threshold, strayChance } = map.forest;
+function forestMask(map: MapDefinition, x: number, z: number): number {
+  const { scale, threshold } = map.forest;
   const mask = fractalNoise2D(map.seed + FOREST_SEED_OFFSET, x / scale, z / scale, 3);
-  return Math.max(strayChance, smoothstep(threshold, threshold + 0.1, mask));
+  return smoothstep(threshold, threshold + 0.1, mask);
 }
 
 /** Uniform grid for fast "is anything within minSpacing?" checks. */
@@ -42,9 +46,51 @@ function createSpacingGrid(spacing: number) {
   };
 }
 
-function acceptsPoint(map: MapDefinition, rule: DecorationRule, rng: Rng, x: number, z: number) {
-  if (isInSettlementArea(map, x, z)) return false;
-  return rule.placement === 'scatter' || rng() < forestDensity(map, x, z);
+/** Half-size of the square a rule samples candidate points from. */
+function samplingHalfSize(map: MapDefinition, rule: DecorationRule): number {
+  const playableHalf = map.size / 2;
+  return rule.placement === 'border'
+    ? playableHalf + map.border.width - EDGE_MARGIN
+    : playableHalf - EDGE_MARGIN;
+}
+
+/** Probability (0–1) that a candidate point is kept. */
+function placementChance(
+  map: MapDefinition,
+  rule: DecorationRule,
+  x: number,
+  y: number,
+  z: number,
+) {
+  switch (rule.placement) {
+    case 'scatter':
+      return isInSettlementArea(map, x, z) ? 0 : 1;
+    case 'forest':
+      return isInSettlementArea(map, x, z)
+        ? 0
+        : Math.max(map.forest.strayChance, forestMask(map, x, z));
+    case 'border': {
+      const inRing = Math.max(Math.abs(x), Math.abs(z)) > map.size / 2 + EDGE_MARGIN;
+      if (!inRing) return 0;
+      const density = BORDER_BASE_DENSITY + (1 - BORDER_BASE_DENSITY) * forestMask(map, x, z);
+      const altitude = y / map.border.mountainHeight;
+      return density * (1 - smoothstep(TREELINE_START, TREELINE_END, altitude));
+    }
+  }
+}
+
+function tryPlace(
+  map: MapDefinition,
+  rule: DecorationRule,
+  rng: Rng,
+  heights: ReturnType<typeof createHeightField>,
+  half: number,
+): Decoration | null {
+  const x = randomRange(rng, -half, half);
+  const z = randomRange(rng, -half, half);
+  const y = heights.getHeightAt(x, z);
+  if (rng() >= placementChance(map, rule, x, y, z)) return null;
+  return { kind: rule.kind, x, y, z, rotation: 0, scale: 0 };
 }
 
 /**
@@ -54,28 +100,22 @@ function acceptsPoint(map: MapDefinition, rule: DecorationRule, rng: Rng, x: num
 export function scatterDecorations(map: MapDefinition): Decoration[] {
   const rng = createRng(map.seed);
   const heights = createHeightField(map);
-  const half = map.size / 2 - BORDER_MARGIN;
   const result: Decoration[] = [];
 
   for (const rule of map.decorations) {
     const grid = createSpacingGrid(rule.minSpacing);
+    const half = samplingHalfSize(map, rule);
     const maxAttempts = rule.count * 30;
     let placed = 0;
 
     for (let attempt = 0; attempt < maxAttempts && placed < rule.count; attempt++) {
-      const x = randomRange(rng, -half, half);
-      const z = randomRange(rng, -half, half);
-      if (!acceptsPoint(map, rule, rng, x, z) || !grid.isFree(x, z)) continue;
+      const candidate = tryPlace(map, rule, rng, heights, half);
+      if (!candidate || !grid.isFree(candidate.x, candidate.z)) continue;
 
-      grid.add(x, z);
-      result.push({
-        kind: rule.kind,
-        x,
-        y: heights.getHeightAt(x, z),
-        z,
-        rotation: randomRange(rng, 0, Math.PI * 2),
-        scale: randomRange(rng, rule.minScale, rule.maxScale),
-      });
+      grid.add(candidate.x, candidate.z);
+      candidate.rotation = randomRange(rng, 0, Math.PI * 2);
+      candidate.scale = randomRange(rng, rule.minScale, rule.maxScale);
+      result.push(candidate);
       placed++;
     }
   }

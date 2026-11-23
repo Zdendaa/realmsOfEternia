@@ -14,6 +14,8 @@ const MIN_POLAR_ANGLE = 0.2;
 const MAX_POLAR_ANGLE = 1.1;
 /** How quickly the focus point follows the terrain height (per second). */
 const HEIGHT_FOLLOW_RATE = 6;
+/** Minimum height of the camera above the terrain directly below it. */
+const CAMERA_GROUND_CLEARANCE = 4;
 /** Keyboard pan speed as a fraction of the current camera distance per second. */
 const KEY_PAN_SPEED = 0.8;
 
@@ -76,6 +78,11 @@ export function RtsCameraControls({ bounds, heights }: RtsCameraControlsProps) {
     const dy = (groundY - target.y) * Math.min(1, delta * HEIGHT_FOLLOW_RATE);
     target.y += dy;
     camera.position.y += dy;
+
+    // Never let the camera dip into terrain (the border mountains rise near the edges).
+    const minCameraY =
+      heights.getHeightAt(camera.position.x, camera.position.z) + CAMERA_GROUND_CLEARANCE;
+    if (camera.position.y < minCameraY) camera.position.y = minCameraY;
   });
 
   return (

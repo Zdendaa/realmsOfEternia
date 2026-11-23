@@ -5,8 +5,12 @@ export interface DecorationRule {
   count: number;
   minScale: number;
   maxScale: number;
-  /** `scatter`: uniform over the map. `forest`: clustered by the map's forest mask. */
-  placement: 'scatter' | 'forest';
+  /**
+   * `scatter`: uniform over the playable area.
+   * `forest`: playable area, clustered by the map's forest mask.
+   * `border`: dense forest on the non-playable border ring.
+   */
+  placement: 'scatter' | 'forest' | 'border';
   /** Minimum distance between two decorations of this rule, in world units. */
   minSpacing: number;
 }
@@ -35,16 +39,28 @@ export interface ForestSettings {
   strayChance: number;
 }
 
+/**
+ * Non-playable ring around the playable area: mountains rising into the fog.
+ * The terrain keeps going beyond it, so the world never visibly ends.
+ */
+export interface BorderSettings {
+  /** Width of the ring, in world units. Border forest is placed only within it. */
+  width: number;
+  /** Peak height of the border mountains, in world units. */
+  mountainHeight: number;
+}
+
 export interface MapDefinition {
   id: string;
   name: string;
-  /** Width and depth of the square map, in world units. Map is centered at the origin. */
+  /** Width and depth of the square playable area, in world units. Centered at the origin. */
   size: number;
   /** Seed for all procedural generation on this map. */
   seed: number;
   terrain: TerrainSettings;
   settlement: SettlementArea;
   forest: ForestSettings;
+  border: BorderSettings;
   decorations: readonly DecorationRule[];
 }
 

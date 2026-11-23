@@ -24,6 +24,7 @@ Pure functions and types: IDs, vectors, constants (`SIMULATION_TICK_RATE`, `MAX_
 
 - `createHeightField(map).getHeightAt(x, z)` returns the terrain height at any point. The heightmap is never stored or sent over the network; it is recomputed from the map seed. Use it for everything that sits on the ground: the terrain mesh, decorations, units, buildings and the camera focus.
 - `scatterDecorations(map)` places trees and rocks. Trees cluster into forests through a noise mask, and the central settlement area (`map.settlement`) stays flat and empty.
+- Map layout, from the center outward: the flat settlement plateau, rolling hills across the playable square (`map.size`), then a non-playable border ring (`map.border`) of forested mountains. The mountains continue past the ring and fade into the fog, so the world never visibly ends. `isInPlayableArea(map, x, z)` tells the two zones apart. Border trees are scenery only.
 
 Determinism is required. With the same input, a rule function must return the same output on every machine. Always use `createRng(seed)` and never `Math.random()`.
 
@@ -50,7 +51,8 @@ Rules:
 - **`render/` only visualizes.** It reads state and draws it. It does not compute gameplay outcomes.
 - **`ui/` is plain React DOM** that sits over the canvas. It talks to the scene only through stores.
 - **Per-frame values never go through React state.** Camera movement, animation and similar values are mutated inside `useFrame` or kept in refs, which avoids re-renders. Zustand stores hold values that change at human speed, such as settings, selection and menus.
-- **Large numbers of identical props use instancing** (Drei `<Instances>`), so each prop type costs one draw call.
+- **Static props use chunked instancing.** `StaticInstances` uploads instance matrices once. Trees are split into 60×60 world-space chunks, each its own instanced mesh with its own bounding sphere, so chunks outside the camera or shadow frustum are skipped. Chunks share one geometry and material per part.
+- **The sun follows the camera.** The directional light and its target track the camera focus point. The shadow frustum scales with zoom in steps of 10 units, and its position is snapped to whole shadow-map texels so shadow edges don't shimmer while panning.
 
 ### `@roe/server`: the authoritative server
 

@@ -10,7 +10,7 @@ export const ATMOSPHERE = {
   hemisphereIntensity: 0.9,
   sunColor: '#ffe2b8',
   sunIntensity: 2.8,
-  /** Low afternoon sun from the side of the default view, for readable shadows. */
+  /** Sun direction (offset from the focus point). Low afternoon sun from the side of the default view. */
   sunPosition: [-70, 55, 50] as [number, number, number],
   toneMappingExposure: 1.05,
 } as const;

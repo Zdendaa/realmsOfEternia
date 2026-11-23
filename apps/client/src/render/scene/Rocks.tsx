@@ -1,5 +1,8 @@
-import { Instance, Instances } from '@react-three/drei';
 import type { Decoration } from '@roe/shared';
+import { useEffect, useMemo } from 'react';
+import { DodecahedronGeometry, MeshStandardMaterial } from 'three';
+import { packMatrices } from './instanceData';
+import { StaticInstances } from './StaticInstances';
 
 interface RocksProps {
   items: readonly Decoration[];
@@ -7,18 +10,28 @@ interface RocksProps {
 
 /** Placeholder boulders rendered as a single instanced mesh. */
 export function Rocks({ items }: RocksProps) {
-  return (
-    <Instances limit={items.length} frames={1} castShadow receiveShadow frustumCulled={false}>
-      <dodecahedronGeometry args={[0.8, 0]} />
-      <meshStandardMaterial color="#8a8a84" roughness={0.95} flatShading />
-      {items.map((r, i) => (
-        <Instance
-          key={i}
-          position={[r.x, r.y + 0.3 * r.scale - 0.1, r.z]}
-          rotation={[r.rotation * 0.3, r.rotation, 0]}
-          scale={[r.scale * 1.3, r.scale * 0.75, r.scale]}
-        />
-      ))}
-    </Instances>
+  const geometry = useMemo(() => new DodecahedronGeometry(0.8, 0), []);
+  const material = useMemo(
+    () => new MeshStandardMaterial({ color: '#8a8a84', roughness: 0.95, flatShading: true }),
+    [],
   );
+  useEffect(
+    () => () => {
+      geometry.dispose();
+      material.dispose();
+    },
+    [geometry, material],
+  );
+
+  const matrices = useMemo(
+    () =>
+      packMatrices(items, (r) => ({
+        position: [r.x, r.y + 0.3 * r.scale - 0.1, r.z],
+        rotation: [r.rotation * 0.3, r.rotation, 0],
+        scale: [r.scale * 1.3, r.scale * 0.75, r.scale],
+      })),
+    [items],
+  );
+
+  return <StaticInstances geometry={geometry} material={material} matrices={matrices} />;
 }
