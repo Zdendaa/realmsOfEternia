@@ -3,8 +3,8 @@ import { VALUE_NOISE_GLSL } from '../shaders/noise.glsl';
 
 /**
  * Modulates the vertex colors with world-space noise so the ground isn't flat plastic:
- * broad patches (~5 units) everywhere, and fine tufts (~1 unit) that fade out with
- * camera distance so the RTS overview stays calm. Vertex-color zones stay the base.
+ * a faint broad variation (~5 units) and fine tufts (~1 unit) that fade out with
+ * camera distance. Kept subtle: instanced grass tufts carry the visible detail. Vertex-color zones stay the base.
  */
 const DETAIL_GLSL = /* glsl */ `
 {
@@ -12,7 +12,7 @@ const DETAIL_GLSL = /* glsl */ `
   float fineFade = 1.0 - smoothstep(45.0, 140.0, length(vViewPosition));
   float broad = roeNoise(p * 0.19) - 0.5;
   float fine = (roeNoise(p * 0.95) - 0.5) * 0.6 + (roeNoise(p * 2.3) - 0.5) * 0.4;
-  diffuseColor.rgb *= 1.0 + broad * 0.13 + fine * 0.11 * fineFade;
+  diffuseColor.rgb *= 1.0 + broad * 0.04 + fine * 0.1 * fineFade;
 }
 `;
 

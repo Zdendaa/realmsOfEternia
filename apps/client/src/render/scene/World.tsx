@@ -7,6 +7,7 @@ import { Rocks } from './Rocks';
 import { Settlement } from './settlement/Settlement';
 import { Sky } from './Sky';
 import { Terrain } from './Terrain';
+import { GroundCover } from './GroundCover';
 import { Trees } from './Trees';
 import { Water } from './Water';
 
@@ -41,6 +42,7 @@ export function World({ world }: WorldProps) {
         heights={world.heights}
         seed={world.map.seed}
       />
+      <GroundCover cover={world.groundCover} />
       <Trees items={trees} />
       <Rocks items={rocks} />
       <Suspense fallback={null}>

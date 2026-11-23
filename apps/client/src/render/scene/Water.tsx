@@ -48,12 +48,12 @@ void main() {
   float deep = smoothstep(0.0, uFullDepth, depth);
   vec3 color = mix(uShallow, uDeep, deep);
 
-  // Two drifting noise layers; where both peak, a soft moving glint appears.
+  // Highlight streaks: noise stretched ~9:1 along X gives thin ripple lines that drift
+  // slowly. A second, broad mask shows them only in some areas, and they stay faint.
   vec2 p = vWorld.xz;
-  float a = roeNoise(p * 0.9 + vec2(uTime * 0.16, uTime * 0.07));
-  float b = roeNoise(p * 1.45 - vec2(uTime * 0.1, -uTime * 0.13));
-  float glint = smoothstep(0.5, 0.68, a * b);
-  color = mix(color, uGlint, glint * 0.28);
+  vec2 sp = vec2(p.x * 0.3 + uTime * 0.12, p.y * 2.8 + sin(p.x * 0.18 + uTime * 0.4) * 0.6);
+  float streak = smoothstep(0.76, 0.84, roeNoise(sp)) * smoothstep(0.5, 0.8, roeNoise(p * 0.07 + uTime * 0.02));
+  color = mix(color, uGlint, streak * 0.12);
   // Very slow, broad brightness swell so the surface never looks frozen.
   color *= 0.96 + 0.08 * roeNoise(p * 0.08 + uTime * 0.03);
 
@@ -122,7 +122,7 @@ interface WaterProps {
   heights: HeightField;
 }
 
-/** Stylized low-poly water: color by depth, soft shore band, drifting glints. */
+/** Stylized low-poly water: color by depth, soft shore band, faint drifting highlight streaks. */
 export function Water({ lakes, heights }: WaterProps) {
   const geometry = useMemo(() => buildWaterGeometry(lakes, heights), [lakes, heights]);
   const material = useMemo(

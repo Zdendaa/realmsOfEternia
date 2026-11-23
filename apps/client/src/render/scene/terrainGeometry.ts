@@ -8,6 +8,7 @@ import {
 } from '@roe/shared';
 import { BufferAttribute, Color, PlaneGeometry } from 'three';
 import type { WornPatch } from '../../world/createWorld';
+import { createWearSampler } from '../../world/wear';
 
 /** Grid spacing in the border ring; mountains don't need playable-area detail. */
 const BORDER_SPACING = 2;
@@ -63,21 +64,6 @@ function createGridMapping(map: MapDefinition) {
  * Builds the terrain mesh from the shared height field: playable area, border ring
  * and far surroundings, all in one seamless geometry with per-vertex colors.
  */
-/** Wear amount (0–1) at a point: strongest at patch centers, ragged at the edges. */
-function createWearSampler(map: MapDefinition, patches: readonly WornPatch[]) {
-  return (x: number, z: number): number => {
-    let wear = 0;
-    for (const p of patches) {
-      const distance = Math.hypot(x - p.x, z - p.z);
-      if (distance < p.radius)
-        wear = Math.max(wear, 1 - smoothstep(p.radius * 0.35, p.radius, distance));
-    }
-    if (wear === 0) return 0;
-    const ragged = fractalNoise2D(map.seed + 404, x / 1.6, z / 1.6, 2);
-    return smoothstep(0.15, 0.75, wear * (0.55 + ragged * 0.9));
-  };
-}
-
 export function buildTerrainGeometry(
   map: MapDefinition,
   heights: HeightField,
@@ -111,10 +97,10 @@ export function buildTerrainGeometry(
     const z = positions.getZ(i);
     const flatness = normals.getY(i);
 
-    // Broad patches of lighter and darker grass, plus fine variation.
+    // Mid-green base with only gentle variation; grass tufts provide the detail.
     const patches = fractalNoise2D(map.seed + 101, x / 22, z / 22, 3);
     const detail = fractalNoise2D(map.seed + 202, x / 3, z / 3, 2);
-    color.copy(GRASS_DARK).lerp(GRASS_LIGHT, smoothstep(0.3, 0.7, patches) * 0.55 + detail * 0.25);
+    color.copy(GRASS_DARK).lerp(GRASS_LIGHT, 0.55 + (patches - 0.5) * 0.3 + (detail - 0.5) * 0.2);
 
     // Drier grass higher up, bare dirt on slopes, rock on high or steep mountainsides.
     color.lerp(GRASS_DRY, smoothstep(0.45, 1, y / hillHeight) * 0.6);

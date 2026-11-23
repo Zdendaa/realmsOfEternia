@@ -1,3 +1,5 @@
+import { createGroundCover, type GroundCover } from './groundCover';
+import { createWearSampler } from './wear';
 import {
   BUILDINGS,
   PROPS,
@@ -69,6 +71,8 @@ export interface World {
   /** Lakes with resolved water levels (already carved into `heights`). */
   lakes: readonly Lake[];
   decorations: Decoration[];
+  /** Cosmetic grass tufts and flower clusters. */
+  groundCover: GroundCover;
 }
 
 interface Bounds {
@@ -191,6 +195,19 @@ export function createWorld(map: MapDefinition, settlement: SettlementLayout): W
       ({ path, bounds }) => inBounds(bounds, x, z) && distanceToPolyline(path, x, z) < pathReach,
     );
 
+  const water = createWaterMap(map, createBaseHeightField(map));
+  const wornPatches = createWornPatches(buildings, settlement.squares);
+  const groundCover = createGroundCover({
+    map,
+    heights,
+    water,
+    footprints,
+    // Bounds must cover the whole fade band beside a path (half-width + 3 units).
+    paths: paths.map((path) => ({ path, bounds: boundsOf(path, settlement.pathWidth / 2 + 4) })),
+    pathWidth: settlement.pathWidth,
+    wearAt: createWearSampler(map, wornPatches),
+  });
+
   return {
     map,
     heights,
@@ -198,8 +215,9 @@ export function createWorld(map: MapDefinition, settlement: SettlementLayout): W
     props: scatterProps(map, settlement, buildings, paths, heights),
     paths,
     pathWidth: settlement.pathWidth,
-    wornPatches: createWornPatches(buildings, settlement.squares),
-    lakes: createWaterMap(map, createBaseHeightField(map)).lakes,
+    wornPatches,
+    lakes: water.lakes,
     decorations: scatterDecorations(map, { heights, isBlocked }),
+    groundCover,
   };
 }

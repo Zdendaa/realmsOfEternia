@@ -13,6 +13,8 @@ interface StaticInstancesProps {
   matrices: Float32Array;
   /** Optional per-instance RGB colors, 3 floats per instance. */
   colors?: Float32Array | undefined;
+  /** Cast shadows (default true). Small ground cover skips this to save the shadow pass. */
+  castShadow?: boolean;
 }
 
 /**
@@ -21,7 +23,13 @@ interface StaticInstancesProps {
  * instances, so the whole group is frustum-culled correctly (also by the shadow camera).
  * Geometry and material are owned by the caller so chunks can share them.
  */
-export function StaticInstances({ geometry, material, matrices, colors }: StaticInstancesProps) {
+export function StaticInstances({
+  geometry,
+  material,
+  matrices,
+  colors,
+  castShadow = true,
+}: StaticInstancesProps) {
   const ref = useRef<InstancedMesh>(null);
   const count = matrices.length / 16;
 
@@ -36,5 +44,12 @@ export function StaticInstances({ geometry, material, matrices, colors }: Static
     mesh.computeBoundingSphere();
   }, [matrices, colors]);
 
-  return <instancedMesh ref={ref} args={[geometry, material, count]} castShadow receiveShadow />;
+  return (
+    <instancedMesh
+      ref={ref}
+      args={[geometry, material, count]}
+      castShadow={castShadow}
+      receiveShadow
+    />
+  );
 }
