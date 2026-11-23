@@ -15,12 +15,15 @@ import {
   type Vec2,
   type WaterMap,
 } from '@roe/shared';
+import { createPointGrid, type PointGrid } from '../spatial/pointGrid.js';
 
 /** Free space kept between buildings and trees/rocks. */
 const BUILDING_CLEARANCE = 3;
 /** Free space kept on each side of a path, beyond its half-width. */
 const PATH_CLEARANCE = 1;
 const PATH_SAMPLE_SPACING = 0.5;
+/** Cell size of the spatial indexes. */
+const OBSTACLE_CELL = 8;
 
 export interface PlacedBuilding extends PlacedFootprint {
   definition: BuildingDefinition;
@@ -53,6 +56,10 @@ export interface SimWorld {
   pathWidth: number;
   /** Trees and rocks, with stable ids. */
   decorations: Decoration[];
+  /** Spatial index of trees and rocks, for placement checks. */
+  obstacleIndex: PointGrid<Decoration>;
+  /** Spatial index of all sampled path points. */
+  pathIndex: PointGrid<Vec2>;
 }
 
 export function boundsOf(points: readonly Vec2[], margin: number): Bounds {
@@ -102,6 +109,8 @@ export function createWorld(map: MapDefinition, settlement: SettlementLayout): S
       ({ path, bounds }) => inBounds(bounds, x, z) && distanceToPolyline(path, x, z) < pathReach,
     );
 
+  const decorations = scatterDecorations(map, { heights, isBlocked });
+
   return {
     map,
     terrain,
@@ -110,6 +119,8 @@ export function createWorld(map: MapDefinition, settlement: SettlementLayout): S
     buildings,
     paths,
     pathWidth: settlement.pathWidth,
-    decorations: scatterDecorations(map, { heights, isBlocked }),
+    decorations,
+    obstacleIndex: createPointGrid(decorations, OBSTACLE_CELL),
+    pathIndex: createPointGrid(paths.flat(), OBSTACLE_CELL),
   };
 }

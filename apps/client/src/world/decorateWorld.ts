@@ -50,7 +50,7 @@ function createWornPatches(
 ): WornPatch[] {
   const patches: WornPatch[] = squares.map((s) => ({ ...s }));
   for (const b of buildings) {
-    if (b.definition.id === 'farmPlot') continue;
+    if (b.definition.id === 'field') continue;
     const front = entrancePoint(b, 0.8);
     patches.push({ ...front, radius: Math.min(b.footprint.w, b.footprint.d) * 0.4 });
   }

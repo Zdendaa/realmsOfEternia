@@ -16,7 +16,9 @@ _Last updated: 2026-11-23._
 | 2.3   | Terrain detail shader, muted crops, lake with stylized water                      | ✅ Done |
 | 2.3b  | Grass tufts and flowers, uniform tree scale, subtler water highlights             | ✅ Done |
 | 2.3c  | Meadow-scale grass carpet, smaller flowers, calm water with a shoreline foam line | ✅ Done |
-| 3     | Building placement and construction by the player                                 | ⏳ Next |
+| 3.1   | `@roe/sim` package; world creation moved out of the client                        | ✅ Done |
+| 3.2   | Placement rules, commands, game state, unit tests                                 | ✅ Done |
+| 3.3   | Construction menu, placement preview and placing                                  | ⏳ Next |
 
 ## What works today
 
@@ -56,4 +58,4 @@ _Last updated: 2026-11-23._
 - **Cosmetic layers are client-only by design:** props, worn ground and grass live in the client (`decorateWorld`); everything gameplay-relevant comes from `@roe/sim`.
 - **Settlement data is hand-authored** for one map. There are no generators or editors yet.
 - **Footprints are bounding boxes,** slightly larger than the buildings. Selection and collision will need finer shapes.
-- **No automated tests yet.** Rules were verified with ad-hoc scripts and browser checks.
+- **Tests cover the simulation only:** `@roe/sim` has unit tests for placement rules and commands; rendering is verified with browser screenshots.

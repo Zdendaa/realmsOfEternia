@@ -15,11 +15,12 @@
     "build": "pnpm -r build",
     "preview": "pnpm --filter @roe/client preview",
     "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r --if-present test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "clean": "pnpm -r clean"
   },
   "devDependencies": {
@@ -31,6 +32,7 @@
     "globals": "^17.14.0",
     "prettier": "^3.10.1",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.74.0"
+    "typescript-eslint": "^8.74.0",
+    "vitest": "^5.1.1"
   }
 }

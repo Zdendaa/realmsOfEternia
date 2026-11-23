@@ -14,8 +14,11 @@ export interface BuildRules {
   isBuildable(x: number, z: number): boolean;
 }
 
-export function createBuildRules(map: MapDefinition): BuildRules {
-  const water = createWaterMap(map, createBaseHeightField(map));
+/** `water` can be passed in when the caller already has it, to avoid resolving lakes twice. */
+export function createBuildRules(
+  map: MapDefinition,
+  water: WaterMap = createWaterMap(map, createBaseHeightField(map)),
+): BuildRules {
   return {
     water,
     isBuildable: (x, z) => isInPlayableArea(map, x, z) && !water.isWater(x, z, SHORE_MARGIN),

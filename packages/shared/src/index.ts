@@ -9,4 +9,5 @@ export * from './map/terrain.js';
 export * from './map/water.js';
 export * from './map/buildable.js';
 export * from './map/flatten.js';
+export * from './map/footprintGeometry.js';
 export * from './map/decorations.js';

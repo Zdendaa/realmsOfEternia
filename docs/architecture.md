@@ -40,6 +40,8 @@ Static configuration written as typed object literals with `as const satisfies S
 - `PROTOTYPE_MAP`: terrain, forest, border and water (one lake) settings.
 - `BUILDINGS`: id, name, `modelPath`, `footprint` (world units), `scale` and `rotationOffset`. Footprints are measured from model bounding boxes. By convention every building's entrance faces local +Z.
 - `PROTOTYPE_SETTLEMENT`: the hand-authored starting village around a central square. Fields are tiled `farm_plot` instances built with `field()`. Paths are spline control points whose endpoints come from `entrancePoint()`, so moving a building keeps its path attached; every path ends at an entrance or runs off toward the map edge as a road. The layout also lists squares (worn ground) and prop rules.
+- `RESOURCES`: wood, stone, iron, gold, food and mana. Building `cost` uses wood, stone and gold so far.
+- Buildings also carry `buildable`, `cost` and `description`. A `field` is one placeable 2×3 unit of `farm_plot` tiles (`modelTiling`).
 - `PROPS`: small pack details (rocks, garden trees). The pack has no standalone village clutter; barrels, crates and fences are baked into the building models.
 - `MEDIEVAL_PACK`: the KayKit asset pack's folder, its world scale (pack unit × 3) and material overrides (color, roughness) by material name. The overrides are applied when models load, so the GLB files stay untouched.
 
@@ -48,7 +50,11 @@ Static configuration written as typed object literals with `as const satisfies S
 Game rules that need both primitives (`shared`) and content (`game-data`). `shared` can't import `game-data`, because `game-data` already depends on `shared`, so this layer sits on top of both. Client and server import it and run exactly the same code.
 
 - `createWorld(map, settlement)` builds the static, gameplay-relevant world: the terrain with lakes (`terrain`), the terrain flattened under the starting settlement (`heights`), the water map, the starting buildings, sampled paths, and trees and rocks with stable ids.
-- Commands, game state and placement rules are added here in Phase 3.
+- **Game state** (`GameState`) is plain, serializable data: building instances (id, type, position, rotation, owner, status) and the next entity id. The starting settlement becomes the first instances. `createStateHeights(world, state)` is the terrain flattened under every building in that state.
+- **Commands** are what a client sends, for example `{ type: 'placeBuilding', building, x, z, quarterTurns }`. A command never contains the player: the receiver attaches the issuer (the server takes it from the network session), so a client can't act for someone else. `parseCommand(unknown)` turns an untrusted message into a command, copying only known fields.
+- **`applyCommand(world, state, issuer, command)`** validates and executes a command purely: it returns a new state, or the unchanged state plus the failed rules. `validateCommand` runs only the checks.
+- **Placement rules** (`checkPlacement`, tunable via `PLACEMENT_RULES`): a known and buildable type; the center on the 1-unit grid; rotation in whole quarter turns; inside the playable area; not in or right next to water; at most 1.5 units of height difference under the footprint; a 1-unit gap to other buildings (rotated-rectangle overlap test); clear of paths; and not on trees or rocks (trees block placement and are never removed). Spatial indexes over trees, rocks and path samples keep the checks fast.
+- **Tests:** `pnpm test` runs vitest on small synthetic maps (flat ground, a known lake and path, an injected tilted terrain for the slope rule).
 
 ### `@roe/client`: the game client
 

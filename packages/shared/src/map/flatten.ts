@@ -23,6 +23,8 @@ export interface FlattenOptions {
 }
 
 const DEFAULT_FLATTEN: FlattenOptions = { padding: 1, blend: 5 };
+/** Cell size of the spatial grid that finds areas near a point. */
+const GRID_CELL = 16;
 
 interface PreparedArea {
   x: number;
@@ -88,6 +90,23 @@ export function flattenHeightField(
     };
   });
 
+  // Spatial grid: each cell lists (in original order) the areas whose reach overlaps it,
+  // so lookups stay fast as towns grow.
+  const cells = new Map<string, PreparedArea[]>();
+  const cellOf = (v: number) => Math.floor(v / GRID_CELL);
+  for (const a of prepared) {
+    const reach = Math.sqrt(a.reachSq);
+    for (let cx = cellOf(a.x - reach); cx <= cellOf(a.x + reach); cx++) {
+      for (let cz = cellOf(a.z - reach); cz <= cellOf(a.z + reach); cz++) {
+        const key = `${cx},${cz}`;
+        const list = cells.get(key);
+        if (list) list.push(a);
+        else cells.set(key, [a]);
+      }
+    }
+  }
+  const none: PreparedArea[] = [];
+
   return {
     getHeightAt(x, z) {
       // Inside a (padded) footprint that area's level wins outright, so a building
@@ -96,7 +115,7 @@ export function flattenHeightField(
       let maxWeight = 0;
       let weightSum = 0;
       let levelSum = 0;
-      for (const a of prepared) {
+      for (const a of cells.get(`${cellOf(x)},${cellOf(z)}`) ?? none) {
         const dx = x - a.x;
         const dz = z - a.z;
         if (dx * dx + dz * dz > a.reachSq) continue;

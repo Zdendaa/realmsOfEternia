@@ -27,9 +27,6 @@ export interface SettlementLayout {
 
 /** Paths meet a building this far in front of its front edge (just clear of the facade). */
 const ENTRANCE_GAP = 1.2;
-/** farm_plot tile spacing: its footprint plus a thin furrow between tiles. */
-const PLOT_STEP = { x: 4.6, z: 4.1 };
-
 const deg = (degrees: number) => (degrees * Math.PI) / 180;
 
 function place(building: BuildingId, x: number, z: number, rotationDeg: number) {
@@ -42,25 +39,6 @@ function door(placement: BuildingPlacement): Vec2 {
     { ...placement, footprint: BUILDINGS[placement.building].footprint },
     ENTRANCE_GAP,
   );
-}
-
-/** A field: `cols` × `rows` farm_plot tiles centered on (x, z), rotated as a whole. */
-function field(x: number, z: number, rotationDeg: number, cols: number, rows: number) {
-  const r = deg(rotationDeg);
-  const plots: BuildingPlacement[] = [];
-  for (let c = 0; c < cols; c++) {
-    for (let row = 0; row < rows; row++) {
-      const lx = (c - (cols - 1) / 2) * PLOT_STEP.x;
-      const lz = (row - (rows - 1) / 2) * PLOT_STEP.z;
-      plots.push({
-        building: 'farmPlot',
-        x: x + lx * Math.cos(r) + lz * Math.sin(r),
-        z: z - lx * Math.sin(r) + lz * Math.cos(r),
-        rotation: r,
-      });
-    }
-  }
-  return plots;
 }
 
 const v = (x: number, z: number): Vec2 => ({ x, z });
@@ -99,8 +77,8 @@ export const PROTOTYPE_SETTLEMENT: SettlementLayout = {
     mill,
     lumbermill,
     // Two 2×3 fields on either side of the mill.
-    ...field(-22.5, 0, 0, 2, 3),
-    ...field(-22.5, 22.5, 0, 2, 3),
+    place('field', -22.5, 0, 0),
+    place('field', -22.5, 22.5, 0),
   ],
   paths: [
     // Gate → square.
