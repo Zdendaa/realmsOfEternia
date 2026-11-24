@@ -4,6 +4,8 @@ import type { EconomyDraft } from '../economy/draft.js';
 import { cellCenter, isWalkable, nearestWalkableCell } from '../nav/navGrid.js';
 import { toPlacedFootprint, type BuildingInstance } from '../state/gameState.js';
 import { IDLE, type UnitInstance } from '../state/units.js';
+import { materialsInTransit } from '../construction/delivery.js';
+import { isBuilding, updateBuilder, updateDeliverer } from './building.js';
 import { updateGatherer } from './gathering.js';
 import { assignToSlot, freeSlots, moveTo } from './orders.js';
 
@@ -12,14 +14,13 @@ export const SERF_RULES = {
   autoAssignRadius: 30,
   /** Idle serfs look for work once per this many ticks (staggered by unit id). */
   lookForWorkEvery: 10,
-  /** A builder counts as at the site within this distance of the footprint. */
-  workReach: 2.2,
 } as const;
 
 /**
- * Decides tasks and activities for every serf (state order): builders keep building
- * while their site exists, gatherers run their loop, finished moves become idle, and
- * idle serfs pick up nearby construction sites. Mutates the given working copies.
+ * Decides tasks and activities for every serf (state order): builders fetch missing
+ * material and build while their site exists, gatherers run their loop, finished moves
+ * become idle, and idle serfs pick up nearby construction sites. Mutates the given
+ * working copies and the economy draft.
  */
 export function updateSerfs(
   ctx: SimContext,
@@ -29,19 +30,14 @@ export function updateSerfs(
   economy: EconomyDraft,
 ): void {
   const byId = new Map<EntityId, BuildingInstance>(buildings.map((b) => [b.id, b]));
+  const transit = materialsInTransit(units);
   for (const unit of units) {
     if (unit.type !== 'serf') continue;
     const task = unit.task;
     if (task.kind === 'build') {
-      const site = byId.get(task.siteId);
-      if (site?.status !== 'construction') {
-        unit.task = IDLE;
-        unit.movement = null;
-      } else if (!unit.movement) {
-        const reach = distanceToFootprint(toPlacedFootprint(site), unit.x, unit.z);
-        // Arrived, or the route ended as close as the ground allows.
-        if (reach > SERF_RULES.workReach) unit.task = IDLE;
-      }
+      updateBuilder(unit, byId.get(task.siteId), buildings, economy, transit);
+    } else if (task.kind === 'deliver') {
+      updateDeliverer(unit, byId.get(task.siteId), buildings, economy);
     } else if (task.kind === 'gather') {
       updateGatherer(unit, buildings, economy);
     } else if (task.kind === 'move' && !unit.movement) {
@@ -57,17 +53,22 @@ export function updateSerfs(
         lookForWork(unit, buildings, units);
       }
     }
-    unit.activity = activityOf(unit);
+    unit.activity = activityOf(unit, byId, economy);
   }
 }
 
-function activityOf(unit: UnitInstance): UnitInstance['activity'] {
+/** Builders only work while delivered material leaves work to do; otherwise they wait. */
+function activityOf(
+  unit: UnitInstance,
+  byId: ReadonlyMap<EntityId, BuildingInstance>,
+  economy: EconomyDraft,
+): UnitInstance['activity'] {
   if (unit.movement) return 'walking';
   const { task } = unit;
-  if (task.kind === 'build' || (task.kind === 'gather' && task.phase === 'working')) {
-    return 'working';
+  if (task.kind === 'build') {
+    return isBuilding(unit, byId.get(task.siteId), economy) ? 'working' : 'idle';
   }
-  return 'idle';
+  return task.kind === 'gather' && task.phase === 'working' ? 'working' : 'idle';
 }
 
 /** Assigns `serf` to the nearest own site with a free slot within the auto-assign radius. */

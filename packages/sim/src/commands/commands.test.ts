@@ -72,6 +72,7 @@ describe('applyCommand', () => {
     expect(result.state.construction[initial.nextEntityId]).toEqual({
       workDone: 0,
       workRequired: 30 * SIMULATION_TICK_RATE,
+      delivered: {},
     });
     expect(result.state.nextEntityId).toBe(initial.nextEntityId + 1);
   });

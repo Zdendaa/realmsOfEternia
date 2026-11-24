@@ -43,11 +43,12 @@ export function byDistanceTo<T extends UnitInstance>(units: readonly T[], target
   return [...units].sort((a, b) => distanceSq(a, target) - distanceSq(b, target) || a.id - b.id);
 }
 
-/** Work slots of a site that no unit has claimed yet. */
+/** Work slots of a site that no unit has claimed yet (builders fetching material keep theirs). */
 export function freeSlots(site: BuildingInstance, units: readonly UnitInstance[]): number[] {
   const taken = new Set<number>();
   for (const u of units) {
-    if (u.task.kind === 'build' && u.task.siteId === site.id) taken.add(u.task.slot);
+    const t = u.task;
+    if ((t.kind === 'build' || t.kind === 'deliver') && t.siteId === site.id) taken.add(t.slot);
   }
   return workSlots(site)
     .map((_, slot) => slot)

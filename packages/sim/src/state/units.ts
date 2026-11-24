@@ -14,7 +14,24 @@ export type UnitTask =
    * `progress`: ticks of work toward the next unit (while working), or walks to the
    * storage door so far (while carrying goods there).
    */
-  | { kind: 'gather'; nodeId: number; phase: GatherPhase; progress: number };
+  | { kind: 'gather'; nodeId: number; phase: GatherPhase; progress: number }
+  /**
+   * A builder of site `siteId` (work slot `slot`, which it keeps) fetching one unit of
+   * `resource` from storage. Each phase starts walking right away; a route that ends
+   * short of its target makes the builder give up (idle). Back at the site it delivers
+   * and builds again.
+   */
+  | {
+      kind: 'deliver';
+      siteId: EntityId;
+      slot: number;
+      manual: boolean;
+      resource: ResourceId;
+      phase: DeliverPhase;
+    };
+
+/** Where a builder fetching material is. */
+export type DeliverPhase = 'toStorage' | 'toSite';
 
 /** Where a gatherer is in its loop. */
 export type GatherPhase = 'toNode' | 'working' | 'toStorage';
@@ -23,6 +40,11 @@ export type GatherPhase = 'toNode' | 'working' | 'toStorage';
 export interface Cargo {
   resource: ResourceId;
   amount: number;
+  /**
+   * Construction material reserved for this site (already paid when it was placed).
+   * Brought back to storage it returns to the site's reserve instead of the stock.
+   */
+  siteId?: EntityId;
 }
 
 /** How the unit is moving toward its current goal. Null when standing still. */

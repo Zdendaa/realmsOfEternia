@@ -4,6 +4,7 @@ import {
   STARTING_RESOURCES,
   type BuildingId,
   type ResourceAmounts,
+  type ResourceId,
 } from '@roe/game-data';
 import type { EntityId, PlacedFootprint, PlayerId } from '@roe/shared';
 import type { SimWorld } from '../world/createWorld.js';
@@ -32,6 +33,11 @@ export interface BuildingInstance {
 export interface ConstructionProgress {
   workDone: number;
   workRequired: number;
+  /**
+   * Materials delivered so far (the cost was paid at placement; builders carry it over
+   * one unit per trip). Work can't get ahead of the delivered share of the cost.
+   */
+  delivered: Readonly<Partial<Record<ResourceId, number>>>;
 }
 
 /** Authoritative simulation state. Plain data: serializable, never mutated in place. */

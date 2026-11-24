@@ -1,4 +1,4 @@
-import { PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT, UNITS } from '@roe/game-data';
+import { BUILDINGS, PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT, UNITS } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type Vec2 } from '@roe/shared';
 import { describe, expect, it } from 'vitest';
 import { now, report } from '../test/bench.js';
@@ -47,6 +47,8 @@ function game(
   };
 }
 
+/** Builders of any site, including those fetching material for it. */
+const isBuilder = (u: UnitInstance) => u.task.kind === 'build' || u.task.kind === 'deliver';
 const serfs = (state: GameState) => state.units.filter((u) => u.type === 'serf');
 const ids = (units: readonly UnitInstance[]) => units.map((u) => u.id);
 const dist = (a: Vec2, b: Vec2) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -186,13 +188,31 @@ describe('moveUnits', () => {
   });
 });
 
+/**
+ * The state with every material of site `siteId` already delivered, for tests about
+ * the building work itself (deliveries are tested in construction/delivery.test.ts).
+ */
+const supplied = (state: GameState, siteId: number): GameState => {
+  const site = state.buildings.find((b) => b.id === siteId);
+  const progress = state.construction[siteId];
+  if (!site || !progress) throw new Error('no site');
+  return {
+    ...state,
+    construction: {
+      ...state.construction,
+      [siteId]: { ...progress, delivered: { ...BUILDINGS[site.type].cost } },
+    },
+  };
+};
+
 describe('construction', () => {
-  /** Ticks until the last placed site is complete. */
+  /** Ticks until a supplied house is complete. */
   const ticksToBuild = (serfCount: number) => {
     const initial = createInitialState(world, { owner: 'alice' });
-    const g = game({ ...initial, units: initial.units.slice(0, serfCount) });
-    g.step(place('house', 14, 6));
-    const siteId = g.state.buildings.at(-1)?.id as number;
+    const placed = game({ ...initial, units: initial.units.slice(0, serfCount) });
+    placed.step(place('house', 14, 6));
+    const siteId = placed.state.buildings.at(-1)?.id as number;
+    const g = game(supplied(placed.state, siteId));
     return g.run(200 * SIMULATION_TICK_RATE, (s) =>
       s.buildings.some((b) => b.id === siteId && b.status === 'complete'),
     );
@@ -212,7 +232,7 @@ describe('construction', () => {
     const g = game();
     g.step(place('house', 14, 6));
     g.run(5 * SIMULATION_TICK_RATE);
-    const builders = g.state.units.filter((u) => u.task.kind === 'build');
+    const builders = g.state.units.filter((u) => isBuilder(u));
     expect(builders).toHaveLength(3);
   });
 
@@ -221,7 +241,8 @@ describe('construction', () => {
     g.step(place('well', 10, 8));
     const siteId = g.state.buildings.at(-1)?.id as number;
     expect(g.state.buildings.at(-1)?.status).toBe('construction');
-    g.run(60 * SIMULATION_TICK_RATE, (s) => s.buildings.at(-1)?.status === 'complete');
+    // Three trips for the stone, then 15 s of work.
+    g.run(120 * SIMULATION_TICK_RATE, (s) => s.buildings.at(-1)?.status === 'complete');
     expect(g.state.buildings.at(-1)?.status).toBe('complete');
     expect(g.state.construction[siteId]).toBeUndefined();
     g.step();
@@ -234,16 +255,18 @@ describe('construction', () => {
     expect(placed?.ok).toBe(true);
     const siteId = g.state.buildings.at(-1)?.id as number;
     g.run(3 * SIMULATION_TICK_RATE);
-    expect(g.state.units.some((u) => u.task.kind === 'build')).toBe(false);
+    expect(g.state.units.some((u) => isBuilder(u))).toBe(false);
 
     const [result] = g.step({ type: 'assignBuilders', unitIds: ids(serfs(g.state)), siteId });
     expect(result?.ok).toBe(true);
-    expect(g.state.units.filter((u) => u.task.kind === 'build')).toHaveLength(3);
-    g.run(walkTicks(60), (st) => st.units.filter((u) => u.activity === 'working').length === 3);
-    g.step();
-    const working = g.state.units.filter((u) => u.activity === 'working');
+    expect(g.state.units.filter((u) => isBuilder(u))).toHaveLength(3);
+    // With the materials there, all three start working when they arrive.
+    const h = game(supplied(g.state, siteId));
+    h.run(walkTicks(60), (st) => st.units.filter((u) => u.activity === 'working').length === 3);
+    h.step();
+    const working = h.state.units.filter((u) => u.activity === 'working');
     expect(working).toHaveLength(3);
-    expect(g.state.construction[siteId]?.workDone).toBeGreaterThan(0);
+    expect(h.state.construction[siteId]?.workDone).toBeGreaterThan(0);
     expect(SERF_RULES.autoAssignRadius).toBe(30);
   });
 

@@ -1,14 +1,14 @@
-import type { ResourceAmounts } from '@roe/game-data';
-import type { PlayerId } from '@roe/shared';
-import type { GameState } from '../state/gameState.js';
+import type { ResourceAmounts, ResourceId } from '@roe/game-data';
+import type { EntityId, PlayerId } from '@roe/shared';
+import type { ConstructionProgress, GameState } from '../state/gameState.js';
 import { remainingAmount } from '../state/resourceNodes.js';
 import type { Cargo } from '../state/units.js';
 import type { SimWorld } from '../world/createWorld.js';
 import { EMPTY_STOCK } from './stock.js';
 
 /**
- * Copy-on-write working copies of the economy for one tick. Harvesting and deliveries
- * write here; `commit` returns the new records, or the old ones (same references)
+ * Copy-on-write working copies of the economy for one tick. Harvesting, deposits and
+ * material deliveries to construction sites write here; `commit` returns the new records, or the old ones (same references)
  * when nothing changed, so per-tick state changes stay cheap and stable.
  */
 export interface EconomyDraft {
@@ -16,20 +16,24 @@ export interface EconomyDraft {
   /** Read through `remaining`; written by `take`. */
   nodes: Readonly<Record<number, number>>;
   stocks: Readonly<Record<PlayerId, Readonly<ResourceAmounts>>>;
+  construction: Readonly<Record<EntityId, ConstructionProgress>>;
   nodesCopied: boolean;
   stocksCopied: boolean;
+  constructionCopied: boolean;
 }
 
 export function createEconomyDraft(
   world: SimWorld,
-  state: Pick<GameState, 'resourceNodes' | 'stocks'>,
+  state: Pick<GameState, 'resourceNodes' | 'stocks' | 'construction'>,
 ): EconomyDraft {
   return {
     world,
     nodes: state.resourceNodes,
     stocks: state.stocks,
+    construction: state.construction,
     nodesCopied: false,
     stocksCopied: false,
+    constructionCopied: false,
   };
 }
 
@@ -49,8 +53,13 @@ export function take(draft: EconomyDraft, id: number): boolean {
   return true;
 }
 
-/** Adds delivered goods to the player's stock. */
+/**
+ * Hands goods in at a storage: they join the player's stock, except construction
+ * material reserved for a site, which goes back to that site's reserve (it was paid
+ * already; adding it again would create resources).
+ */
 export function deposit(draft: EconomyDraft, player: PlayerId, cargo: Cargo): void {
+  if (cargo.siteId !== undefined) return;
   if (!draft.stocksCopied) {
     draft.stocks = { ...draft.stocks };
     draft.stocksCopied = true;
@@ -62,8 +71,23 @@ export function deposit(draft: EconomyDraft, player: PlayerId, cargo: Cargo): vo
   };
 }
 
+/** Records one delivered unit of `resource` at construction site `siteId`. */
+export function deliverToSite(draft: EconomyDraft, siteId: EntityId, resource: ResourceId): void {
+  const progress = draft.construction[siteId];
+  if (!progress) return;
+  if (!draft.constructionCopied) {
+    draft.construction = { ...draft.construction };
+    draft.constructionCopied = true;
+  }
+  (draft.construction as Record<EntityId, ConstructionProgress>)[siteId] = {
+    ...progress,
+    delivered: { ...progress.delivered, [resource]: (progress.delivered[resource] ?? 0) + 1 },
+  };
+}
+
 /** The tick's resulting records (unchanged references when nothing happened). */
 export const commitEconomy = (draft: EconomyDraft) => ({
   resourceNodes: draft.nodes,
   stocks: draft.stocks,
+  construction: draft.construction,
 });

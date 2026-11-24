@@ -56,8 +56,12 @@ const gatherTask = (nodeId: number, phase: GatherPhase): UnitTask => ({
 /** Starts (or restarts) the gather loop at `node`: walk there, or deliver other goods first. */
 export function startGathering(unit: UnitInstance, node: Decoration): Partial<UnitInstance> {
   const resource = RESOURCE_NODES[node.kind].resource;
-  if (unit.carrying && unit.carrying.resource !== resource) {
-    // Different goods in hand: deliver them first (phase toStorage picks the storage).
+  if (
+    unit.carrying &&
+    (unit.carrying.resource !== resource || unit.carrying.siteId !== undefined)
+  ) {
+    // Other goods in hand (or material reserved for a site): hand them in first, so the
+    // harvest never mixes with them (phase toStorage picks the storage).
     return { task: gatherTask(node.id, 'toStorage'), movement: null };
   }
   return { task: gatherTask(node.id, 'toNode'), movement: moveTo(node) };

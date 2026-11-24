@@ -160,7 +160,11 @@ function placeBuilding(state: GameState, issuer: PlayerId, command: PlaceBuildin
     buildings: [...state.buildings, site],
     construction: {
       ...state.construction,
-      [site.id]: { workDone: 0, workRequired: definition.buildTime * SIMULATION_TICK_RATE },
+      [site.id]: {
+        workDone: 0,
+        workRequired: definition.buildTime * SIMULATION_TICK_RATE,
+        delivered: {},
+      },
     },
     nextEntityId: state.nextEntityId + 1,
   };

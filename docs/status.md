@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-24._
 
-**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) and 5.3 (carried goods are visible) are done. Next: 5.4, material delivery to construction sites. The approved plan and milestone status are in [phase-5-plan.md](phase-5-plan.md).
+**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) 5.3 (carried goods are visible) and 5.4 (builders carry the materials to sites) are done. Next: 5.6, workers in the lumbermill and quarry. The approved plan and milestone status are in [phase-5-plan.md](phase-5-plan.md).
 
 ## Phases
 
@@ -28,6 +28,7 @@ _Last updated: 2026-11-24._
 | 5.1   | Resource stock, paid construction costs, resource bar                             | ✅ Done |
 | 5.2   | Finite trees and rocks, serf gathering, axe/pickaxe cursors                       | ✅ Done |
 | 5.3   | Carrying visual: walk with held load, low-poly bundles on the rig                 | ✅ Done |
+| 5.4   | Material delivery to construction sites                                           | ✅ Done |
 | 5     | Economy: see [phase-5-plan.md](phase-5-plan.md) for the remaining milestones      | ⏳ Next |
 
 ## What works today
@@ -45,7 +46,7 @@ _Last updated: 2026-11-24._
 - **Gathering:** with serfs selected, the cursor shows an axe over trees and a pickaxe over rocks; a right click sends them to harvest (a group spreads over nearby trees or rocks). Each serf chops (3 s) or quarries (4 s) one unit, carries it to the Town Hall, and goes back; when a tree or rock runs out (trees 3–5 wood, rocks 6–12 stone by size) it moves on to the next one nearby. On the way back they hold the load in both arms (low-poly logs or stones). Felled trees disappear, rocks shrink as they're quarried, and the ground they blocked becomes walkable and buildable. Five serfs gather roughly 5–6 wood per minute from a forest edge about 35 units from the Town Hall, and about 5 stone per minute from rocks at a similar distance.
 - **Serfs:** five start in front of the Town Hall; more are recruited there (select the Town Hall → "Recruit serf", up to 200, no cost yet). They are KayKit characters (the Ranger without cape and quiver) with baked skeletal animation: idle, walking (2.0 units/s), hammering while building, each unit out of phase with the others, and the scarf in the player color. Primitive placeholder serfs show while the models load, or if they fail to load. Left click or a box selects them (Shift adds), and a right click sends them to the ground point (spread out) or to a construction site.
 - **Cursors and command feedback:** the cursor shows what a click would do: select over own units and buildings, move over the ground and build over own construction sites while serfs are selected. Water and steep slopes count as ground: serfs go to the nearest walkable spot. "Not allowed" shows over other buildings, trees and rocks (until Phase 5), and where nothing walkable is near or outside the playable area; a right click there does nothing. A move shows chevrons converging where the serfs will end up, in the player color (0.6 s); assigning to a site pulses an outline around it with a hammer icon above.
-- **Construction sites:** dirt, a wooden scaffold and the real model rising from the ground as work progresses, with a progress bar. Idle serfs take sites within 30 units on their own; each working serf adds the same amount of work (linear), up to the building's `maxBuilders` (house 3, mill 4...). A house takes 30 s for one serf, 10 s for three. Selecting a site shows its progress and builders. Finished sites become normal buildings.
+- **Construction sites:** dirt, a wooden scaffold and the real model rising from the ground as work progresses, with a progress bar. Idle serfs take sites within 30 units on their own (up to the building's `maxBuilders`: house 3, mill 4...). Builders first carry the materials from the Town Hall, one unit per trip, and the work can't get ahead of what has arrived; each working serf then adds the same amount of work (linear). A house near the Town Hall takes about 45 s with three serfs (30 s of work for one serf, 10 s for three, plus the trips). Selecting a site shows its progress, the delivered materials (e.g. wood 3 / 4, stone 0 / 2) and its builders. Finished sites become normal buildings.
 - **Pathfinding:** A* on a 1-unit grid (water, slopes, trees, rocks and buildings block) with smoothed routes; units push each other apart instead of stacking. On the prototype map a path takes about 1–1.5 ms on average and a tick with 300 moving serfs about 0.5 ms (p99 about 7 ms when many paths are planned at once).
 - **Shared rules ready for Phase 3:** `createHeightField`, `flattenHeightField`, `entrancePoint`, `createBuildRules().isBuildable` and `createWaterMap().isWater`.
 - **Server:** a Colyseus server with a placeholder 2–4 player match room. The client doesn't connect to it yet.
@@ -92,7 +93,7 @@ _Last updated: 2026-11-24._
 
 - **Multiplayer isn't wired yet:** the client runs the tick locally. The server runs the same tick and validates commands with the same rules, but keeps its game state privately (no state sync, no client connection yet), and its starting settlement is neutral, so nobody can recruit there.
 - **No persistence:** placed buildings disappear on reload (by design for now).
-- **No material deliveries yet:** costs are paid when a site is placed, but serfs build without carrying materials (Phase 5.4). Carried goods are visible: serfs walk back with logs or stones held in both arms.
+- **Builders are the only carriers:** there are no separate carrier jobs, and serfs beyond a site's `maxBuilders` don't help carrying. Delivered material isn't shown as piles on the site.
 - **The server's settlement has no stock:** it stays neutral, so players on the server can't place buildings until matches have start positions.
 - **Placed buildings get no paths and no worn ground** at their entrances.
 - **Cosmetic layers are client-only by design:** props, worn ground and grass live in the client (`decorateWorld`); everything gameplay-relevant comes from `@roe/sim`.

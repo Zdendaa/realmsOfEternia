@@ -47,7 +47,11 @@ export function stepGame(
   planPaths(ctx, units);
   advanceUnits(units);
   separateUnits(ctx, units);
-  const { buildings, construction } = progressConstruction(current, units);
+  const economic = commitEconomy(economy);
+  const { buildings, construction } = progressConstruction(
+    { buildings: current.buildings, construction: economic.construction },
+    units,
+  );
 
   const next: GameState = {
     ...current,
@@ -55,7 +59,8 @@ export function stepGame(
     units,
     buildings,
     construction,
-    ...commitEconomy(economy),
+    resourceNodes: economic.resourceNodes,
+    stocks: economic.stocks,
   };
   syncContext(ctx, next);
   return { state: next, results };

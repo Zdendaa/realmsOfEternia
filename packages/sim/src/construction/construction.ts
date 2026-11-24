@@ -1,10 +1,12 @@
 import type { EntityId } from '@roe/shared';
 import type { BuildingInstance, ConstructionProgress, GameState } from '../state/gameState.js';
+import { allowedWork } from './delivery.js';
 import type { UnitInstance } from '../state/units.js';
 
 /**
  * Adds one tick of work from every serf working at a site (linear in the number of
- * builders; work slots cap it at `maxBuilders`) and completes finished sites.
+ * builders; work slots cap it at `maxBuilders`), never beyond the delivered share of the
+ * materials, and completes finished sites.
  * Returns the new buildings and construction records; unchanged ones keep their references.
  */
 export function progressConstruction(
@@ -19,13 +21,16 @@ export function progressConstruction(
   }
   if (workers.size === 0) return state;
 
+  const types = new Map(state.buildings.map((b) => [b.id, b]));
   const construction: Record<EntityId, ConstructionProgress> = {};
   const finished = new Set<EntityId>();
   for (const [key, progress] of Object.entries(state.construction)) {
     const siteId = Number(key);
-    const workDone = Math.min(
-      progress.workRequired,
-      progress.workDone + (workers.get(siteId) ?? 0),
+    const site = types.get(siteId);
+    const limit = site ? allowedWork(site, progress) : progress.workRequired;
+    const workDone = Math.max(
+      progress.workDone,
+      Math.min(limit, progress.workDone + (workers.get(siteId) ?? 0)),
     );
     if (workDone >= progress.workRequired) {
       finished.add(siteId);

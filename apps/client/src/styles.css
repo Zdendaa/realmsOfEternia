@@ -335,6 +335,28 @@ body,
   background: rgb(255 255 255 / 16%);
 }
 
+.site-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--hud-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.site-materials li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.site-materials li.is-complete {
+  color: #9be08f;
+}
+
 .selection-issue {
   margin: 0;
   color: #ff8a7a;
