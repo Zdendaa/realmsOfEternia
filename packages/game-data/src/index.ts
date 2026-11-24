@@ -1,5 +1,6 @@
 export {
   CHARACTER_PACK,
+  RIG_MEDIUM,
   type AnimationClipRef,
   type CharacterAnimation,
   type CharacterModel,

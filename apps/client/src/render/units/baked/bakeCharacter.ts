@@ -1,4 +1,5 @@
 import {
+  AnimationClip,
   AnimationMixer,
   BufferAttribute,
   BufferGeometry,
@@ -11,7 +12,6 @@ import {
   RGBAFormat,
   SkinnedMesh,
   Vector3,
-  type AnimationClip,
   type Material,
   type Object3D,
 } from 'three';
@@ -41,6 +41,82 @@ export interface BakedCharacter<K extends string> {
   boneTexture: DataTexture;
   boneCount: number;
   clips: Record<K, BakedClip>;
+  /** Where carried goods attach (see `BakeOptions.attach`), or null. */
+  attachment: CarryAttachment | null;
+}
+
+/**
+ * Rigid attachment of carried goods to one bone. A vertex `v` of a bundle modelled
+ * around the hands (origin between them, +X to the character's left, +Y up, +Z forward)
+ * goes to `anchor · v` in bind space; skinned with weight 1 on `bone`, it then follows
+ * the animation exactly like the hands.
+ */
+export interface CarryAttachment {
+  bone: number;
+  anchor: Matrix4;
+}
+
+export interface BakeOptions<K extends string> {
+  hiddenMeshes: readonly string[];
+  fps: number;
+  /** Compute a `CarryAttachment` on `bone`, between `hands` as posed in clip `clip`. */
+  attach?: { clip: K; bone: string; hands: readonly [string, string] };
+}
+
+/**
+ * A clip with the legs and hips of `lower` and the `upperBones` of `upper` (names as in
+ * the GLB; GLTFLoader sanitizes them the same way here). Lasts as long as `lower`; a
+ * shorter upper clip holds its last frame, which suits static poses.
+ */
+export function combineClips(
+  name: string,
+  lower: AnimationClip,
+  upper: AnimationClip,
+  upperBones: readonly string[],
+): AnimationClip {
+  const upperSet = new Set(upperBones.map((b) => PropertyBinding.sanitizeNodeName(b)));
+  const isUpper = (trackName: string) => upperSet.has(trackName.split('.')[0] ?? '');
+  return new AnimationClip(name, lower.duration, [
+    ...lower.tracks.filter((t) => !isUpper(t.name)),
+    ...upper.tracks.filter((t) => isUpper(t.name)),
+  ]);
+}
+
+/** `CarryAttachment` from the first frame of `clip`. */
+function measureAttachment(
+  root: Object3D,
+  bones: readonly Object3D[],
+  boneInverses: readonly Matrix4[],
+  clip: AnimationClip,
+  boneName: string,
+  hands: readonly [string, string],
+): CarryAttachment | null {
+  const find = (name: string) => {
+    const key = PropertyBinding.sanitizeNodeName(name);
+    const index = bones.findIndex((b) => b.name === key);
+    return index >= 0 ? index : null;
+  };
+  const bone = find(boneName);
+  const left = find(hands[0]);
+  const right = find(hands[1]);
+  if (bone === null || left === null || right === null) return null;
+
+  const mixer = new AnimationMixer(root);
+  mixer.clipAction(clip).play();
+  mixer.setTime(0);
+  root.updateMatrixWorld(true);
+  const between = (bones[left] as Object3D)
+    .getWorldPosition(new Vector3())
+    .add((bones[right] as Object3D).getWorldPosition(new Vector3()))
+    .multiplyScalar(0.5);
+  const skin = new Matrix4().multiplyMatrices(
+    (bones[bone] as Object3D).matrixWorld,
+    boneInverses[bone] as Matrix4,
+  );
+  mixer.stopAllAction();
+  mixer.uncacheRoot(root);
+  const anchor = skin.invert().multiply(new Matrix4().makeTranslation(between));
+  return { bone, anchor };
 }
 
 /**
@@ -104,7 +180,7 @@ function measureStride(root: Object3D, feet: Object3D[], clip: AnimationClip): n
 export function bakeCharacter<K extends string>(
   source: Object3D,
   clips: Record<K, AnimationClip>,
-  options: { hiddenMeshes: readonly string[]; fps: number },
+  options: BakeOptions<K>,
 ): BakedCharacter<K> {
   // The loaded scene is cached and shared; animate a private copy with its own skeleton.
   const root = cloneSkinned(source);
@@ -168,7 +244,12 @@ export function bakeCharacter<K extends string>(
   boneTexture.generateMipmaps = false;
   boneTexture.needsUpdate = true;
 
-  return { geometry, material, boneTexture, boneCount: bones.length, clips: baked };
+  const attach = options.attach;
+  const attachment = attach
+    ? measureAttachment(root, bones, boneInverses, clips[attach.clip], attach.bone, attach.hands)
+    : null;
+
+  return { geometry, material, boneTexture, boneCount: bones.length, clips: baked, attachment };
 }
 
 /**

@@ -1,3 +1,4 @@
+import type { ResourceId } from '@roe/game-data';
 import type { EntityId, PlayerId } from '@roe/shared';
 import type { UnitActivity } from '@roe/sim';
 
@@ -12,6 +13,8 @@ export interface RenderedUnit {
   activity: UnitActivity;
   /** What kind of work a working unit does (picks the animation): build, chop or mine. */
   work: UnitWork;
+  /** The resource the unit carries, or null. */
+  carrying: ResourceId | null;
   ownerId: PlayerId | null;
 }
 

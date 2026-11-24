@@ -66,6 +66,7 @@ export function UnitFrameDriver() {
           heading: 0,
           activity: unit.activity,
           work: 'build',
+          carrying: null,
           ownerId: null,
         };
         renderedUnits.set(unit.id, r);
@@ -88,6 +89,7 @@ export function UnitFrameDriver() {
       r.y = ctx.heights.getHeightAt(x, z);
       r.activity = unit.activity;
       r.work = workOf(unit, world.decorations);
+      r.carrying = unit.carrying?.resource ?? null;
       r.ownerId = unit.ownerId;
       renderedUnitList.push(r);
     }

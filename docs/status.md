@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-24._
 
-**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) and 5.2 (serfs gather wood and stone; trees and rocks run out) are done. Next: 5.3, the carrying visual. The approved plan and milestone status are in [phase-5-plan.md](phase-5-plan.md).
+**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) and 5.3 (carried goods are visible) are done. Next: 5.4, material delivery to construction sites. The approved plan and milestone status are in [phase-5-plan.md](phase-5-plan.md).
 
 ## Phases
 
@@ -27,6 +27,7 @@ _Last updated: 2026-11-24._
 | 4.6   | Context cursors and command markers                                               | ✅ Done |
 | 5.1   | Resource stock, paid construction costs, resource bar                             | ✅ Done |
 | 5.2   | Finite trees and rocks, serf gathering, axe/pickaxe cursors                       | ✅ Done |
+| 5.3   | Carrying visual: walk with held load, low-poly bundles on the rig                 | ✅ Done |
 | 5     | Economy: see [phase-5-plan.md](phase-5-plan.md) for the remaining milestones      | ⏳ Next |
 
 ## What works today
@@ -41,7 +42,7 @@ _Last updated: 2026-11-24._
 - **Camera:** WASD and arrow keys, middle drag or the screen edges (toggle in the settings) to pan, right drag to rotate, mouse wheel to zoom. The focus point stays inside the playable area and on the ground.
 - **Building placement:** a construction menu lists the six buildable types with their costs; costs the stock can't cover are red, and the ghost says what is missing ("Not enough gold"). A ghost follows the mouse, snapped to a 1-unit grid, rotating in 90° steps, green or red by the shared placement rules (area, water, slope, buildings, paths, trees, rocks). A placed building becomes a construction site, pays its full cost from the stock, and flattens the terrain and clears grass under it.
 - **Resources:** a top bar shows the player's stock of wood, stone, iron, gold, food and mana (original icons), starting at 30 / 20 / 0 / 5 / 20 / 0, with a short +/- flash on every change.
-- **Gathering:** with serfs selected, the cursor shows an axe over trees and a pickaxe over rocks; a right click sends them to harvest (a group spreads over nearby trees or rocks). Each serf chops (3 s) or quarries (4 s) one unit, carries it to the Town Hall, and goes back; when a tree or rock runs out (trees 3–5 wood, rocks 6–12 stone by size) it moves on to the next one nearby. Felled trees disappear, rocks shrink as they're quarried, and the ground they blocked becomes walkable and buildable. Five serfs gather roughly 5–6 wood per minute from a forest edge about 35 units from the Town Hall, and about 5 stone per minute from rocks at a similar distance.
+- **Gathering:** with serfs selected, the cursor shows an axe over trees and a pickaxe over rocks; a right click sends them to harvest (a group spreads over nearby trees or rocks). Each serf chops (3 s) or quarries (4 s) one unit, carries it to the Town Hall, and goes back; when a tree or rock runs out (trees 3–5 wood, rocks 6–12 stone by size) it moves on to the next one nearby. On the way back they hold the load in both arms (low-poly logs or stones). Felled trees disappear, rocks shrink as they're quarried, and the ground they blocked becomes walkable and buildable. Five serfs gather roughly 5–6 wood per minute from a forest edge about 35 units from the Town Hall, and about 5 stone per minute from rocks at a similar distance.
 - **Serfs:** five start in front of the Town Hall; more are recruited there (select the Town Hall → "Recruit serf", up to 200, no cost yet). They are KayKit characters (the Ranger without cape and quiver) with baked skeletal animation: idle, walking (2.0 units/s), hammering while building, each unit out of phase with the others, and the scarf in the player color. Primitive placeholder serfs show while the models load, or if they fail to load. Left click or a box selects them (Shift adds), and a right click sends them to the ground point (spread out) or to a construction site.
 - **Cursors and command feedback:** the cursor shows what a click would do: select over own units and buildings, move over the ground and build over own construction sites while serfs are selected. Water and steep slopes count as ground: serfs go to the nearest walkable spot. "Not allowed" shows over other buildings, trees and rocks (until Phase 5), and where nothing walkable is near or outside the playable area; a right click there does nothing. A move shows chevrons converging where the serfs will end up, in the player color (0.6 s); assigning to a site pulses an outline around it with a hammer icon above.
 - **Construction sites:** dirt, a wooden scaffold and the real model rising from the ground as work progresses, with a progress bar. Idle serfs take sites within 30 units on their own; each working serf adds the same amount of work (linear), up to the building's `maxBuilders` (house 3, mill 4...). A house takes 30 s for one serf, 10 s for three. Selecting a site shows its progress and builders. Finished sites become normal buildings.
@@ -78,7 +79,7 @@ _Last updated: 2026-11-24._
 - **Quick steps (accepted):** serfs walk at 2.0 units/s at the building-matched scale 0.62 (~1.4 units tall). `Walking_B` covers only ~0.66 units per cycle at this size, so it plays at ~3.2× (≈360 steps/min, feet planted). It reads fine at RTS zoom; close up the legs look hurried. A larger scale (tried 0.99) slows the cadence but makes serfs taller than the houses suggest.
 - **Animations switch instantly** (no cross-fade between clips), and serfs hammer without a tool in their hands (the free pack has no hammer model).
 - **Team color relies on the blue scarf:** only texels where blue dominates are recolored.
-- **Carrying has no clip:** the animation pack has `Holding_A–C` poses and `PickUp`, but no carry walk; Phase 5 needs a layered or custom solution. Chop and dig clips are already baked for Phase 5.
+- **Carrying is a combined clip:** the walk's legs with the `Holding_A` arms; the upper body doesn't sway with the steps, and the load is put down instantly (no pick-up or drop animation). Bundles are small at the default zoom.
 - **Units don't avoid each other while planning:** separation only pushes overlapping units apart, so crowds in narrow gaps can jostle and a stuck unit gives up after two re-plans.
 - **Gatherers often work on the far side of a tree,** hidden by its crown from the default camera angle. Felled trees leave no stump.
 - **Goods are kept through other orders:** a serf moved away while carrying keeps the load until its next gather trip delivers it.
@@ -91,7 +92,7 @@ _Last updated: 2026-11-24._
 
 - **Multiplayer isn't wired yet:** the client runs the tick locally. The server runs the same tick and validates commands with the same rules, but keeps its game state privately (no state sync, no client connection yet), and its starting settlement is neutral, so nobody can recruit there.
 - **No persistence:** placed buildings disappear on reload (by design for now).
-- **No material deliveries yet:** costs are paid when a site is placed, but serfs build without carrying materials (Phase 5.4). Carried goods aren't visible yet (5.3).
+- **No material deliveries yet:** costs are paid when a site is placed, but serfs build without carrying materials (Phase 5.4). Carried goods are visible: serfs walk back with logs or stones held in both arms.
 - **The server's settlement has no stock:** it stays neutral, so players on the server can't place buildings until matches have start positions.
 - **Placed buildings get no paths and no worn ground** at their entrances.
 - **Cosmetic layers are client-only by design:** props, worn ground and grass live in the client (`decorateWorld`); everything gameplay-relevant comes from `@roe/sim`.

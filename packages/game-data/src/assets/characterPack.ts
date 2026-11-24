@@ -4,10 +4,25 @@ export interface AnimationClipRef {
   file: string;
   /** Clip name inside the file. */
   clip: string;
+  /**
+   * Optional second clip for the upper body (`RIG_MEDIUM.upperBody` bones): the result
+   * keeps this clip's legs and hips and takes the arms, spine and head from the other.
+   * Used for carrying: a walk with the arms of a holding pose.
+   */
+  upperBody?: { file: string; clip: string };
 }
 
 /** What a unit's visible activity looks like. Keys are referenced by the renderer. */
-export type CharacterAnimation = 'idle' | 'walk' | 'build' | 'chop' | 'mine';
+export type CharacterAnimation =
+  | 'idle'
+  | 'walk'
+  | 'build'
+  | 'chop'
+  | 'mine'
+  /** Walking with a load held in both arms. */
+  | 'carry'
+  /** Standing with a load held in both arms. */
+  | 'hold';
 
 export interface CharacterModel {
   /** Model file relative to `CHARACTER_PACK.dir`. */
@@ -19,7 +34,31 @@ export interface CharacterModel {
   /** Standing height in model units (world height = height · scale). */
   height: number;
   animations: Readonly<Record<CharacterAnimation, AnimationClipRef>>;
+  /**
+   * Where carried goods sit: rigidly on `bone`, centered between the two `hands` bones
+   * as they are posed in the `carry` clip.
+   */
+  carryAttach: { bone: string; hands: readonly [string, string] };
 }
+
+/** Bone groups of the KayKit Rig_Medium skeleton (names as in the GLB files). */
+export const RIG_MEDIUM = {
+  upperBody: [
+    'spine',
+    'chest',
+    'head',
+    'upperarm.l',
+    'lowerarm.l',
+    'wrist.l',
+    'hand.l',
+    'handslot.l',
+    'upperarm.r',
+    'lowerarm.r',
+    'wrist.r',
+    'hand.r',
+    'handslot.r',
+  ],
+} as const;
 
 const MEDIUM = 'animations/Rig_Medium/';
 
@@ -51,6 +90,16 @@ export const CHARACTER_PACK = {
       // Gathering: chopping trees and quarrying rocks.
       chop: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Chopping' },
       mine: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Pickaxing' },
+      // No carry walk in the pack: the walk's legs with Holding_A's arms (both forearms
+      // forward at waist height, like holding a box). Stride, and so playback rate,
+      // stay the walk's.
+      carry: {
+        file: `${MEDIUM}Rig_Medium_MovementBasic.glb`,
+        clip: 'Walking_B',
+        upperBody: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Holding_A' },
+      },
+      hold: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Holding_A' },
     },
+    carryAttach: { bone: 'chest', hands: ['handslot.l', 'handslot.r'] },
   } satisfies CharacterModel,
 } as const;
