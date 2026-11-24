@@ -60,7 +60,7 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 | 5b.1 | Population and recruit cost                                  | ✅     |
 | 5b.2 | Profession looks (hats, tools, tint, loads)                  | ✅     |
 | 5b.3 | Farm: production union, farmer, grow cycle, grain            | ✅     |
-| 5b.4 | Mill and bakery: process loop, spinning blades, temp. bakery |        |
+| 5b.4 | Mill and bakery: process loop, spinning blades, temp. bakery | ✅     |
 | 5b.5 | Gold and iron mines on deposits                              |        |
 | 5b.6 | Visual migration to the Medieval Hexagon Pack                |        |
 | 5.5  | Storehouse (from Hexagon props, after 5b.6)                  |        |
@@ -89,6 +89,7 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 - sim: `units/production/process.ts` with input reservation. Tests: the chain runs end to end, no input means waiting, one unit is never used twice.
 - game-data: `bakery` (flagged temporary), building-scoped material overrides where needed.
 - client: separate spinning blade mesh for the mill, bakery model (Hexagon blacksmith copied in as GLB, roof recolored), chimney smoke.
+- Done 2026-11-24: `process` has a single `input` and `output` (`{ resource, amount }`): mill, bakery and both mines need just one each. Workers handle several steps per trip by their carry capacity (miller 3, baker 4 → 2 flour). The roof is not recolored: of the pack's four variants the yellow (straw) roof matches the Builder Pack roofs best, so it is used as is; player-colored roofs come with 5b.6. No building-scoped material overrides were needed. Millers and bakers work inside (hidden while processing).
 
 ### 5b.5 Gold and iron mines
 

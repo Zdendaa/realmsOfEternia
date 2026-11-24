@@ -7,6 +7,7 @@ import { IDLE, type UnitInstance, type WorkPhase } from '../state/units.js';
 import { workerDoor } from './production/common.js';
 import { updateFarmer } from './production/farm.js';
 import { updateHarvester } from './production/harvest.js';
+import { updateProcessor } from './production/process.js';
 
 export { WORKER_RULES } from './production/common.js';
 
@@ -87,7 +88,8 @@ const WORKING_PHASES: ReadonlySet<WorkPhase> = new Set([
 
 /**
  * One tick of every worker's loop (state order), by the kind of production of its
- * building: harvesting (`production/harvest.ts`) or farming (`production/farm.ts`).
+ * building: harvesting (`production/harvest.ts`), farming (`production/farm.ts`) or
+ * processing (`production/process.ts`).
  * Workers whose building is gone or no longer complete stand idle.
  */
 export function updateWorkers(
@@ -115,6 +117,9 @@ export function updateWorkers(
         break;
       case 'farm':
         updateFarmer(unit, task, building, production, tick, buildings, economy);
+        break;
+      case 'process':
+        updateProcessor(unit, task, building, production, tick, buildings, economy);
         break;
     }
     const phase = unit.task.kind === 'work' ? unit.task.phase : null;

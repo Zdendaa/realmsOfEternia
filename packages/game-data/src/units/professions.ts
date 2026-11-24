@@ -11,8 +11,9 @@ export interface ProfessionDefinition {
   tunic: string;
   hat: HatStyle;
   /**
-   * Units of goods the worker carries per trip to storage. Farmers gather several plots'
-   * crop before walking to storage; harvesting and processing workers carry one at a time.
+   * Units of goods the worker carries per trip. Farmers gather several plots' crop before
+   * walking to storage; millers and bakers fetch and process several units per trip;
+   * woodcutters and stonecutters carry one at a time.
    */
   carryCapacity: number;
 }
@@ -39,8 +40,8 @@ export const PROFESSIONS = {
     carryCapacity: 1,
   },
   farmer: { id: 'farmer', name: 'Farmer', tunic: '#a8894f', hat: 'strawHat', carryCapacity: 3 },
-  miller: { id: 'miller', name: 'Miller', tunic: '#a9a294', hat: 'millerCap', carryCapacity: 1 },
-  baker: { id: 'baker', name: 'Baker', tunic: '#e0d6c2', hat: 'toque', carryCapacity: 1 },
+  miller: { id: 'miller', name: 'Miller', tunic: '#a9a294', hat: 'millerCap', carryCapacity: 3 },
+  baker: { id: 'baker', name: 'Baker', tunic: '#e0d6c2', hat: 'toque', carryCapacity: 4 },
   miner: { id: 'miner', name: 'Miner', tunic: '#4e3b2c', hat: 'minerHelmet', carryCapacity: 1 },
 } as const satisfies Record<string, ProfessionDefinition>;
 

@@ -32,6 +32,15 @@ export function applyMaterialOverrides(
   });
 }
 
+/**
+ * True if `object` or one of its ancestors is named in `names`. A glTF mesh with several
+ * materials loads as a group (named after the node) of meshes with other names.
+ */
+export function isUnder(object: Object3D, names: readonly string[]): boolean {
+  for (let o: Object3D | null = object; o; o = o.parent) if (names.includes(o.name)) return true;
+  return false;
+}
+
 export interface ModelPart {
   geometry: BufferGeometry;
   material: Material;
@@ -41,14 +50,14 @@ export interface ModelPart {
 
 /**
  * Flattens a loaded model into (geometry, material, transform) parts, one per mesh,
- * ready to be drawn with one instanced mesh each. Meshes named in `skip` are left out
- * (drawn separately, like a field's crop).
+ * ready to be drawn with one instanced mesh each. Nodes named in `skip` are left out with
+ * everything under them (drawn separately, like a field's crop or mill sails).
  */
 export function extractModelParts(root: Object3D, skip: readonly string[] = []): ModelPart[] {
   root.updateMatrixWorld(true);
   const parts: ModelPart[] = [];
   root.traverse((object) => {
-    if (!(object instanceof Mesh) || skip.includes(object.name)) return;
+    if (!(object instanceof Mesh) || isUnder(object, skip)) return;
     const materials: Material[] = Array.isArray(object.material)
       ? object.material
       : [object.material];

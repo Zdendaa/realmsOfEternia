@@ -1,8 +1,10 @@
+import { HEXAGON_PACK } from '../assets/hexagonPack.js';
 import { MEDIEVAL_PACK } from '../assets/medievalPack.js';
 import type { BuildingDefinition } from './types.js';
 
 const model = (file: string) => `${MEDIEVAL_PACK.modelDir}${file}.gltf.glb`;
 const S = MEDIEVAL_PACK.worldScale;
+const hexagonModel = (file: string) => `${HEXAGON_PACK.modelDir}${file}.glb`;
 
 /** farm_plot tile spacing inside a field: its footprint plus a thin furrow. */
 const PLOT_STEP = { x: 4.6, z: 4.1 };
@@ -84,7 +86,7 @@ export const BUILDINGS = {
   mill: {
     id: 'mill',
     name: 'Mill',
-    description: 'Grinds grain from nearby fields.',
+    description: 'Its miller grinds grain from the Town Hall into flour.',
     modelPath: model('mill'),
     scale: S,
     footprint: { w: 5, d: 5 },
@@ -93,6 +95,39 @@ export const BUILDINGS = {
     cost: { wood: 6, stone: 4 },
     buildTime: 45,
     maxBuilders: 4,
+    spinningPart: { mesh: 'mill_blades', axis: 'z', turnsPerSecond: 0.25 },
+    production: {
+      kind: 'process',
+      profession: 'miller',
+      input: { resource: 'grain', amount: 1 },
+      output: { resource: 'flour', amount: 1 },
+      seconds: 4,
+    },
+  },
+  bakery: {
+    id: 'bakery',
+    name: 'Bakery',
+    description: 'Its baker bakes bread from flour: 2 food per sack.',
+    // Temporary: the Hexagon pack's blacksmith (a shed with a domed oven and chimney)
+    // stands in until there is a bakery model. Phase 8 wants it as the blacksmith.
+    modelPath: hexagonModel('building_bakery_temp'),
+    temporary: true,
+    // 1.29 × 1.25 pack units × 3.5.
+    scale: HEXAGON_PACK.worldScale,
+    footprint: { w: 5, d: 4.5 },
+    rotationOffset: 0,
+    buildable: true,
+    cost: { wood: 5, stone: 4 },
+    buildTime: 40,
+    maxBuilders: 4,
+    smokeFrom: { x: 0.21, y: 0.98, z: -0.14 },
+    production: {
+      kind: 'process',
+      profession: 'baker',
+      input: { resource: 'flour', amount: 1 },
+      output: { resource: 'food', amount: 2 },
+      seconds: 6,
+    },
   },
   lumbermill: {
     id: 'lumbermill',

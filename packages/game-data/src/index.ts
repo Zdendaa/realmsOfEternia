@@ -6,6 +6,7 @@ export {
   type AtlasCell,
   type CharacterModel,
 } from './assets/characterPack.js';
+export { HEXAGON_PACK } from './assets/hexagonPack.js';
 export { MEDIEVAL_PACK, type MaterialOverride } from './assets/medievalPack.js';
 export {
   BUILDINGS,
@@ -21,7 +22,10 @@ export type {
   FarmProduction,
   HarvestProduction,
   ModelTiling,
+  ProcessProduction,
   ProductionDefinition,
+  ResourceAmount,
+  SpinningPart,
 } from './buildings/types.js';
 export { PROPS, type PropDefinition, type PropId } from './props/definitions.js';
 export { STARTING_RESOURCES, STORAGE_BUILDINGS } from './economy/startingResources.js';

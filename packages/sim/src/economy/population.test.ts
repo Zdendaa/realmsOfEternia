@@ -169,14 +169,14 @@ describe('workers and housing', () => {
     expect(awaitsWorker(second, g.state.units)).toBe(true);
   });
 
-  it('the starting settlement comes with its woodcutter and two farmers', () => {
+  it('the starting settlement comes with its woodcutter, miller and two farmers', () => {
     const prototype = createWorld(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT);
     const state = createInitialState(prototype, { owner: 'alice' });
-    const staffed = state.buildings.filter((b) => b.type === 'lumbermill' || b.type === 'field');
-    expect(staffed).toHaveLength(3);
+    const staffed = state.buildings.filter((b) => ['lumbermill', 'mill', 'field'].includes(b.type));
+    expect(staffed).toHaveLength(4);
     for (const b of staffed) expect(awaitsWorker(b, state.units)).toBe(false);
     const population = populationOf(state, 'alice');
-    expect(population.used).toBe(prototype.startingSerfs + 3);
+    expect(population.used).toBe(prototype.startingSerfs + 4);
     expect(population.capacity).toBe(BUILDINGS.townHall.housing + BUILDINGS.house.housing * 6);
   });
 });

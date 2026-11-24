@@ -16,6 +16,8 @@ export interface RenderedUnit {
   work: UnitWork;
   /** A worker's profession (its hat and tunic), from its building; null for serfs. */
   profession: ProfessionId | null;
+  /** Working inside its building (millers, bakers while processing): not drawn. */
+  inside: boolean;
   /** The resource the unit carries, or null. */
   carrying: ResourceId | null;
   ownerId: PlayerId | null;

@@ -171,16 +171,34 @@ const WORK_PHASES: Record<ProductionDefinition['kind'], Partial<Record<WorkPhase
     harvesting: 'Reaping {goods}',
     toStorage: 'Carrying {goods} to the Town Hall',
   },
+  process: {
+    waiting: 'Waiting for {input} in the Town Hall',
+    fetching: 'Fetching {input} from the Town Hall',
+    toBuilding: 'Bringing {input} in',
+    processing: 'Making {goods} inside',
+    toStorage: 'Carrying {goods} to the Town Hall',
+  },
 };
 
 /** What a production building makes, for the worker texts. */
 function workWords(production: ProductionDefinition) {
-  const resource =
-    production.kind === 'harvest' ? RESOURCE_NODES[production.node].resource : production.crop;
-  return {
-    node: production.kind === 'harvest' ? production.node : 'plot',
-    goods: RESOURCES[resource].name.toLowerCase(),
-  };
+  const name = (id: ResourceId) => RESOURCES[id].name.toLowerCase();
+  switch (production.kind) {
+    case 'harvest':
+      return {
+        node: production.node,
+        goods: name(RESOURCE_NODES[production.node].resource),
+        input: '',
+      };
+    case 'farm':
+      return { node: 'plot', goods: name(production.crop), input: '' };
+    case 'process':
+      return {
+        node: '',
+        goods: name(production.output.resource),
+        input: name(production.input.resource),
+      };
+  }
 }
 
 /**
@@ -230,7 +248,8 @@ function WorkerStatus({ buildingId, type }: { buildingId: number; type: keyof ty
   const words = workWords(production);
   const text = (WORK_PHASES[production.kind][phase] ?? phase)
     .replace('{node}', words.node)
-    .replace('{goods}', words.goods);
+    .replace('{goods}', words.goods)
+    .replace('{input}', words.input);
   return <p className="selection-meta">Worker: {text}</p>;
 }
 

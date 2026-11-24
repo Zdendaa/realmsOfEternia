@@ -40,6 +40,8 @@ export type DeliverPhase = 'toStorage' | 'toSite';
  * `processing` → `toStorage`; `waiting`: nothing to harvest within reach right now.
  * Farming (field): `toPlot` → `sowing` plot by plot; `waiting` while the crop grows;
  * `toPlot` → `harvesting` → `toStorage` for every plot.
+ * Processing (mill, bakery): `waiting` for input in stock → `fetching` it from storage
+ * (already taken from the stock) → `toBuilding` → `processing` → `toStorage`.
  */
 export type WorkPhase =
   | 'waiting'
@@ -50,7 +52,8 @@ export type WorkPhase =
   | 'toStorage'
   | 'toPlot'
   | 'sowing'
-  | 'harvesting';
+  | 'harvesting'
+  | 'fetching';
 
 /** Where a gatherer is in its loop. */
 export type GatherPhase = 'toNode' | 'working' | 'toStorage';
@@ -62,7 +65,8 @@ export interface WorkTask {
   phase: WorkPhase;
   /**
    * What the worker works on: the tree or rock (decoration id) when harvesting, the plot
-   * index on a field; -1 when none is chosen.
+   * index on a field, the number of input units fetched when processing; -1 when none
+   * is chosen.
    */
   target: number;
   /** Ticks of work toward the current step (harvesting, processing, sowing a plot...). */

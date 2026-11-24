@@ -46,6 +46,13 @@ function professionOf(
   return building ? (productionOf(building.type)?.profession ?? null) : null;
 }
 
+/** Millers and bakers process inside their building, so they aren't drawn meanwhile. */
+function isInside(unit: UnitInstance, buildings: ReadonlyMap<EntityId, BuildingInstance>) {
+  if (unit.task.kind !== 'work' || unit.task.phase !== 'processing') return false;
+  const building = buildings.get(unit.task.buildingId);
+  return building ? productionOf(building.type)?.kind === 'process' : false;
+}
+
 /**
  * Computes every unit's frame once: interpolated position between the previous and the
  * current tick, ground height, facing (walking direction, or the site or tree/rock while
@@ -93,6 +100,7 @@ export function UnitFrameDriver() {
           activity: unit.activity,
           work: 'build',
           profession: null,
+          inside: false,
           carrying: null,
           ownerId: null,
         };
@@ -129,6 +137,7 @@ export function UnitFrameDriver() {
       r.activity = unit.activity;
       r.work = workOf(unit, world.decorations);
       r.profession = professionOf(unit, look.buildings);
+      r.inside = isInside(unit, look.buildings);
       r.carrying = unit.carrying?.resource ?? null;
       r.ownerId = unit.ownerId;
       renderedUnitList.push(r);

@@ -77,6 +77,29 @@ export function deposit(draft: EconomyDraft, player: PlayerId, cargo: Cargo): vo
   };
 }
 
+/**
+ * Takes `amount` of `resource` out of the player's stock (a worker reserving its input).
+ * Returns false, changing nothing, if the stock holds less.
+ */
+export function withdraw(
+  draft: EconomyDraft,
+  player: PlayerId,
+  resource: ResourceId,
+  amount: number,
+): boolean {
+  const stock = draft.stocks[player];
+  if (!stock || stock[resource] < amount) return false;
+  if (!draft.stocksCopied) {
+    draft.stocks = { ...draft.stocks };
+    draft.stocksCopied = true;
+  }
+  (draft.stocks as Record<PlayerId, ResourceAmounts>)[player] = {
+    ...stock,
+    [resource]: stock[resource] - amount,
+  };
+  return true;
+}
+
 /** Records one delivered unit of `resource` at construction site `siteId`. */
 export function deliverToSite(draft: EconomyDraft, siteId: EntityId, resource: ResourceId): void {
   const progress = draft.construction[siteId];

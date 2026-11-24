@@ -188,7 +188,7 @@ export function createVillagerInstances(
       scale.setScalar(characterScale);
       let count = 0;
       for (const unit of units) {
-        if (unit.type !== kind) continue;
+        if (unit.type !== kind || unit.inside) continue;
         if (count >= capacity) break;
         const i = count++;
         position.set(unit.x, unit.y, unit.z);

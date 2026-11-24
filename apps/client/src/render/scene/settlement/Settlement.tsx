@@ -11,11 +11,15 @@ for (const { modelPath } of [...Object.values(BUILDINGS), ...Object.values(PROPS
   useGLTF.preload(publicUrl(modelPath), false);
 }
 
-/** Crop meshes left out of the static models (`FieldCrops` draws them), by model file. */
+/**
+ * Model parts left out of the static models, by model file: crops (`FieldCrops` draws
+ * them) and spinning parts (`SpinningParts`).
+ */
 const SKIPPED_MESHES = new Map(
-  (Object.values(BUILDINGS) as BuildingDefinition[]).flatMap((d) =>
-    d.cropMesh ? [[d.modelPath, [d.cropMesh]] as const] : [],
-  ),
+  (Object.values(BUILDINGS) as BuildingDefinition[]).flatMap((d) => {
+    const names = [d.cropMesh, d.spinningPart?.mesh].filter((n): n is string => n !== undefined);
+    return names.length > 0 ? [[d.modelPath, names] as const] : [];
+  }),
 );
 
 interface SettlementProps {

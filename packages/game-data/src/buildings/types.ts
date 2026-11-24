@@ -39,11 +39,42 @@ export interface FarmProduction {
   harvestSeconds: number;
 }
 
+/** An amount of one resource (a process step's input or output). */
+export interface ResourceAmount {
+  resource: ResourceId;
+  amount: number;
+}
+
+/**
+ * Processing (mill, bakery): the worker fetches `input` from storage (taken from the stock
+ * as they set off, so no two workers count on the same unit), works on it at the building
+ * for `seconds`, and carries `output` to storage. Per trip the worker handles as many
+ * steps as its profession's `carryCapacity` allows on both ways.
+ */
+export interface ProcessProduction {
+  kind: 'process';
+  profession: ProfessionId;
+  input: ResourceAmount;
+  output: ResourceAmount;
+  /** Seconds of work per step (one input → one output). */
+  seconds: number;
+}
+
 /**
  * What a production building does once complete. Every production building gets one
  * worker (housing permitting).
  */
-export type ProductionDefinition = HarvestProduction | FarmProduction;
+export type ProductionDefinition = HarvestProduction | FarmProduction | ProcessProduction;
+
+/** A model part that turns while the building's worker is at work (mill sails). */
+export interface SpinningPart {
+  /** Name of the model mesh; its node's origin is the hub. */
+  mesh: string;
+  /** Axis of its own node it turns around. */
+  axis: 'x' | 'y' | 'z';
+  /** Full turns per second at working speed. */
+  turnsPerSecond: number;
+}
 
 export interface BuildingDefinition {
   id: string;
@@ -58,6 +89,15 @@ export interface BuildingDefinition {
    * with growth stages instead of as part of the static model.
    */
   cropMesh?: string;
+  /** A part that turns while the worker works (drawn by the renderer, not instanced). */
+  spinningPart?: SpinningPart;
+  /** Chimney top in model units: smoke rises from here while the worker works. */
+  smokeFrom?: { x: number; y: number; z: number };
+  /**
+   * The model is a stand-in until a fitting one exists (listed in status.md under
+   * temporary models).
+   */
+  temporary?: boolean;
   /**
    * Ground area the building occupies, in world units (w along local X, d along local Z).
    * Measured from the model's bounding box × `scale`, rounded up to 0.5.

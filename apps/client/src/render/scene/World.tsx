@@ -16,7 +16,9 @@ import { Lighting } from './Lighting';
 import { Paths } from './Paths';
 import { Rocks } from './Rocks';
 import { FieldCrops, type CropField } from './settlement/FieldCrops';
+import { ChimneySmoke } from './settlement/ChimneySmoke';
 import { Settlement } from './settlement/Settlement';
+import { SpinningParts, type AnimatedBuilding } from './settlement/SpinningParts';
 import { Sky } from './Sky';
 import { Terrain } from './Terrain';
 import { Trees } from './Trees';
@@ -62,6 +64,19 @@ export function World({ world, heights, buildings, resourceNodes }: WorldProps) 
           (b) => b.status === 'complete' && (BUILDINGS[b.type] as BuildingDefinition).cropMesh,
         )
         .map((b): CropField => ({ building: b, y: heights.getHeightAt(b.x, b.z) })),
+    [buildings, heights],
+  );
+  // Complete buildings that animate while their worker works (mill sails, bakery smoke).
+  const animated = useMemo(
+    () =>
+      buildings
+        .filter((b) => {
+          const d = BUILDINGS[b.type] as BuildingDefinition;
+          return (
+            b.status === 'complete' && (d.spinningPart !== undefined || d.smokeFrom !== undefined)
+          );
+        })
+        .map((b): AnimatedBuilding => ({ building: b, y: heights.getHeightAt(b.x, b.z) })),
     [buildings, heights],
   );
   const sites = useMemo(
@@ -118,7 +133,9 @@ export function World({ world, heights, buildings, resourceNodes }: WorldProps) 
       <Suspense fallback={null}>
         <Settlement buildings={placedBuildings} props={props} />
         <FieldCrops fields={cropFields} />
+        <SpinningParts buildings={animated} />
       </Suspense>
+      <ChimneySmoke buildings={animated} />
       <ConstructionSites sites={sites} />
     </>
   );
