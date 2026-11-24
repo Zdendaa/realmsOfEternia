@@ -119,12 +119,24 @@ Towers automatically detect and attack enemies in range.
 - **Configurable per type:** range, attack speed, damage, health, projectile type, target priority, upgrade levels.
 - **Upgrades** improve functionality and visibly change the tower.
 - **Special ammunition:** fire arrows, armor-piercing arrows, magical projectiles.
+- **Progression:** see 4.7 (towers start as weak wooden archer towers and are upgraded to very strong ones).
 
 ### 4.7 Military and combat
 
 Units have health, damage, attack speed, armor, movement speed, attack range, cost, training time and faction-specific abilities.
 
 Combat supports melee, ranged attacks, magic, siege warfare, formations, target selection, unit commands and defensive behavior.
+
+**Combat vision** (planned in this order: Phase 6 military, then Phase 7 fortifications):
+
+- **Base army (Humans):**
+  - **Swordsmen:** strong against infantry.
+  - **Spearmen:** strong against buildings; later also against cavalry.
+  - **Archers:** ranged.
+- **Counter system:** every unit has strengths and weaknesses against other unit types (and buildings), so army composition matters more than army size.
+- **Towers:** start as weak wooden archer towers and are upgraded step by step up to very strong ones: stone, crossbow, magic and fire towers.
+- **Walls, then siege engines:** after walls come siege engines to break them, including wheeled cannons, catapults and rams.
+- **Later:** Orcs and other races with their own armies; dragons as top-tier units.
 
 ### 4.8 Heroes and magic
 
@@ -135,6 +147,12 @@ Heroes have unique abilities, experience and levels, equipment, special spells a
 Research costs resources and time, and unlocks new buildings, new and stronger units, better production, better fortifications, new weapons and magical abilities.
 
 Categories: **economy, military, defense, magic.**
+
+Planned for Phase 8 (Building upgrades and technologies), after military and fortifications:
+
+- **Research building:** a school / university (Settlers 5 style) where research happens.
+- **Unlocks:** buildings, units and upgrades are unlocked by research.
+- **Data:** building and unit definitions support an optional `requires` field (a research id). It is already in the game-data types and stays unused (no rule reads it) until the technology tree exists.
 
 ### 4.10 AI and multiplayer
 

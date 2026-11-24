@@ -113,6 +113,11 @@ export interface BuildingDefinition {
    * yards and work areas sit on +Z), so this is 0 for now.
    */
   rotationOffset: number;
+  /**
+   * Research that unlocks it (a research id). Reserved for the technology tree (Phase 8);
+   * nothing reads it yet.
+   */
+  requires?: string;
   /** Whether players may place it from the construction menu. */
   buildable: boolean;
   /** Construction cost, paid from the player's stock when the site is placed. */
