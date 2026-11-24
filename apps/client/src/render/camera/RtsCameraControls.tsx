@@ -2,8 +2,10 @@ import { MapControls } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { clamp, type HeightField } from '@roe/shared';
 import { useRef, type ComponentRef } from 'react';
-import { Vector3 } from 'three';
+import { MOUSE, Vector3 } from 'three';
+import { usePointerTracker, type PointerTrack } from '../../input/usePointerTracker';
 import { usePressedKeys } from '../../input/usePressedKeys';
+import { useSettingsStore } from '../../state/settingsStore';
 
 type MapControlsImpl = ComponentRef<typeof MapControls>;
 
@@ -18,6 +20,15 @@ const HEIGHT_FOLLOW_RATE = 6;
 const CAMERA_GROUND_CLEARANCE = 4;
 /** Keyboard pan speed as a fraction of the current camera distance per second. */
 const KEY_PAN_SPEED = 0.8;
+/** The screen edge band (px) that pans the camera when edge scrolling is on. */
+const EDGE_BAND = 10;
+
+/**
+ * Mouse scheme: left is free for selection (click, box; no LEFT entry = no camera action),
+ * the middle button pans, the right button rotates (a right click without movement is a
+ * unit command).
+ */
+const MOUSE_BUTTONS = { MIDDLE: MOUSE.PAN, RIGHT: MOUSE.ROTATE };
 
 const forward = new Vector3();
 const right = new Vector3();
@@ -26,6 +37,14 @@ const offset = new Vector3();
 function axis(keys: ReadonlySet<string>, positive: string[], negative: string[]): number {
   const has = (codes: string[]) => codes.some((code) => keys.has(code));
   return (has(positive) ? 1 : 0) - (has(negative) ? 1 : 0);
+}
+
+/** Pan direction from the pointer touching a screen edge: x right, z forward (up). */
+function edgeAxis(pointer: PointerTrack): { x: number; z: number } {
+  if (!pointer.inside || pointer.pressed) return { x: 0, z: 0 };
+  const x = pointer.x <= EDGE_BAND ? -1 : pointer.x >= window.innerWidth - 1 - EDGE_BAND ? 1 : 0;
+  const z = pointer.y <= EDGE_BAND ? 1 : pointer.y >= window.innerHeight - 1 - EDGE_BAND ? -1 : 0;
+  return { x, z };
 }
 
 interface RtsCameraControlsProps {
@@ -37,20 +56,24 @@ interface RtsCameraControlsProps {
 
 /**
  * RTS-style camera: mouse pan / rotate / zoom via MapControls,
- * WASD + arrow key panning relative to the view direction,
+ * WASD + arrow key panning and optional screen-edge panning relative to the view direction,
  * the focus point is clamped to the map and follows the terrain height.
  */
 export function RtsCameraControls({ bounds, heights }: RtsCameraControlsProps) {
   const controlsRef = useRef<MapControlsImpl>(null);
   const keys = usePressedKeys();
+  const pointer = usePointerTracker();
 
   useFrame(({ camera }, delta) => {
     const controls = controlsRef.current;
     if (!controls) return;
     const target = controls.target;
 
-    const inputX = axis(keys.current, ['KeyD', 'ArrowRight'], ['KeyA', 'ArrowLeft']);
-    const inputZ = axis(keys.current, ['KeyW', 'ArrowUp'], ['KeyS', 'ArrowDown']);
+    const edge = useSettingsStore.getState().edgeScroll
+      ? edgeAxis(pointer.current)
+      : { x: 0, z: 0 };
+    const inputX = axis(keys.current, ['KeyD', 'ArrowRight'], ['KeyA', 'ArrowLeft']) || edge.x;
+    const inputZ = axis(keys.current, ['KeyW', 'ArrowUp'], ['KeyS', 'ArrowDown']) || edge.z;
 
     if (inputX !== 0 || inputZ !== 0) {
       forward.subVectors(target, camera.position).setY(0).normalize();
@@ -89,6 +112,7 @@ export function RtsCameraControls({ bounds, heights }: RtsCameraControlsProps) {
     <MapControls
       ref={controlsRef}
       makeDefault
+      mouseButtons={MOUSE_BUTTONS}
       enableDamping
       dampingFactor={0.12}
       screenSpacePanning={false}

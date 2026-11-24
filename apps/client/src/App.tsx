@@ -1,6 +1,7 @@
 import { GameCanvas } from './render/GameCanvas';
 import { ConstructionMenu } from './ui/ConstructionMenu';
 import { Hud } from './ui/Hud';
+import { SelectionBox } from './ui/SelectionBox';
 import { SelectionPanel } from './ui/SelectionPanel';
 
 export function App() {
@@ -10,6 +11,7 @@ export function App() {
       <Hud />
       <ConstructionMenu />
       <SelectionPanel />
+      <SelectionBox />
     </div>
   );
 }

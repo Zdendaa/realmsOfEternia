@@ -11,6 +11,7 @@ import { PlacementPreview } from './placement/PlacementPreview';
 import { ATMOSPHERE } from './scene/atmosphere';
 import { World } from './scene/World';
 import { SelectionMarkers } from './selection/SelectionMarkers';
+import { SelectionRings } from './selection/SelectionRings';
 import { SimulationDriver } from './simulation/SimulationDriver';
 import { Units } from './units/Units';
 
@@ -41,6 +42,8 @@ export function GameCanvas() {
       <SimulationDriver />
       <World world={world} heights={heights} buildings={buildings} />
       <Units />
+      {/* Reads the unit positions Units wrote this frame, so it comes after it. */}
+      <SelectionRings />
       <SelectionMarkers />
       <PlacementPreview />
       <RtsCameraControls bounds={world.map.size / 2} heights={heights} />

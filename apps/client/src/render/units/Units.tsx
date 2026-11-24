@@ -14,6 +14,7 @@ import {
 import { useGameStore } from '../../state/gameStore';
 import { simClock } from '../simulation/simClock';
 import { createSerfParts } from './placeholderSerf';
+import { renderedUnits } from './renderedUnits';
 import { ownerColor } from './unitColors';
 import { unitPose } from './unitPose';
 
@@ -121,8 +122,18 @@ export function Units() {
       if (target !== null) heading += angleDelta(heading, target) * turn;
       headings.current.set(unit.id, heading);
 
+      const ground = ctx.heights.getHeightAt(x, z);
+      const rendered = renderedUnits.get(unit.id);
+      if (rendered) {
+        rendered.x = x;
+        rendered.y = ground;
+        rendered.z = z;
+      } else {
+        renderedUnits.set(unit.id, { x, y: ground, z });
+      }
+
       const pose = unitPose(unit.activity, time, unit.id * 1.7);
-      position.set(x, ctx.heights.getHeightAt(x, z) + pose.lift, z);
+      position.set(x, ground + pose.lift, z);
       quaternion.setFromEuler(euler.set(pose.pitch, heading, pose.roll));
       matrix.compose(position, quaternion, scale);
       cloth.setMatrixAt(count, matrix);
@@ -137,6 +148,10 @@ export function Units() {
     body.instanceMatrix.needsUpdate = true;
     if (cloth.instanceColor) cloth.instanceColor.needsUpdate = true;
     if (headings.current.size > state.units.length * 2 + 64) headings.current.clear();
+    if (renderedUnits.size > state.units.length) {
+      const alive = new Set(state.units.map((u) => u.id));
+      for (const id of renderedUnits.keys()) if (!alive.has(id)) renderedUnits.delete(id);
+    }
   });
 
   return (

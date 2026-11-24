@@ -36,8 +36,36 @@ function TownHallActions({ buildingId }: { buildingId: number }) {
   );
 }
 
-/** Panel for the current selection: name, owner state and available actions. */
+/** Selected units: how many, and what they are doing. */
+function UnitSelection({ ids }: { ids: readonly number[] }) {
+  // A primitive selector result (a string), so the panel re-renders only when counts change.
+  const summary = useGameStore((s) => {
+    const wanted = new Set(ids);
+    const counts = { idle: 0, walking: 0, working: 0 };
+    for (const u of s.state.units) if (wanted.has(u.id)) counts[u.activity]++;
+    return `${counts.idle + counts.walking + counts.working},${counts.idle},${counts.walking},${counts.working}`;
+  });
+  const [total = 0, idle = 0, walking = 0, working = 0] = summary.split(',').map(Number);
+  if (total === 0) return null;
+  return (
+    <section className="hud-panel selection-panel" aria-label="Selection">
+      <h2>{total === 1 ? 'Serf' : `${total} serfs`}</h2>
+      <p className="selection-meta">
+        {working} working · {walking} walking · {idle} idle
+      </p>
+      <p className="selection-meta">Right-click: move · Right-click a construction site: build</p>
+    </section>
+  );
+}
+
+/** Panel for the current selection: units, or a building with its actions. */
 export function SelectionPanel() {
+  const unitIds = useSelectionStore((s) => s.units);
+  if (unitIds.length > 0) return <UnitSelection ids={unitIds} />;
+  return <BuildingSelection />;
+}
+
+function BuildingSelection() {
   const buildingId = useSelectionStore((s) => s.building);
   const building = useGameStore((s) =>
     buildingId === null ? undefined : s.state.buildings.find((b) => b.id === buildingId),

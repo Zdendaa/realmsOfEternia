@@ -257,3 +257,12 @@ body,
   color: #ff8a7a;
   font-size: 12px;
 }
+
+/* Box selection rectangle (shown while dragging with the left button). */
+.drag-box {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  border: 1px solid rgb(255 224 138 / 90%);
+  background: rgb(255 224 138 / 12%);
+}

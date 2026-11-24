@@ -1,9 +1,11 @@
 import { useSettingsStore } from '../state/settingsStore';
 
 const CONTROLS: readonly [key: string, action: string][] = [
-  ['W A S D / Arrows', 'Pan camera'],
-  ['Left drag', 'Pan camera'],
+  ['Left click', 'Select unit / building'],
+  ['Left drag', 'Box select (Shift adds)'],
+  ['Right click', 'Move / build'],
   ['Right drag', 'Rotate camera'],
+  ['W A S D / Middle drag / Edge', 'Pan camera'],
   ['Mouse wheel', 'Zoom'],
 ];
 
@@ -12,6 +14,8 @@ export function Hud() {
   const showStats = useSettingsStore((s) => s.showStats);
   const toggleShadows = useSettingsStore((s) => s.toggleShadows);
   const toggleStats = useSettingsStore((s) => s.toggleStats);
+  const edgeScroll = useSettingsStore((s) => s.edgeScroll);
+  const toggleEdgeScroll = useSettingsStore((s) => s.toggleEdgeScroll);
 
   return (
     <div className="hud">
@@ -28,6 +32,10 @@ export function Hud() {
         <label>
           <input type="checkbox" checked={showStats} onChange={toggleStats} />
           FPS stats
+        </label>
+        <label>
+          <input type="checkbox" checked={edgeScroll} onChange={toggleEdgeScroll} />
+          Edge scrolling
         </label>
       </section>
 

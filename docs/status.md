@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-24._
 
-**Current state:** Phase 4 (serfs and construction sites) is in progress. 4.1 and 4.2 are done: the deterministic 10 Hz tick, serfs, pathfinding and construction sites run in `@roe/sim` on client and server. The client runs the tick, shows interpolated placeholder serfs and recruits serfs at the Town Hall. Idle serfs walk to nearby sites and build them; sites still look like finished buildings until 4.4.
+**Current state:** Phase 4 (serfs and construction sites) is in progress. 4.1–4.3 are done: the deterministic 10 Hz tick, serfs, pathfinding and construction sites run in `@roe/sim` on client and server. The client runs the tick, shows interpolated placeholder serfs recruits serfs at the Town Hall, and lets the player select serfs (click, box) and move them with a right click. Idle serfs walk to nearby sites and build them; sites still look like finished buildings until 4.4.
 
 ## Phases
 
@@ -21,8 +21,8 @@ _Last updated: 2026-11-24._
 | 3.3   | Construction menu, placement preview and placing                                  | ✅ Done |
 | 4.1   | Sim core: 10 Hz tick, serfs, nav grid + A*, separation, construction, commands    | ✅ Done |
 | 4.2   | Client tick loop, interpolation, placeholder serfs, recruiting                    | ✅ Done |
-| 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | ⏳ Next |
-| 4.4   | Construction sites: visuals, progress, right-click assignment                     | Planned |
+| 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | ✅ Done |
+| 4.4   | Construction sites: visuals, progress, right-click assignment                     | ⏳ Next |
 | 4.5   | Character models with baked-animation instancing                                  | Planned |
 | 5     | Economy (resources, costs paid, production)                                       | Planned |
 
@@ -35,7 +35,7 @@ _Last updated: 2026-11-24._
   - a sun at about 48° whose shadows follow the camera
   - chunked instancing for trees (5,700) and ground cover, and per-model instancing for buildings
   - procedural terrain detail and stylized water, with no texture downloads
-- **Camera:** WASD and arrow keys or left drag to pan, right drag to rotate, mouse wheel to zoom. The focus point stays inside the playable area and on the ground.
+- **Camera:** WASD and arrow keys, middle drag or the screen edges (toggle in the settings) to pan, right drag to rotate, mouse wheel to zoom. The focus point stays inside the playable area and on the ground.
 - **Building placement:** a construction menu lists the six buildable types with their costs (display only). A ghost follows the mouse, snapped to a 1-unit grid, rotating in 90° steps, green or red by the shared placement rules (area, water, slope, buildings, paths, trees, rocks). Placed buildings flatten the terrain and clear grass under them.
 - **Shared rules ready for Phase 3:** `createHeightField`, `flattenHeightField`, `entrancePoint`, `createBuildRules().isBuildable` and `createWaterMap().isWater`.
 - **Server:** a Colyseus server with a placeholder 2–4 player match room. The client doesn't connect to it yet.
