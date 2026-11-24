@@ -1,9 +1,10 @@
-import type { ResourceId } from '@roe/game-data';
+import type { ResourceId, UnitKind } from '@roe/game-data';
 import type { EntityId, PlayerId } from '@roe/shared';
 import type { UnitActivity } from '@roe/sim';
 
 export interface RenderedUnit {
   id: EntityId;
+  type: UnitKind;
   x: number;
   /** Ground height under the unit (without animation). */
   y: number;

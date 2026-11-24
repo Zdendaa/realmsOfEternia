@@ -1,4 +1,12 @@
-import { BUILDINGS, RESOURCES, UNITS, type ResourceId } from '@roe/game-data';
+import {
+  BUILDINGS,
+  productionOf,
+  RESOURCE_NODES,
+  RESOURCES,
+  UNITS,
+  type ResourceId,
+} from '@roe/game-data';
+import type { WorkPhase } from '@roe/sim';
 import type { CommandIssue } from '@roe/sim';
 import { useState } from 'react';
 import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
@@ -101,6 +109,32 @@ function SiteProgress({
   );
 }
 
+/** What a worker is doing, by phase; `{node}` and `{goods}` depend on the building. */
+const WORK_PHASES: Record<WorkPhase, string> = {
+  waiting: 'Waiting: no {node}s within reach',
+  toNode: 'Walking to a {node}',
+  working: 'Harvesting a {node}',
+  toBuilding: 'Bringing {goods} back',
+  processing: 'Preparing {goods}',
+  toStorage: 'Carrying {goods} to the Town Hall',
+};
+
+/** The worker of a production building and what it does (re-renders when the phase changes). */
+function WorkerStatus({ buildingId, type }: { buildingId: number; type: keyof typeof BUILDINGS }) {
+  const phase = useGameStore((s) => {
+    const worker = s.state.units.find(
+      (u) => u.task.kind === 'work' && u.task.buildingId === buildingId,
+    );
+    return worker?.task.kind === 'work' ? worker.task.phase : null;
+  });
+  const production = productionOf(type);
+  if (!production) return null;
+  if (!phase) return <p className="selection-meta">No worker</p>;
+  const goods = RESOURCES[RESOURCE_NODES[production.node].resource].name.toLowerCase();
+  const text = WORK_PHASES[phase].replace('{node}', production.node).replace('{goods}', goods);
+  return <p className="selection-meta">Worker: {text}</p>;
+}
+
 /** Selected units: how many, and what they are doing. */
 function UnitSelection({ ids }: { ids: readonly number[] }) {
   // A primitive selector result (a string), so the panel re-renders only when counts change.
@@ -151,7 +185,10 @@ function BuildingSelection() {
           maxBuilders={definition.maxBuilders}
         />
       ) : (
-        <p className="selection-meta">{definition.description}</p>
+        <>
+          <p className="selection-meta">{definition.description}</p>
+          {own && <WorkerStatus buildingId={building.id} type={building.type} />}
+        </>
       )}
       {own && building.type === 'townHall' && building.status === 'complete' && (
         <TownHallActions key={building.id} buildingId={building.id} />

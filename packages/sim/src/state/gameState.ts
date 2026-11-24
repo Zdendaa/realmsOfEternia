@@ -9,6 +9,7 @@ import {
 import type { EntityId, PlacedFootprint, PlayerId } from '@roe/shared';
 import type { SimWorld } from '../world/createWorld.js';
 import { IDLE, type UnitInstance } from './units.js';
+import { createWorker, employsWorker } from '../units/workers.js';
 import { spawnPoint } from './spawn.js';
 
 export type BuildingStatus = 'construction' | 'complete';
@@ -117,6 +118,11 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
       });
     }
   }
+  // Production buildings of an owned starting settlement come with their workers.
+  for (const building of buildings) {
+    if (employsWorker(building)) units.push(createWorker(building, nextEntityId++));
+  }
+
   const resources = options.resources ?? STARTING_RESOURCES;
   const stockHolders = [...(owner !== null ? [owner] : []), ...(options.players ?? [])];
   const stocks = Object.fromEntries(stockHolders.map((player) => [player, { ...resources }]));

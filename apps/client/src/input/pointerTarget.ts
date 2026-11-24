@@ -1,3 +1,4 @@
+import { UNITS } from '@roe/game-data';
 import { isInPlayableArea, type Decoration, type EntityId, type Vec2 } from '@roe/shared';
 import {
   isWalkable,
@@ -51,10 +52,11 @@ const raycaster = new Raycaster();
 const ndc = new Vector2();
 const hit = new Vector3();
 
+/** The local player's units that take orders (workers don't, so they can't be selected). */
 export const ownUnitIds = (): EntityId[] =>
   useGameStore
     .getState()
-    .state.units.filter((u) => u.ownerId === LOCAL_PLAYER)
+    .state.units.filter((u) => u.ownerId === LOCAL_PLAYER && UNITS[u.type].controllable)
     .map((u) => u.id);
 
 /** Tree or rock whose blocking circle (plus a margin) contains (x, z), nearest first. */

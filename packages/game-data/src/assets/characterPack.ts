@@ -62,6 +62,28 @@ export const RIG_MEDIUM = {
 
 const MEDIUM = 'animations/Rig_Medium/';
 
+/** Clips shared by every villager (all Adventurers use the same Rig_Medium skeleton). */
+const VILLAGER_ANIMATIONS = {
+  idle: { file: `${MEDIUM}Rig_Medium_General.glb`, clip: 'Idle_A' },
+  // The walk with the longest stride: ~1.07 model units per 1.07 s cycle, i.e. ~0.62
+  // world units/s at this scale. The renderer speeds it up to the serf's walking speed
+  // from the measured stride, so the feet stay planted.
+  walk: { file: `${MEDIUM}Rig_Medium_MovementBasic.glb`, clip: 'Walking_B' },
+  build: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Hammering' },
+  // Gathering: chopping trees and quarrying rocks.
+  chop: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Chopping' },
+  mine: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Pickaxing' },
+  // No carry walk in the pack: the walk's legs with Holding_A's arms (both forearms
+  // forward at waist height, like holding a box). Stride, and so playback rate,
+  // stay the walk's.
+  carry: {
+    file: `${MEDIUM}Rig_Medium_MovementBasic.glb`,
+    clip: 'Walking_B',
+    upperBody: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Holding_A' },
+  },
+  hold: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Holding_A' },
+} as const satisfies Record<CharacterAnimation, AnimationClipRef>;
+
 /**
  * KayKit Adventurers 2.0 (FREE) characters with KayKit Character Animations 1.1, both
  * CC0 by Kay Lousberg. Files live in apps/client/public/assets/models/characters/.
@@ -80,26 +102,17 @@ export const CHARACTER_PACK = {
     // ~2.3 model units tall → ~1.4 world units, matching the medieval buildings.
     scale: 0.62,
     height: 2.3,
-    animations: {
-      idle: { file: `${MEDIUM}Rig_Medium_General.glb`, clip: 'Idle_A' },
-      // The walk with the longest stride: ~1.07 model units per 1.07 s cycle, i.e. ~0.62
-      // world units/s at this scale. The renderer speeds it up to the serf's walking speed
-      // from the measured stride, so the feet stay planted.
-      walk: { file: `${MEDIUM}Rig_Medium_MovementBasic.glb`, clip: 'Walking_B' },
-      build: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Hammering' },
-      // Gathering: chopping trees and quarrying rocks.
-      chop: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Chopping' },
-      mine: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Pickaxing' },
-      // No carry walk in the pack: the walk's legs with Holding_A's arms (both forearms
-      // forward at waist height, like holding a box). Stride, and so playback rate,
-      // stay the walk's.
-      carry: {
-        file: `${MEDIUM}Rig_Medium_MovementBasic.glb`,
-        clip: 'Walking_B',
-        upperBody: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Holding_A' },
-      },
-      hold: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Holding_A' },
-    },
+    animations: VILLAGER_ANIMATIONS,
+    carryAttach: { bone: 'chest', hands: ['handslot.l', 'handslot.r'] },
+  } satisfies CharacterModel,
+  worker: {
+    // The Rogue without cape: a hooded worker that reads differently from the serfs.
+    model: 'adventurers/Rogue.glb',
+    hiddenMeshes: ['Rogue_Cape'],
+    // Same rig and proportions as the serf.
+    scale: 0.62,
+    height: 2.3,
+    animations: VILLAGER_ANIMATIONS,
     carryAttach: { bone: 'chest', hands: ['handslot.l', 'handslot.r'] },
   } satisfies CharacterModel,
 } as const;

@@ -15,10 +15,15 @@ const angleDelta = (a: number, b: number) => {
   return d > Math.PI ? d - Math.PI * 2 : d < -Math.PI ? d + Math.PI * 2 : d;
 };
 
-/** Builders hammer; gatherers chop trees and pick at rocks. */
+/**
+ * Builders hammer (as do workers processing at their building); gatherers and workers
+ * at a node chop trees and pick at rocks.
+ */
 function workOf(unit: UnitInstance, decorations: readonly Decoration[]): UnitWork {
-  if (unit.task.kind !== 'gather') return 'build';
-  return decorations[unit.task.nodeId]?.kind === 'rock' ? 'mine' : 'chop';
+  const task = unit.task;
+  const atNode = task.kind === 'gather' || (task.kind === 'work' && task.phase === 'working');
+  if (!atNode) return 'build';
+  return decorations[task.nodeId]?.kind === 'rock' ? 'mine' : 'chop';
 }
 
 /**
@@ -60,6 +65,7 @@ export function UnitFrameDriver() {
       if (!r) {
         r = {
           id: unit.id,
+          type: unit.type,
           x,
           y: 0,
           z,
@@ -82,6 +88,13 @@ export function UnitFrameDriver() {
       } else if (unit.activity === 'working' && unit.task.kind === 'gather') {
         const node = world.decorations[unit.task.nodeId];
         if (node) target = Math.atan2(node.x - x, node.z - z);
+      } else if (unit.activity === 'working' && unit.task.kind === 'work') {
+        // Workers face the node they harvest, or their building while processing.
+        const faced =
+          unit.task.phase === 'working'
+            ? world.decorations[unit.task.nodeId]
+            : look.buildings.get(unit.task.buildingId);
+        if (faced) target = Math.atan2(faced.x - x, faced.z - z);
       }
       if (target !== null) r.heading += angleDelta(r.heading, target) * turn;
       r.x = x;

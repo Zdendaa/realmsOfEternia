@@ -10,7 +10,7 @@ const PLOT_STEP = { x: 4.6, z: 4.1 };
 /**
  * Building catalog. Footprints come from measured model bounding boxes (pack units):
  * castle 1.81×1.85, house 1.69×1.66, farm_plot 1.47×1.28, mill 1.69×1.67,
- * well 1.02×1.02, lumbermill 1.82×1.66, market 1.47×1.67.
+ * well 1.02×1.02, lumbermill 1.82×1.66, market 1.47×1.67, mine 1.61×1.88.
  */
 export const BUILDINGS = {
   townHall: {
@@ -84,7 +84,7 @@ export const BUILDINGS = {
   lumbermill: {
     id: 'lumbermill',
     name: 'Lumbermill',
-    description: 'Cuts wood from the forest. Build it near trees.',
+    description: 'Its woodcutter fells trees nearby. Build it near the forest.',
     modelPath: model('lumbermill'),
     scale: S,
     footprint: { w: 5.5, d: 5 },
@@ -93,6 +93,21 @@ export const BUILDINGS = {
     cost: { wood: 5, stone: 2 },
     buildTime: 40,
     maxBuilders: 4,
+    production: { node: 'tree', workRadius: 25, processSeconds: 2 },
+  },
+  quarry: {
+    id: 'quarry',
+    name: 'Quarry',
+    description: 'Its stonecutter breaks rocks nearby. Build it near rocks.',
+    modelPath: model('mine'),
+    scale: S,
+    footprint: { w: 5, d: 5.5 },
+    rotationOffset: 0,
+    buildable: true,
+    cost: { wood: 6, stone: 1 },
+    buildTime: 40,
+    maxBuilders: 4,
+    production: { node: 'rock', workRadius: 30, processSeconds: 2 },
   },
   market: {
     id: 'market',
@@ -110,6 +125,10 @@ export const BUILDINGS = {
 } as const satisfies Record<string, BuildingDefinition>;
 
 export type BuildingId = keyof typeof BUILDINGS;
+
+/** The production settings of a building type, if it is a production building. */
+export const productionOf = (type: BuildingId): BuildingDefinition['production'] =>
+  (BUILDINGS[type] as BuildingDefinition).production;
 
 /** Narrows an arbitrary string (e.g. from a network message) to a known building id. */
 export function isBuildingId(value: unknown): value is BuildingId {

@@ -1,6 +1,6 @@
 import type { UnitDefinition } from './types.js';
 
-/** Unit catalog. Workers and military units join with the economy and combat phases. */
+/** Unit catalog. Military units join with the combat phase. */
 export const UNITS = {
   serf: {
     id: 'serf',
@@ -11,6 +11,17 @@ export const UNITS = {
     speed: 2,
     radius: 0.4,
     maxPerPlayer: 200,
+    controllable: true,
+  },
+  worker: {
+    id: 'worker',
+    name: 'Worker',
+    description: 'Works in a production building. Arrives when the building is finished.',
+    speed: 2,
+    radius: 0.4,
+    // One per production building; the cap only guards against runaway spawning.
+    maxPerPlayer: 200,
+    controllable: false,
   },
 } as const satisfies Record<string, UnitDefinition>;
 

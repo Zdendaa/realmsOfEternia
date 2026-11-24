@@ -1,4 +1,10 @@
-import { CHARACTER_PACK, UNITS, type CharacterAnimation } from '@roe/game-data';
+import {
+  CHARACTER_PACK,
+  UNITS,
+  type CharacterAnimation,
+  type CharacterModel,
+  type UnitKind,
+} from '@roe/game-data';
 import type { UnitActivity } from '@roe/sim';
 import {
   DynamicDrawUsage,
@@ -21,8 +27,6 @@ import {
 } from './bakedSkinMaterial';
 import { BUNDLE_FOR, BUNDLE_KINDS, createBundleGeometry, type BundleKind } from './carryBundles';
 
-const SERF = CHARACTER_PACK.serf;
-
 /** Which clip shows which activity (working units pick theirs from `RenderedUnit.work`). */
 const CLIP_FOR: Record<UnitActivity, CharacterAnimation> = {
   idle: 'idle',
@@ -34,15 +38,18 @@ const matrix = new Matrix4();
 const position = new Vector3();
 const quaternion = new Quaternion();
 const up = new Vector3(0, 1, 0);
-const scale = new Vector3(SERF.scale, SERF.scale, SERF.scale);
+const scale = new Vector3();
 
-export interface SerfInstances {
+export interface VillagerInstances {
   geometry: BufferGeometry;
   material: MeshStandardMaterial;
   depthMaterial: Material;
   /** Carried goods: one instanced mesh per bundle shape, written by `update`. */
   bundles: readonly InstancedMesh[];
-  /** Writes every unit's transform, clip, phase, playback rate and color, and their loads. */
+  /**
+   * Writes the transform, clip, phase, playback rate and color of every unit of this
+   * villager kind among `units`, and their loads.
+   */
   update(mesh: InstancedMesh, units: readonly RenderedUnit[], time: number): void;
   dispose(): void;
 }
@@ -51,11 +58,9 @@ export interface SerfInstances {
  * Feet don't slide: cycles per second = speed / stride per cycle (in world units), so
  * the playback rate is speed · duration / stride. Clamped only as a safety net.
  */
-function strideRate(clip: BakedClip) {
-  const worldStride = clip.stride * SERF.scale;
-  return worldStride > 0
-    ? Math.min(4, Math.max(0.25, (UNITS.serf.speed * clip.duration) / worldStride))
-    : 1;
+function strideRate(clip: BakedClip, character: CharacterModel, speed: number) {
+  const worldStride = clip.stride * character.scale;
+  return worldStride > 0 ? Math.min(4, Math.max(0.25, (speed * clip.duration) / worldStride)) : 1;
 }
 
 /** Per-instance animation attributes (clip row, frames, phase, rate) and team colors. */
@@ -104,16 +109,19 @@ function createBundles(
 }
 
 /**
- * GPU resources and per-frame instance writing for baked serfs. Per instance: the
+ * GPU resources and per-frame instance writing for one kind of baked villager (serfs or
+ * workers). Per instance: the
  * transform, the clip for its activity, a phase offset so units don't move in sync, the
  * stride-matched playback rate while walking, and the owner's color. Units carrying
  * goods walk with the `carry` clip (stand with `hold`), and their bundle is written to
  * the matching bundle mesh with the same transform and animation.
  */
-export function createSerfInstances(
+export function createVillagerInstances(
   baked: BakedCharacter<CharacterAnimation>,
   capacity: number,
-): SerfInstances {
+  kind: UnitKind,
+  character: CharacterModel,
+): VillagerInstances {
   const uniforms: BakedSkinUniforms = {
     uBones: { value: baked.boneTexture },
     uTime: { value: 0 },
@@ -124,8 +132,10 @@ export function createSerfInstances(
   baked.geometry.setAttribute('aTeam', team);
   const teamArray = team.array as Float32Array;
 
-  const walkRate = strideRate(baked.clips.walk);
-  const carryRate = strideRate(baked.clips.carry);
+  const speed = UNITS[kind].speed;
+  const walkRate = strideRate(baked.clips.walk, character, speed);
+  const carryRate = strideRate(baked.clips.carry, character, speed);
+  const characterScale = character.scale;
 
   const material = makeBakedSkinMaterial(baked.material, uniforms);
   const depthMaterial = makeBakedSkinDepthMaterial(uniforms);
@@ -139,10 +149,13 @@ export function createSerfInstances(
     bundles: bundles.map((b) => b.mesh),
     update(mesh, units, time) {
       uniforms.uTime.value = time;
+      scale.setScalar(characterScale);
       for (const b of bundles) b.count = 0;
-      const count = Math.min(units.length, capacity);
-      for (let i = 0; i < count; i++) {
-        const unit = units[i] as RenderedUnit;
+      let count = 0;
+      for (const unit of units) {
+        if (unit.type !== kind) continue;
+        if (count >= capacity) break;
+        const i = count++;
         position.set(unit.x, unit.y, unit.z);
         quaternion.setFromAxisAngle(up, unit.heading);
         matrix.compose(position, quaternion, scale);

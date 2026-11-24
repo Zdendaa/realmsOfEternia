@@ -5,6 +5,8 @@ import {
   RIG_MEDIUM,
   type AnimationClipRef,
   type CharacterAnimation,
+  type CharacterModel,
+  type UnitKind,
 } from '@roe/game-data';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import type { AnimationClip, InstancedMesh } from 'three';
@@ -13,30 +15,43 @@ import { simClock } from '../../simulation/simClock';
 import { renderedUnitList } from '../renderedUnits';
 import { UNIT_CAPACITY } from '../unitCapacity';
 import { bakeCharacter, combineClips } from './bakeCharacter';
-import { createSerfInstances } from './serfInstances';
+import { createVillagerInstances } from './villagerInstances';
 
-const SERF = CHARACTER_PACK.serf;
+/** The character model of each unit kind. */
+const CHARACTERS: Record<UnitKind, CharacterModel> = {
+  serf: CHARACTER_PACK.serf,
+  worker: CHARACTER_PACK.worker,
+};
+
 const url = (file: string) => publicUrl(`${CHARACTER_PACK.dir}${file}`);
-const MODEL_URL = url(SERF.model);
-const ANIMATION_FILES = Object.values(SERF.animations).flatMap((a: AnimationClipRef) =>
-  a.upperBody ? [a.file, a.upperBody.file] : [a.file],
-);
-const ANIMATION_URLS = [...new Set(ANIMATION_FILES.map(url))];
+
+/** Model and animation library URLs of a character (the clip files are shared). */
+function characterUrls(character: CharacterModel) {
+  const files = Object.values(character.animations).flatMap((a: AnimationClipRef) =>
+    a.upperBody ? [a.file, a.upperBody.file] : [a.file],
+  );
+  return { model: url(character.model), animations: [...new Set(files.map(url))] };
+}
 
 // Start downloading as soon as this module loads.
-useGLTF.preload([MODEL_URL, ...ANIMATION_URLS], false);
+for (const character of Object.values(CHARACTERS)) {
+  const urls = characterUrls(character);
+  useGLTF.preload([urls.model, ...urls.animations], false);
+}
 
-/** Loads the serf model and its animation clips (suspends), then bakes them once. */
-function useSerfInstances() {
-  const [model, ...libraries] = useGLTF([MODEL_URL, ...ANIMATION_URLS], false);
+/** Loads one character and its clips (suspends), then bakes them once. */
+function useVillagerInstances(kind: UnitKind) {
+  const character = CHARACTERS[kind];
+  const urls = characterUrls(character);
+  const [model, ...libraries] = useGLTF([urls.model, ...urls.animations], false);
   const scene = model?.scene;
   const clipLists = libraries.map((l) => l.animations);
   const key = clipLists.map((list) => list.length).join(',');
   return useMemo(() => {
-    if (!scene) throw new Error('Serf model missing');
-    const byUrl = new Map(ANIMATION_URLS.map((u, i) => [u, clipLists[i] ?? []]));
+    if (!scene) throw new Error(`${kind} model missing`);
+    const byUrl = new Map(urls.animations.map((u, i) => [u, clipLists[i] ?? []]));
     const clips = {} as Record<CharacterAnimation, AnimationClip>;
-    const refs = Object.entries(SERF.animations) as [CharacterAnimation, AnimationClipRef][];
+    const refs = Object.entries(character.animations) as [CharacterAnimation, AnimationClipRef][];
     const find = (file: string, name: string) => {
       const clip = byUrl.get(url(file))?.find((c) => c.name === name);
       if (!clip) throw new Error(`Animation "${name}" not found in ${file}`);
@@ -54,49 +69,59 @@ function useSerfInstances() {
         : clip;
     }
     const baked = bakeCharacter<CharacterAnimation>(scene, clips, {
-      hiddenMeshes: SERF.hiddenMeshes,
+      hiddenMeshes: character.hiddenMeshes,
       fps: CHARACTER_PACK.bakeFps,
-      attach: { clip: 'carry', ...SERF.carryAttach },
+      attach: { clip: 'carry', ...character.carryAttach },
     });
-    return createSerfInstances(baked, UNIT_CAPACITY);
+    return createVillagerInstances(baked, UNIT_CAPACITY, kind, character);
     // Loaded files are cached and never change; `key` stands in for the clip lists.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scene, key]);
+  }, [scene, key, kind]);
 }
 
-/**
- * Serfs as KayKit characters with baked skeletal animation (see `bakeCharacter`): one
- * instanced mesh, so one draw call (plus one for shadows) for any number of serfs, and
- * one more per bundle shape while someone carries goods.
- */
-export function BakedUnits() {
-  const serfs = useSerfInstances();
+/** One kind of villager: one instanced mesh, plus one per bundle shape while carrying. */
+function BakedVillagers({ kind }: { kind: UnitKind }) {
+  const villagers = useVillagerInstances(kind);
   const ref = useRef<InstancedMesh>(null);
 
   useLayoutEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
     mesh.count = 0;
-    mesh.customDepthMaterial = serfs.depthMaterial;
-  }, [serfs]);
-  useEffect(() => () => serfs.dispose(), [serfs]);
+    mesh.customDepthMaterial = villagers.depthMaterial;
+  }, [villagers]);
+  useEffect(() => () => villagers.dispose(), [villagers]);
 
   useFrame(() => {
-    if (ref.current) serfs.update(ref.current, renderedUnitList, simClock.time);
+    if (ref.current) villagers.update(ref.current, renderedUnitList, simClock.time);
   });
 
   return (
     <>
       <instancedMesh
         ref={ref}
-        args={[serfs.geometry, serfs.material, UNIT_CAPACITY]}
+        args={[villagers.geometry, villagers.material, UNIT_CAPACITY]}
         castShadow
         receiveShadow
         frustumCulled={false}
       />
-      {serfs.bundles.map((bundle) => (
+      {villagers.bundles.map((bundle) => (
         <primitive key={bundle.id} object={bundle} />
       ))}
+    </>
+  );
+}
+
+/**
+ * Villagers as KayKit characters with baked skeletal animation (see `bakeCharacter`):
+ * serfs (the Ranger) and workers (the Rogue), each one instanced mesh, so one draw call
+ * (plus one for shadows) per kind for any number of units.
+ */
+export function BakedUnits() {
+  return (
+    <>
+      <BakedVillagers kind="serf" />
+      <BakedVillagers kind="worker" />
     </>
   );
 }

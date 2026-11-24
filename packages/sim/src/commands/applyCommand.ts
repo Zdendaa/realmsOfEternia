@@ -64,10 +64,15 @@ export type CommandResult =
 const OK: CommandCheck = { ok: true, issues: [] };
 const fail = (...issues: CommandIssue[]): CommandCheck => ({ ok: false, issues });
 
-/** Units among `ids` that exist and belong to `issuer`, in state order. */
+/**
+ * Units among `ids` that exist, belong to `issuer` and take orders (workers don't), in
+ * state order.
+ */
 function ownUnits(state: GameState, issuer: PlayerId, ids: readonly EntityId[]): UnitInstance[] {
   const wanted = new Set(ids);
-  return state.units.filter((u) => wanted.has(u.id) && u.ownerId === issuer);
+  return state.units.filter(
+    (u) => wanted.has(u.id) && u.ownerId === issuer && UNITS[u.type].controllable,
+  );
 }
 
 const findBuilding = (state: GameState, id: EntityId) => state.buildings.find((b) => b.id === id);

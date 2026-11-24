@@ -62,6 +62,8 @@ export type {
   UnitInstance,
   UnitMovement,
   UnitTask,
+  WorkPhase,
+  WorkTask,
 } from './state/units.js';
 export { stepGame, type StepResult } from './tick/stepGame.js';
 export { MOVEMENT_RULES } from './units/movement.js';

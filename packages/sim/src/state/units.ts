@@ -28,13 +28,32 @@ export type UnitTask =
       manual: boolean;
       resource: ResourceId;
       phase: DeliverPhase;
-    };
+    }
+  | WorkTask;
 
 /** Where a builder fetching material is. */
 export type DeliverPhase = 'toStorage' | 'toSite';
 
+/**
+ * A worker's loop at its production building: harvest a node nearby, bring the unit to
+ * the building, process it there, carry it to storage, repeat. `waiting`: nothing to
+ * harvest within reach right now.
+ */
+export type WorkPhase =
+  'waiting' | 'toNode' | 'working' | 'toBuilding' | 'processing' | 'toStorage';
+
 /** Where a gatherer is in its loop. */
 export type GatherPhase = 'toNode' | 'working' | 'toStorage';
+
+/** A worker's job at its production building (`nodeId` is -1 when none is chosen). */
+export interface WorkTask {
+  kind: 'work';
+  buildingId: EntityId;
+  phase: WorkPhase;
+  nodeId: number;
+  /** Ticks of work toward the current step (harvesting or processing). */
+  progress: number;
+}
 
 /** Goods a unit is carrying. */
 export interface Cargo {

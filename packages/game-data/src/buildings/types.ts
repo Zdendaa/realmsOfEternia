@@ -1,4 +1,4 @@
-import type { Footprint } from '@roe/shared';
+import type { DecorationKind, Footprint } from '@roe/shared';
 import type { ResourceCost } from '../resources/definitions.js';
 
 /** A model repeated on a grid inside one building (e.g. a field of crop tiles). */
@@ -8,6 +8,17 @@ export interface ModelTiling {
   /** Distance between tile centers along local X and local Z, in world units. */
   stepX: number;
   stepZ: number;
+}
+
+/**
+ * A production building: when complete it gets one worker who harvests `node`s (trees or
+ * rocks) within `workRadius` of the building, processes each unit at the building for
+ * `processSeconds` and carries it to the nearest storage.
+ */
+export interface ProductionDefinition {
+  node: DecorationKind;
+  workRadius: number;
+  processSeconds: number;
 }
 
 export interface BuildingDefinition {
@@ -39,4 +50,6 @@ export interface BuildingDefinition {
   buildTime: number;
   /** How many serfs can work on its construction site at once. */
   maxBuilders: number;
+  /** Set for production buildings (see `ProductionDefinition`). */
+  production?: ProductionDefinition;
 }
