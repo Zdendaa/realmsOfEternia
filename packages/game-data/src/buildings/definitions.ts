@@ -109,7 +109,7 @@ export const BUILDINGS = {
     name: 'Bakery',
     description: 'Its baker bakes bread from flour: 2 food per sack.',
     // Temporary: the Hexagon pack's blacksmith (a shed with a domed oven and chimney)
-    // stands in until there is a bakery model. Phase 8 wants it as the blacksmith.
+    // stands in until there is a bakery model. Phase 6 (military) wants it as the blacksmith.
     modelPath: hexagonModel('building_bakery_temp'),
     temporary: true,
     // 1.29 × 1.25 pack units × 3.5.

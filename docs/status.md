@@ -74,7 +74,7 @@ _Last updated: 2026-11-24._
 
 ### Assets
 
-- **Temporary models:** the bakery is the Medieval Hexagon Pack's blacksmith (yellow variant: a straw-roofed shed with a domed stone oven), flagged `temporary` in game-data until a bakery model exists. Phase 8 will want it as the blacksmith. Hexagon buildings are scaled 3.5× (Builder Pack 3×); the Hexagon pack's CC0 license is in `assets/models/hexagon/`.
+- **Temporary models:** the bakery is the Medieval Hexagon Pack's blacksmith (yellow variant: a straw-roofed shed with a domed stone oven), flagged `temporary` in game-data until a bakery model exists. Phase 6 (military) will want it as the blacksmith. Hexagon buildings are scaled 3.5× (Builder Pack 3×); the Hexagon pack's CC0 license is in `assets/models/hexagon/`.
 
 - **Pack style:** the KayKit pack has no standalone village clutter; barrels, crates and fences are baked into the buildings. Its farm plots are blocky crop boxes.
 - **Mixed tree styles:** garden trees from the pack are round, while forest trees are our own conifers.

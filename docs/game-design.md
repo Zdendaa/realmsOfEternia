@@ -92,7 +92,7 @@ Villagers have positions and movement, find jobs, walk between locations, gather
 **Two villager types** (inspired by The Settlers 5):
 
 - **Serfs** are player-controlled and recruited at the Town Hall. They build construction sites, chop trees, quarry stone, and repair buildings and walls.
-- **Workers** spawn automatically when a production building is completed. They work only in their own building, need housing and food, and can't be controlled directly.
+- **Workers** spawn automatically when a production building is completed. They work only in their own building, need housing, and can't be controlled directly. Needs such as food and sleep are a possible later feature (see the roadmap).
 
 **Construction sites:** buildings are placed as construction sites first. Serfs build them using resources delivered to the site.
 
@@ -170,9 +170,9 @@ Work proceeds one milestone at a time.
 | 3     | Building placement                 | ✅ Completed |
 | 4     | Villagers                          | ✅ Completed |
 | 5     | Economy                            | ⏳ Current   |
-| 6     | Fortifications                     | Planned      |
-| 7     | Building upgrades and technologies | Planned      |
-| 8     | Military and combat                | Planned      |
+| 6     | Military and combat                | Planned      |
+| 7     | Fortifications                     | Planned      |
+| 8     | Building upgrades and technologies | Planned      |
 | 9     | AI                                 | Planned      |
 | 10    | Multiplayer                        | Planned      |
 | 11    | Polish and release                 | Planned      |
@@ -197,17 +197,17 @@ First villagers, basic movement, walking between buildings, simple work behavior
 
 Resource storage, gathering, transportation, production chains, worker assignment and economy UI. Buildings become construction sites built by serfs with delivered resources (see 4.4).
 
-### Phase 6 – Fortifications
+### Phase 6 – Military and combat
 
-Wall placement and drawing, gates, towers, castle construction, tower targeting and shooting, destructible walls.
+Infantry, archers and cavalry, unit selection and commands, combat, siege weapons, heroes. Comes right after the economy (including its depth part, Phase 5b): armies give the economy a purpose, and everything after it needs enemies.
 
-### Phase 7 – Building upgrades and technologies
+### Phase 7 – Fortifications
+
+Wall placement and drawing, gates, towers, castle construction, tower targeting and shooting, destructible walls. After military, because towers need enemies to shoot at and walls need attackers to hold back.
+
+### Phase 8 – Building upgrades and technologies
 
 Three upgrade levels with visual architectural changes, the research system, unlockable units and buildings.
-
-### Phase 8 – Military and combat
-
-Infantry, archers and cavalry, unit selection and commands, combat, siege weapons, heroes.
 
 ### Phase 9 – AI
 
@@ -220,6 +220,10 @@ Server-authoritative simulation for 2–4 players, matchmaking, synchronization,
 ### Phase 11 – Polish and release
 
 Sound, music, animations, main menu, settings, performance optimization, save/load, tutorial, custom maps, Steam integration.
+
+### Possible later features
+
+- **Worker needs (food, sleep) like The Settlers 5:** workers eat and rest at times, and an unfed or tired worker works slower. Not scheduled; Phase 5b deliberately keeps workers without needs (only mines consume food).
 
 ## 7. Steam and commercial goals
 

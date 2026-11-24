@@ -13,8 +13,8 @@ Population and recruit costs, a food chain (field → mill → bakery), gold and
 3. **Process buildings** (mill, bakery, mines) share one worker loop: when the input is in stock the worker **takes it from the stock as they set off** (a reservation, like construction costs paid at placement), fetches it from storage, works at the building, and carries the output to storage. Mill: 1 grain → 1 flour. Bakery: 1 flour → 2 food.
 4. **Population is abstract:** capacity comes from completed buildings (Town Hall 10, house 4); used = serfs + workers. Both are derived from the state, never stored. A finished production building whose worker has no free housing stays empty ("Waiting for housing") until capacity frees up; waiting workers spawn in building-id order.
 5. **Recruiting a serf costs 2 food and needs a free population slot** (new issue `noHousing`).
-6. **Workers don't eat.** Only mines consume food (1 food per ore). The food chain never needs food itself, so there is no deadlock. General hunger and upkeep come with military (Phase 7/8), as "hungry = slower, never stops".
-7. **Gold and iron mines** must be placed on a deposit (hand-authored map points, placement rule `needsDeposit`). **Deposits are infinite in 5b**; the data has an `amount` field so they can become finite later. Iron has no use until the blacksmith (Phase 8).
+6. **Workers don't eat.** Only mines consume food (1 food per ore). The food chain never needs food itself, so there is no deadlock. General hunger and upkeep come with military (Phase 6), as "hungry = slower, never stops"; worker needs like The Settlers 5 are a possible later feature (game-design.md).
+7. **Gold and iron mines** must be placed on a deposit (hand-authored map points, placement rule `needsDeposit`). **Deposits are infinite in 5b**; the data has an `amount` field so they can become finite later. Iron has no use until the blacksmith (Phase 6, military).
 8. **Production config becomes a discriminated union:** `harvest` (lumbermill, quarry), `farm` (field), `process` (inputs, outputs, seconds, optional deposit).
 9. **Professions look different through per-instance layers on one Rogue body:** hats built in code on the `head` bone (farmer straw hat, miller cap, baker toque, miner helmet), tools on `handslot.r` while working (axe, pickaxe, sickle; serfs get a hammer while building), a tunic tint per profession and new carried loads (grain sheaf, flour sack, bread basket, ore). Each prop type is one instanced draw call.
 10. **Temporary models are flagged** in game-data (`temporary: true`, see below) and listed in `status.md`.
@@ -29,9 +29,9 @@ Downloads live in `assets-incoming/` (gitignored). They were checked: model, tex
 - **Scale:** about **3.5×** (Builder Pack: 3×) gives matching door and character proportions; set per building.
 - **Materials:** one shared texture atlas (`hexagons_medieval.png`) instead of named colors, so `materialOverrides` doesn't apply. Roofs can be recolored per player with texel recoloring (like the serf scarf).
 - **Files** are `.gltf` + `.bin` + `.png`; they are packed into `.glb` when copied in.
-- **Fits for 5b:** the **mine** (a rock mound with a timbered entrance and rails) for gold and iron mines; the **blacksmith** (a shed with a stone dome oven and chimney) reads as a bakehouse and is the preferred temporary bakery (decided in 5b.4; Phase 8 will want it as the real blacksmith). Later: blacksmith, windmill, tavern, church, homes A/B (Phase 7 upgrade levels), towers and walls (Phase 6), tree stumps.
+- **Fits for 5b:** the **mine** (a rock mound with a timbered entrance and rails) for gold and iron mines; the **blacksmith** (a shed with a stone dome oven and chimney) reads as a bakehouse and is the preferred temporary bakery (decided in 5b.4; Phase 6 will want it as the real blacksmith). Later: blacksmith, windmill, tavern, church, homes A/B (Phase 8 upgrade levels), towers and walls (Phase 7), tree stumps.
 
-**KayKit Adventurers 2.0 FREE accessories (CC0):** `axe_1handed`, `axe_2handed`, `mug_full`, `mug_empty`, plus weapons, shields, bows, staff, wand, spellbooks and quivers (Phase 8). No hammer, pickaxe or sickle, so those are built in code; the one-handed axe can be the woodcutter's tool (5b.2).
+**KayKit Adventurers 2.0 FREE accessories (CC0):** `axe_1handed`, `axe_2handed`, `mug_full`, `mug_empty`, plus weapons, shields, bows, staff, wand, spellbooks and quivers (Phase 6). No hammer, pickaxe or sickle, so those are built in code; the one-handed axe can be the woodcutter's tool (5b.2).
 
 ## Model mapping
 
@@ -104,7 +104,7 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 - Construction sites use the Hexagon construction stages A–C and the scaffolding instead of our own scaffold.
 - Felled trees leave Hexagon tree stumps.
 - A **storehouse** assembled from Hexagon props (crates, sacks, barrels, pallet), which unblocks 5.5.
-- Hexagon towers and walls are reserved for Phase 6 (fortifications), not used here.
+- Hexagon towers and walls are reserved for Phase 7 (fortifications), not used here.
 
 ## Not in scope
 
