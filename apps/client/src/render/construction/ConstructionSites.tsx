@@ -16,6 +16,7 @@ import {
   Vector3,
 } from 'three';
 import { useGameStore } from '../../state/gameStore';
+import { lowerCrop } from '../scene/settlement/cropHeight';
 import { applyMaterialOverrides, publicUrl } from '../scene/settlement/modelAssets';
 import { simClock } from '../simulation/simClock';
 import { createScaffoldGeometry } from './scaffold';
@@ -67,7 +68,6 @@ function useClippedModel(definition: BuildingDefinition) {
   const { scene } = useGLTF(publicUrl(definition.modelPath), false);
   const built = useMemo(() => {
     applyMaterialOverrides(scene);
-    const height = new Box3().setFromObject(scene).getSize(new Vector3()).y * definition.scale;
     const plane = new Plane(new Vector3(0, -1, 0), 0);
     const materials: Material[] = [];
     const group = new Group();
@@ -76,6 +76,7 @@ function useClippedModel(definition: BuildingDefinition) {
       tile.position.set(offset.x, 0, offset.z);
       tile.rotation.y = definition.rotationOffset;
       tile.scale.setScalar(definition.scale);
+      lowerCrop(tile, definition);
       tile.traverse((object) => {
         if (!(object instanceof Mesh)) return;
         const material = (object.material as Material).clone();
@@ -90,6 +91,8 @@ function useClippedModel(definition: BuildingDefinition) {
       });
       group.add(tile);
     }
+    // Measured on the assembled tiles (world units), so a lowered crop counts as it is drawn.
+    const height = new Box3().setFromObject(group).getSize(new Vector3()).y;
     const revealTo = (worldY: number) => {
       plane.constant = worldY;
     };

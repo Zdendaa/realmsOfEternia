@@ -1,4 +1,4 @@
-import type { FarmProduction } from '@roe/game-data';
+import { PROFESSIONS, type FarmProduction } from '@roe/game-data';
 import { SIMULATION_TICK_RATE } from '@roe/shared';
 import { setField, type EconomyDraft } from '../../economy/draft.js';
 import {
@@ -35,19 +35,24 @@ function waitAtField(unit: UnitInstance, task: WorkTask, building: BuildingInsta
 }
 
 /**
- * Picks the farmer's next step from the field's state: deliver what's carried, sow or
- * harvest the next plot, start the harvest once the crop is ripe, or wait for it.
+ * Picks the farmer's next step from the field's state: deliver the load once it is full
+ * or the harvest is over, sow or harvest the next plot, start the harvest once the crop
+ * is ripe, or wait for it.
  */
 function nextStep(
   unit: UnitInstance,
   task: WorkTask,
   building: BuildingInstance,
+  production: FarmProduction,
   tick: number,
   buildings: readonly BuildingInstance[],
   economy: EconomyDraft,
 ): void {
-  if (unit.carrying) return goToStorage(unit, task, buildings);
   const field = fieldOf(economy.fields, building.id);
+  if (unit.carrying) {
+    const full = unit.carrying.amount >= PROFESSIONS[production.profession].carryCapacity;
+    if (full || field.phase !== 'harvesting') return goToStorage(unit, task, buildings);
+  }
   if (field.phase === 'growing') {
     if (!isRipe(field, tick)) return waitAtField(unit, task, building);
     setField(economy, building.id, { phase: 'harvesting', plotsDone: 0, ripeAt: field.ripeAt });
@@ -58,7 +63,8 @@ function nextStep(
 
 /**
  * One tick of a farmer: sow the field plot by plot (walking to each), wait while the crop
- * grows, then harvest plot by plot, carrying each plot's crop to storage, and sow again.
+ * grows, then harvest plot by plot, carrying the crop of up to `carryCapacity` plots (the
+ * profession's) to storage per trip, and sow again.
  * The field's progress lives in `GameState.fields`, so a farmer only remembers which plot
  * it is walking to (`target`) and the ticks of work on it. A plot that can't be reached
  * makes the farmer wait and try again.
@@ -78,13 +84,14 @@ export function updateFarmer(
 
   switch (task.phase) {
     case 'waiting': {
-      if (isLookTick(tick, unit)) nextStep(unit, task, building, tick, buildings, economy);
+      if (isLookTick(tick, unit))
+        nextStep(unit, task, building, production, tick, buildings, economy);
       return;
     }
     case 'toPlot': {
       const working = field.phase === 'sowing' || field.phase === 'harvesting';
       if (!working || field.plotsDone !== task.target) {
-        return nextStep(unit, task, building, tick, buildings, economy);
+        return nextStep(unit, task, building, production, tick, buildings, economy);
       }
       const at = plotWorkPoint(building, task.target);
       if (Math.hypot(unit.x - at.x, unit.z - at.z) > FIELD_RULES.reach) {
@@ -96,7 +103,7 @@ export function updateFarmer(
     }
     case 'sowing': {
       if (field.phase !== 'sowing' || field.plotsDone !== task.target) {
-        return nextStep(unit, task, building, tick, buildings, economy);
+        return nextStep(unit, task, building, production, tick, buildings, economy);
       }
       const progress = task.progress + 1;
       if (progress < ticks(production.sowSeconds)) {
@@ -119,7 +126,7 @@ export function updateFarmer(
     }
     case 'harvesting': {
       if (field.phase !== 'harvesting' || field.plotsDone !== task.target) {
-        return nextStep(unit, task, building, tick, buildings, economy);
+        return nextStep(unit, task, building, production, tick, buildings, economy);
       }
       const progress = task.progress + 1;
       if (progress < ticks(production.harvestSeconds)) {
@@ -129,13 +136,14 @@ export function updateFarmer(
       const done = field.plotsDone + 1;
       // After the last plot the field is bare again, ready for sowing.
       setField(economy, building.id, done < plots ? { ...field, plotsDone: done } : FRESH_FIELD);
-      unit.carrying = { resource: production.crop, amount: 1 };
-      goToStorage(unit, task, buildings);
+      // Reap on until the load is full or the field is done, then carry it all at once.
+      unit.carrying = { resource: production.crop, amount: (unit.carrying?.amount ?? 0) + 1 };
+      nextStep(unit, task, building, production, tick, buildings, economy);
       return;
     }
     case 'toStorage': {
       if (depositAtStorage(unit, task, buildings, economy)) {
-        nextStep(unit, task, building, tick, buildings, economy);
+        nextStep(unit, task, building, production, tick, buildings, economy);
       }
       return;
     }

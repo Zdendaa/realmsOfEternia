@@ -24,6 +24,7 @@ import {
   type InstancedMesh,
 } from 'three';
 import { useGameStore } from '../../../state/gameStore';
+import { RIPE_CROP_HEIGHT } from './cropHeight';
 import { applyMaterialOverrides, publicUrl } from './modelAssets';
 
 /** A complete field to draw the crop of, with its ground height. */
@@ -45,11 +46,9 @@ const RIPE = SPROUT + GROWTH_LEVELS - 1;
 
 /** Crop height (share of the full-grown model) and color per stage. */
 /**
- * Heights as a share of the model's crop. Ripe: waist-high, so the farmer working the
- * field stays visible (the model's full crop is almost as tall as a villager). Sprouts
- * and stubble: low, but clear of the soil ridges.
+ * Heights as a share of the model's crop: ripe as everywhere else (`RIPE_CROP_HEIGHT`),
+ * sprouts and stubble low but clear of the soil ridges.
  */
-const RIPE_HEIGHT = 0.6;
 const SPROUT_HEIGHT = 0.22;
 const STUBBLE_HEIGHT = 0.15;
 const YOUNG = new Color('#6f9a3e');
@@ -58,7 +57,7 @@ const STUBBLE_COLOR = new Color('#b39654');
 function heightOf(stage: number, level: number): number {
   if (stage === BARE) return 0;
   if (stage === STUBBLE) return STUBBLE_HEIGHT;
-  return SPROUT_HEIGHT + (RIPE_HEIGHT - SPROUT_HEIGHT) * level;
+  return SPROUT_HEIGHT + (RIPE_CROP_HEIGHT - SPROUT_HEIGHT) * level;
 }
 
 function stageOf(field: FieldState, plot: number, tick: number, growTicks: number): number {

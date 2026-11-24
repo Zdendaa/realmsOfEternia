@@ -20,6 +20,7 @@ import {
 import { usePlacementInput } from '../../input/usePlacementInput';
 import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import { usePlacementStore } from '../../state/placementStore';
+import { lowerCrop } from '../scene/settlement/cropHeight';
 import { publicUrl } from '../scene/settlement/modelAssets';
 import { pickGround } from './groundPick';
 
@@ -78,6 +79,7 @@ function Ghost({ building, quarterTurns }: GhostProps) {
       tile.position.set(offset.x, 0, offset.z);
       tile.rotation.y = definition.rotationOffset;
       tile.scale.setScalar(definition.scale);
+      lowerCrop(tile, definition);
       tile.traverse((object) => {
         if (object instanceof Mesh) {
           object.material = materials.valid.model;

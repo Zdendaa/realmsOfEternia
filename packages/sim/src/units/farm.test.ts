@@ -1,5 +1,6 @@
 import {
   BUILDINGS,
+  PROFESSIONS,
   PROTOTYPE_MAP,
   PROTOTYPE_SETTLEMENT,
   type FarmProduction,
@@ -92,6 +93,22 @@ describe('farming', () => {
     // No grain is created beyond the six plots before the next harvest.
     g.runUntil((s) => fieldIn(s).phase === 'growing', 2000);
     expect(grain(g.state)).toBe(PLOTS);
+  });
+
+  it('the farmer carries the crop of several plots per trip (its carry capacity)', () => {
+    const g = game(withField());
+    const capacity = PROFESSIONS.farmer.carryCapacity;
+    const stocks: number[] = [];
+    let largest = 0;
+    g.runUntil((s) => {
+      const amount = farmer(s)?.carrying?.amount ?? 0;
+      largest = Math.max(largest, amount);
+      if (stocks.at(-1) !== grain(s)) stocks.push(grain(s));
+      return grain(s) === PLOTS;
+    }, 6000);
+    expect(largest).toBe(capacity);
+    // Grain arrives in full loads: 0 → 3 → 6.
+    expect(stocks).toEqual([0, capacity, PLOTS]);
   });
 
   it('the farmer works each plot from its work point in the furrow', () => {
