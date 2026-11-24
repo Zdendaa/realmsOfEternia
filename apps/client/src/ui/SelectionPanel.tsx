@@ -36,6 +36,26 @@ function TownHallActions({ buildingId }: { buildingId: number }) {
   );
 }
 
+/** Progress and builders of a selected construction site (re-renders only when they change). */
+function SiteProgress({ siteId, maxBuilders }: { siteId: number; maxBuilders: number }) {
+  const percent = useGameStore((s) => {
+    const progress = s.state.construction[siteId];
+    return progress ? Math.floor((progress.workDone / progress.workRequired) * 100) : 100;
+  });
+  const builders = useGameStore(
+    (s) => s.state.units.filter((u) => u.task.kind === 'build' && u.task.siteId === siteId).length,
+  );
+  return (
+    <>
+      <p className="selection-meta">Under construction: {percent}%</p>
+      <p className="selection-meta">
+        Builders: {builders} / {maxBuilders}
+        {builders === 0 && ' · select serfs and right-click the site'}
+      </p>
+    </>
+  );
+}
+
 /** Selected units: how many, and what they are doing. */
 function UnitSelection({ ids }: { ids: readonly number[] }) {
   // A primitive selector result (a string), so the panel re-renders only when counts change.
@@ -77,9 +97,11 @@ function BuildingSelection() {
   return (
     <section className="hud-panel selection-panel" aria-label="Selection">
       <h2>{definition.name}</h2>
-      <p className="selection-meta">
-        {building.status === 'construction' ? 'Under construction' : definition.description}
-      </p>
+      {building.status === 'construction' ? (
+        <SiteProgress siteId={building.id} maxBuilders={definition.maxBuilders} />
+      ) : (
+        <p className="selection-meta">{definition.description}</p>
+      )}
       {own && building.type === 'townHall' && building.status === 'complete' && (
         <TownHallActions key={building.id} buildingId={building.id} />
       )}

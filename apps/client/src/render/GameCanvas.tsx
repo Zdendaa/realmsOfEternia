@@ -35,6 +35,8 @@ export function GameCanvas() {
       onCreated={({ gl }) => {
         gl.toneMapping = ACESFilmicToneMapping;
         gl.toneMappingExposure = ATMOSPHERE.toneMappingExposure;
+        // Construction sites reveal their model with per-material clipping planes.
+        gl.localClippingEnabled = true;
       }}
       onContextMenu={(event) => event.preventDefault()}
     >

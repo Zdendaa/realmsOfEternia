@@ -8,6 +8,7 @@ import {
 } from '@roe/sim';
 import { Suspense, useMemo } from 'react';
 import type { ClientWorld } from '../../world/decorateWorld';
+import { ConstructionSites, type SiteView } from '../construction/ConstructionSites';
 import { ATMOSPHERE } from './atmosphere';
 import { GroundCover } from './GroundCover';
 import { createGroundLevel, FLATTEN_REACH } from './groundLevel';
@@ -38,13 +39,23 @@ export function World({ world, heights, buildings }: WorldProps) {
     [world],
   );
 
+  // Finished buildings are instanced per model; sites get their own construction look.
   const placedBuildings = useMemo(
     () =>
-      buildings.map((b): PlacedBuilding => ({
-        ...toPlacedFootprint(b),
-        definition: BUILDINGS[b.type],
-        y: heights.getHeightAt(b.x, b.z),
-      })),
+      buildings
+        .filter((b) => b.status === 'complete')
+        .map((b): PlacedBuilding => ({
+          ...toPlacedFootprint(b),
+          definition: BUILDINGS[b.type],
+          y: heights.getHeightAt(b.x, b.z),
+        })),
+    [buildings, heights],
+  );
+  const sites = useMemo(
+    () =>
+      buildings
+        .filter((b) => b.status === 'construction')
+        .map((b): SiteView => ({ building: b, y: heights.getHeightAt(b.x, b.z) })),
     [buildings, heights],
   );
 
@@ -94,6 +105,7 @@ export function World({ world, heights, buildings }: WorldProps) {
       <Suspense fallback={null}>
         <Settlement buildings={placedBuildings} props={props} />
       </Suspense>
+      <ConstructionSites sites={sites} />
     </>
   );
 }

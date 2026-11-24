@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-24._
 
-**Current state:** Phase 4 (serfs and construction sites) is in progress. 4.1–4.3 are done: the deterministic 10 Hz tick, serfs, pathfinding and construction sites run in `@roe/sim` on client and server. The client runs the tick, shows interpolated placeholder serfs recruits serfs at the Town Hall, and lets the player select serfs (click, box) and move them with a right click. Idle serfs walk to nearby sites and build them; sites still look like finished buildings until 4.4.
+**Current state:** Phase 4.1–4.4 (serfs and construction sites) are done. Serfs walk, get selected and commanded, and build construction sites over time; the simulation is a deterministic 10 Hz tick shared by client and server. Next: 4.5, real character models (waiting for the KayKit character packs), then Phase 5, the economy.
 
 ## Phases
 
@@ -22,8 +22,8 @@ _Last updated: 2026-11-24._
 | 4.1   | Sim core: 10 Hz tick, serfs, nav grid + A*, separation, construction, commands    | ✅ Done |
 | 4.2   | Client tick loop, interpolation, placeholder serfs, recruiting                    | ✅ Done |
 | 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | ✅ Done |
-| 4.4   | Construction sites: visuals, progress, right-click assignment                     | ⏳ Next |
-| 4.5   | Character models with baked-animation instancing                                  | Planned |
+| 4.4   | Construction sites: visuals, progress, right-click assignment                     | ✅ Done |
+| 4.5   | Character models with baked-animation instancing                                  | ⏳ Next |
 | 5     | Economy (resources, costs paid, production)                                       | Planned |
 
 ## What works today
@@ -36,10 +36,13 @@ _Last updated: 2026-11-24._
   - chunked instancing for trees (5,700) and ground cover, and per-model instancing for buildings
   - procedural terrain detail and stylized water, with no texture downloads
 - **Camera:** WASD and arrow keys, middle drag or the screen edges (toggle in the settings) to pan, right drag to rotate, mouse wheel to zoom. The focus point stays inside the playable area and on the ground.
-- **Building placement:** a construction menu lists the six buildable types with their costs (display only). A ghost follows the mouse, snapped to a 1-unit grid, rotating in 90° steps, green or red by the shared placement rules (area, water, slope, buildings, paths, trees, rocks). Placed buildings flatten the terrain and clear grass under them.
+- **Building placement:** a construction menu lists the six buildable types with their costs (display only). A ghost follows the mouse, snapped to a 1-unit grid, rotating in 90° steps, green or red by the shared placement rules (area, water, slope, buildings, paths, trees, rocks). A placed building becomes a construction site and flattens the terrain and clears grass under it.
+- **Serfs:** five start in front of the Town Hall; more are recruited there (select the Town Hall → "Recruit serf", up to 200, no cost yet). They are placeholder figures (primitives, tinted per player) that walk, work and idle with procedural animation, interpolated between ticks. Left click or a box selects them (Shift adds), and a right click sends them to the ground point (spread out) or to a construction site.
+- **Construction sites:** dirt, a wooden scaffold and the real model rising from the ground as work progresses, with a progress bar. Idle serfs take sites within 30 units on their own; each working serf adds the same amount of work (linear), up to the building's `maxBuilders` (house 3, mill 4...). A house takes 30 s for one serf, 10 s for three. Selecting a site shows its progress and builders. Finished sites become normal buildings.
+- **Pathfinding:** A* on a 1-unit grid (water, slopes, trees, rocks and buildings block) with smoothed routes; units push each other apart instead of stacking. On the prototype map a path takes about 1–1.5 ms on average and a tick with 300 moving serfs about 0.5 ms (p99 about 7 ms when many paths are planned at once).
 - **Shared rules ready for Phase 3:** `createHeightField`, `flattenHeightField`, `entrancePoint`, `createBuildRules().isBuildable` and `createWaterMap().isWater`.
 - **Server:** a Colyseus server with a placeholder 2–4 player match room. The client doesn't connect to it yet.
-- **Performance:** a steady 60 FPS on an Apple M1 Pro in Chrome. Uncapped, frames take about 2.4 ms at the default view and 2.8 ms fully zoomed out.
+- **Performance:** a steady 60 FPS (vsync-capped) on an Apple M1 Pro in Chrome, also with serfs walking and building. Uncapped frame times were last measured before Phase 4 (about 2.4 ms at the default view).
 
 ## Known limitations
 
@@ -60,11 +63,20 @@ _Last updated: 2026-11-24._
 - **Mixed tree styles:** garden trees from the pack are round, while forest trees are our own conifers.
 - **Production build size:** the build includes the whole pack (about 4.6 MB), including 196 tile models that are never used.
 
+### Units and pathfinding
+
+- **Placeholder serfs:** primitives until the character models arrive (4.5).
+- **Units don't avoid each other while planning:** separation only pushes overlapping units apart, so crowds in narrow gaps can jostle and a stuck unit gives up after two re-plans.
+- **Fields block walking:** every building footprint, including fields, is an obstacle. Roads give no speed bonus.
+- **The game pauses in a hidden tab:** the client tick runs from the render loop (fine for single player; the server will be authoritative).
+- **Only buildings and own units can be selected;** there is no double-click "select all of type" yet.
+- **Building picking uses footprint boxes** with a rough height, not the model shape.
+
 ### Architecture
 
-- **Multiplayer isn't wired yet:** the client applies commands locally. The server validates commands with the same rules but keeps its game state privately (no state sync, no client connection yet).
+- **Multiplayer isn't wired yet:** the client runs the tick locally. The server runs the same tick and validates commands with the same rules, but keeps its game state privately (no state sync, no client connection yet), and its starting settlement is neutral, so nobody can recruit there.
 - **No persistence:** placed buildings disappear on reload (by design for now).
-- **Construction is instant and free:** costs are shown but not paid, and there are no construction sites or builders.
+- **Construction is free:** costs are shown but not paid, and serfs build without material deliveries (Phase 5).
 - **Placed buildings get no paths and no worn ground** at their entrances.
 - **Cosmetic layers are client-only by design:** props, worn ground and grass live in the client (`decorateWorld`); everything gameplay-relevant comes from `@roe/sim`.
 - **Settlement data is hand-authored** for one map. There are no generators or editors yet.
