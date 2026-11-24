@@ -24,6 +24,9 @@ export type CharacterAnimation =
   /** Standing with a load held in both arms. */
   | 'hold';
 
+/** One swatch of a character's texture atlas: [column, row], row 0 at the top. */
+export type AtlasCell = readonly [number, number];
+
 export interface CharacterModel {
   /** Model file relative to `CHARACTER_PACK.dir`. */
   model: string;
@@ -39,6 +42,20 @@ export interface CharacterModel {
    * as they are posed in the `carry` clip.
    */
   carryAttach: { bone: string; hands: readonly [string, string] };
+  /**
+   * Recolored areas of the texture atlas (KayKit characters use an 8 × 4 grid of color
+   * swatches, the same layout for every Adventurer). `team` cells take the owner's color,
+   * `profession` cells the profession's tunic color, both keeping the swatch's shading.
+   */
+  tint: {
+    grid: readonly [number, number];
+    team: readonly AtlasCell[];
+    profession: readonly AtlasCell[];
+  };
+  /** Bone that hats follow; hats sit on top of the vertices skinned to it. */
+  headBone: string;
+  /** Bone that tools are held by (KayKit accessories are modelled in its frame). */
+  toolBone: string;
 }
 
 /** Bone groups of the KayKit Rig_Medium skeleton (names as in the GLB files). */
@@ -104,9 +121,21 @@ export const CHARACTER_PACK = {
     height: 2.3,
     animations: VILLAGER_ANIMATIONS,
     carryAttach: { bone: 'chest', hands: ['handslot.l', 'handslot.r'] },
+    // The blue scarf and tunic trim.
+    tint: {
+      grid: [8, 4],
+      team: [
+        [0, 1],
+        [1, 2],
+      ],
+      profession: [],
+    },
+    headBone: 'head',
+    toolBone: 'handslot.r',
   } satisfies CharacterModel,
   worker: {
-    // The Rogue without cape: a hooded worker that reads differently from the serfs.
+    // The Rogue without cape (bare-headed, long hair): reads differently from the serfs,
+    // and the profession's hat sits on the head.
     model: 'adventurers/Rogue.glb',
     hiddenMeshes: ['Rogue_Cape'],
     // Same rig and proportions as the serf.
@@ -114,5 +143,20 @@ export const CHARACTER_PACK = {
     height: 2.3,
     animations: VILLAGER_ANIMATIONS,
     carryAttach: { bone: 'chest', hands: ['handslot.l', 'handslot.r'] },
+    // Bright green neckerchief and cuffs: player color; dark teal tunic: profession.
+    tint: {
+      grid: [8, 4],
+      team: [
+        [1, 1],
+        [1, 2],
+      ],
+      profession: [[0, 1]],
+    },
+    headBone: 'head',
+    toolBone: 'handslot.r',
   } satisfies CharacterModel,
+  /** Tools held while working (KayKit Adventurers accessories, packed to GLB). */
+  accessories: {
+    axe: 'accessories/axe_1handed.glb',
+  },
 } as const;

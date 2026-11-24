@@ -43,6 +43,16 @@ export interface BakedCharacter<K extends string> {
   clips: Record<K, BakedClip>;
   /** Where carried goods attach (see `BakeOptions.attach`), or null. */
   attachment: CarryAttachment | null;
+  /**
+   * Index of a bone by its name in the GLB ('handslot.r'), or null. Indices match the
+   * geometry's skin indices and the bone texture.
+   */
+  boneIndex(name: string): number | null;
+  /**
+   * The bone's frame in bind pose (the inverse of its bind inverse), in the space of
+   * `geometry`: something modelled in the bone's local frame goes to `bind · v`.
+   */
+  boneBinds: readonly Matrix4[];
 }
 
 /**
@@ -249,7 +259,21 @@ export function bakeCharacter<K extends string>(
     ? measureAttachment(root, bones, boneInverses, clips[attach.clip], attach.bone, attach.hands)
     : null;
 
-  return { geometry, material, boneTexture, boneCount: bones.length, clips: baked, attachment };
+  const boneBinds = boneInverses.map((inverse) => inverse.clone().invert());
+  const boneIndexOf = (name: string) => {
+    const index = boneIndex.get(PropertyBinding.sanitizeNodeName(name));
+    return index ?? null;
+  };
+  return {
+    geometry,
+    material,
+    boneTexture,
+    boneCount: bones.length,
+    clips: baked,
+    attachment,
+    boneIndex: boneIndexOf,
+    boneBinds,
+  };
 }
 
 /**

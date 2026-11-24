@@ -1,48 +1,36 @@
 import type { ResourceId } from '@roe/game-data';
 import {
-  BufferAttribute,
-  Color,
+  BoxGeometry,
   CylinderGeometry,
   DodecahedronGeometry,
   SphereGeometry,
   type BufferGeometry,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { skinRigidly } from './attachedProps';
 import type { CarryAttachment } from './bakeCharacter';
+import { paint, prepare } from './propGeometry';
 
 /** Bundle shapes; every resource maps to one. */
-export type BundleKind = 'logs' | 'stones' | 'sack';
+export type BundleKind = 'logs' | 'stones' | 'sack' | 'bread' | 'goldOre' | 'ironOre';
 
-export const BUNDLE_KINDS: readonly BundleKind[] = ['logs', 'stones', 'sack'];
+export const BUNDLE_KINDS: readonly BundleKind[] = [
+  'logs',
+  'stones',
+  'sack',
+  'bread',
+  'goldOre',
+  'ironOre',
+];
 
 export const BUNDLE_FOR: Record<ResourceId, BundleKind> = {
   wood: 'logs',
   stone: 'stones',
-  iron: 'sack',
-  gold: 'sack',
-  food: 'sack',
+  iron: 'ironOre',
+  gold: 'goldOre',
+  food: 'bread',
   mana: 'sack',
 };
-
-/** Paints every vertex of `geometry`; caps (normals along local Y) get `capColor`. */
-function paint(geometry: BufferGeometry, color: string, capColor = color) {
-  const side = new Color(color);
-  const cap = new Color(capColor);
-  const normals = geometry.getAttribute('normal');
-  const colors = new Float32Array(normals.count * 3);
-  for (let i = 0; i < normals.count; i++) {
-    (Math.abs(normals.getY(i)) > 0.9 ? cap : side).toArray(colors, i * 3);
-  }
-  geometry.setAttribute('color', new BufferAttribute(colors, 3));
-  return geometry;
-}
-
-/** Same attribute layout for merging: non-indexed, position + normal + color. */
-function prepare(geometry: BufferGeometry) {
-  const flat = geometry.index ? geometry.toNonIndexed() : geometry;
-  flat.deleteAttribute('uv');
-  return flat;
-}
 
 /** A log lying across the arms (along X), bark sides and light cut ends. */
 function log(length: number, radius: number, y: number, z: number, tilt: number) {
@@ -53,8 +41,8 @@ function log(length: number, radius: number, y: number, z: number, tilt: number)
   return prepare(g);
 }
 
-function stone(radius: number, x: number, y: number, z: number, turn: number) {
-  const g = paint(new DodecahedronGeometry(radius, 0), '#a3a6a8');
+function stone(radius: number, x: number, y: number, z: number, turn: number, color = '#a3a6a8') {
+  const g = paint(new DodecahedronGeometry(radius, 0), color);
   g.rotateX(turn)
     .rotateY(turn * 1.7)
     .scale(1.1, 0.8, 1)
@@ -87,6 +75,34 @@ function bundleShape(kind: BundleKind): BufferGeometry {
       tie.translate(0, 0.27, 0.02);
       return mergeGeometries([prepare(body), prepare(tie)]);
     }
+    case 'bread': {
+      // A shallow wicker basket with two loaves.
+      const basket = paint(new CylinderGeometry(0.2, 0.15, 0.12, 8), '#9a6f3c', '#7a5530');
+      basket.scale(1.3, 1, 1).translate(0, 0.06, 0.02);
+      const loaf = (x: number, turn: number) => {
+        const g = paint(new SphereGeometry(0.1, 7, 5), '#d08a3e');
+        g.scale(1.5, 0.75, 1).rotateY(turn).translate(x, 0.15, 0.02);
+        return prepare(g);
+      };
+      return mergeGeometries([prepare(basket), loaf(-0.08, 0.3), loaf(0.09, -0.2)]);
+    }
+    case 'goldOre':
+    case 'ironOre': {
+      // Dark rock with veins: gold glints yellow, iron ore is rusty.
+      const vein = kind === 'goldOre' ? '#e2b53a' : '#a0522d';
+      const fleck = (x: number, y: number, z: number) => {
+        const g = paint(new BoxGeometry(0.06, 0.04, 0.06), vein);
+        g.rotateY(0.6).translate(x, y, z);
+        return prepare(g);
+      };
+      return mergeGeometries([
+        stone(0.12, -0.08, 0.06, 0.02, 0.7, '#5d5752'),
+        stone(0.11, 0.09, 0.05, 0.03, 1.9, '#5d5752'),
+        fleck(-0.06, 0.16, 0.08),
+        fleck(0.11, 0.13, 0.1),
+        fleck(0.0, 0.08, 0.13),
+      ]);
+    }
   }
 }
 
@@ -97,15 +113,5 @@ function bundleShape(kind: BundleKind): BufferGeometry {
 export function createBundleGeometry(kind: BundleKind, attachment: CarryAttachment) {
   const geometry = bundleShape(kind);
   geometry.applyMatrix4(attachment.anchor);
-  const count = geometry.getAttribute('position').count;
-  const skinIndex = new Float32Array(count * 4);
-  const skinWeight = new Float32Array(count * 4);
-  for (let i = 0; i < count; i++) {
-    skinIndex[i * 4] = attachment.bone;
-    skinWeight[i * 4] = 1;
-  }
-  geometry.setAttribute('skinIndex', new BufferAttribute(skinIndex, 4));
-  geometry.setAttribute('skinWeight', new BufferAttribute(skinWeight, 4));
-  geometry.computeBoundingSphere();
-  return geometry;
+  return skinRigidly(geometry, attachment.bone);
 }

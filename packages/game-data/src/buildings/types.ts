@@ -1,5 +1,6 @@
 import type { DecorationKind, Footprint } from '@roe/shared';
 import type { ResourceCost } from '../resources/definitions.js';
+import type { ProfessionId } from '../units/professions.js';
 
 /** A model repeated on a grid inside one building (e.g. a field of crop tiles). */
 export interface ModelTiling {
@@ -16,6 +17,8 @@ export interface ModelTiling {
  * `processSeconds` and carries it to the nearest storage.
  */
 export interface ProductionDefinition {
+  /** The worker's profession (its look). */
+  profession: ProfessionId;
   node: DecorationKind;
   workRadius: number;
   processSeconds: number;

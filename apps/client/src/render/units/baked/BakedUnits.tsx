@@ -9,12 +9,13 @@ import {
   type UnitKind,
 } from '@roe/game-data';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import type { AnimationClip, InstancedMesh } from 'three';
+import { Mesh, MeshStandardMaterial, type AnimationClip, type InstancedMesh } from 'three';
 import { publicUrl } from '../../scene/settlement/modelAssets';
 import { simClock } from '../../simulation/simClock';
 import { renderedUnitList } from '../renderedUnits';
 import { UNIT_CAPACITY } from '../unitCapacity';
 import { bakeCharacter, combineClips } from './bakeCharacter';
+import { createHatSources, createToolSources, type ToolModel } from './professionProps';
 import { createVillagerInstances } from './villagerInstances';
 
 /** The character model of each unit kind. */
@@ -33,10 +34,30 @@ function characterUrls(character: CharacterModel) {
   return { model: url(character.model), animations: [...new Set(files.map(url))] };
 }
 
+const AXE_URL = url(CHARACTER_PACK.accessories.axe);
+
 // Start downloading as soon as this module loads.
 for (const character of Object.values(CHARACTERS)) {
   const urls = characterUrls(character);
   useGLTF.preload([urls.model, ...urls.animations], false);
+}
+useGLTF.preload(AXE_URL, false);
+
+/** The axe accessory: its mesh geometry (in the hand slot frame) and material. */
+function useAxe(): ToolModel {
+  const { scene } = useGLTF(AXE_URL, false);
+  return useMemo(() => {
+    let found: ToolModel | null = null;
+    scene.updateMatrixWorld(true);
+    scene.traverse((object) => {
+      if (found || !(object instanceof Mesh)) return;
+      const material = object.material as unknown;
+      if (!(material instanceof MeshStandardMaterial)) return;
+      found = { geometry: object.geometry.clone().applyMatrix4(object.matrixWorld), material };
+    });
+    if (!found) throw new Error('Axe model has no mesh');
+    return found;
+  }, [scene]);
 }
 
 /** Loads one character and its clips (suspends), then bakes them once. */
@@ -45,6 +66,7 @@ function useVillagerInstances(kind: UnitKind) {
   const urls = characterUrls(character);
   const [model, ...libraries] = useGLTF([urls.model, ...urls.animations], false);
   const scene = model?.scene;
+  const axe = useAxe();
   const clipLists = libraries.map((l) => l.animations);
   const key = clipLists.map((list) => list.length).join(',');
   return useMemo(() => {
@@ -73,13 +95,16 @@ function useVillagerInstances(kind: UnitKind) {
       fps: CHARACTER_PACK.bakeFps,
       attach: { clip: 'carry', ...character.carryAttach },
     });
-    return createVillagerInstances(baked, UNIT_CAPACITY, kind, character);
+    return createVillagerInstances(baked, UNIT_CAPACITY, kind, character, {
+      hats: createHatSources(baked, character),
+      tools: createToolSources(baked, character, axe),
+    });
     // Loaded files are cached and never change; `key` stands in for the clip lists.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scene, key, kind]);
+  }, [scene, key, kind, axe]);
 }
 
-/** One kind of villager: one instanced mesh, plus one per bundle shape while carrying. */
+/** One kind of villager: one instanced mesh, plus one per load, hat and tool shape. */
 function BakedVillagers({ kind }: { kind: UnitKind }) {
   const villagers = useVillagerInstances(kind);
   const ref = useRef<InstancedMesh>(null);
@@ -105,8 +130,8 @@ function BakedVillagers({ kind }: { kind: UnitKind }) {
         receiveShadow
         frustumCulled={false}
       />
-      {villagers.bundles.map((bundle) => (
-        <primitive key={bundle.id} object={bundle} />
+      {villagers.props.map((prop) => (
+        <primitive key={prop.id} object={prop} />
       ))}
     </>
   );

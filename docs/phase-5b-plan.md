@@ -58,7 +58,7 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 | #    | Scope                                                        | Status |
 | ---- | ------------------------------------------------------------ | ------ |
 | 5b.1 | Population and recruit cost                                  | ✅     |
-| 5b.2 | Profession looks (hats, tools, tint, loads)                  |        |
+| 5b.2 | Profession looks (hats, tools, tint, loads)                  | ✅     |
 | 5b.3 | Farm: production union, farmer, grow cycle, grain            |        |
 | 5b.4 | Mill and bakery: process loop, spinning blades, temp. bakery |        |
 | 5b.5 | Gold and iron mines on deposits                              |        |
@@ -74,7 +74,8 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 ### 5b.2 Profession looks
 
 - game-data: professions in `CHARACTER_PACK` (hat, tool, tint, load); building production names its profession.
-- client: `render/units/baked/professionProps.ts` (hats and tools on bones, instanced like the carry bundles), tunic tint and worker player color in `bakedSkinMaterial.ts`, serf hammer while building, new carried loads. The Adventurers axe is copied in (GLB). Applied to woodcutter and stonecutter first; check in the browser whether hats clip the hood.
+- client: `render/units/baked/professionProps.ts` (hats and tools on bones, instanced like the carry bundles), tunic tint and worker player color in `bakedSkinMaterial.ts`, serf hammer while building, new carried loads. The Adventurers axe is copied in (GLB). Applied to woodcutter and stonecutter first.
+- Done 2026-11-24: the Rogue turned out to have no hood (bare head, long hair), so every profession got a hat, including the woodcutter (wool cap) and stonecutter (cloth cap). Team and tunic colors use exact atlas cells. The grain sheaf load comes with grain in 5b.3.
 
 ### 5b.3 Farm
 

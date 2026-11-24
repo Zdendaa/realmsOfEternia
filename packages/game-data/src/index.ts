@@ -3,6 +3,7 @@ export {
   RIG_MEDIUM,
   type AnimationClipRef,
   type CharacterAnimation,
+  type AtlasCell,
   type CharacterModel,
 } from './assets/characterPack.js';
 export { MEDIEVAL_PACK, type MaterialOverride } from './assets/medievalPack.js';
@@ -33,3 +34,9 @@ export {
 } from './maps/prototypeSettlement.js';
 export { isUnitKind, UNITS, type UnitKind } from './units/definitions.js';
 export type { UnitDefinition } from './units/types.js';
+export {
+  PROFESSIONS,
+  type HatStyle,
+  type ProfessionDefinition,
+  type ProfessionId,
+} from './units/professions.js';

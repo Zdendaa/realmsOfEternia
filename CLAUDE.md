@@ -47,7 +47,7 @@ pnpm isn't installed globally and Corepack can't download it (custom npm registr
 ## Assets and performance
 
 - Only original or properly licensed assets (no copied game content). Primitives are for prototyping only.
-- Current models: KayKit Medieval Builder Pack 1.0 (CC0) in `apps/client/public/assets/models/medieval/`, GLB only. Characters: KayKit Adventurers 2.0 FREE + Character Animations 1.1 (CC0, Rig_Medium) in `apps/client/public/assets/models/characters/`, configured in `CHARACTER_PACK`. GLBs are never edited; colors/roughness are adjusted via `MEDIEVAL_PACK.materialOverrides`. Every building's entrance faces local +Z.
+- Current models: KayKit Medieval Builder Pack 1.0 (CC0) in `apps/client/public/assets/models/medieval/`, GLB only. Characters: KayKit Adventurers 2.0 FREE + Character Animations 1.1 (CC0, Rig_Medium) in `apps/client/public/assets/models/characters/`, configured in `CHARACTER_PACK`. GLBs are never edited; colors/roughness are adjusted via `MEDIEVAL_PACK.materialOverrides`. Packs that ship as .gltf + .bin + .png are packed to GLB with `node scripts/gltf-to-glb.mjs <in.gltf> <out.glb>` (Adventurers accessories live in `characters/accessories/`). Raw downloads go to the gitignored `assets-incoming/`; copy in only what is used. Every building's entrance faces local +Z.
 - macOS blocks reading `~/Downloads`; ask the user to move files into the repo.
 - Think RTS scale: instancing (chunked, culled), spatial indexes, no unnecessary re-renders, incremental updates instead of rebuilds, efficient ticks and network sync. Measure before and after optimizing.
 

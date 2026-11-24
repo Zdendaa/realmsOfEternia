@@ -1,4 +1,5 @@
 import { useFrame } from '@react-three/fiber';
+import { productionOf, type ProfessionId } from '@roe/game-data';
 import type { Decoration, EntityId } from '@roe/shared';
 import type { BuildingInstance, GameState, UnitInstance } from '@roe/sim';
 import { useRef } from 'react';
@@ -24,6 +25,16 @@ function workOf(unit: UnitInstance, decorations: readonly Decoration[]): UnitWor
   const atNode = task.kind === 'gather' || (task.kind === 'work' && task.phase === 'working');
   if (!atNode) return 'build';
   return decorations[task.nodeId]?.kind === 'rock' ? 'mine' : 'chop';
+}
+
+/** A worker's profession, from the production building it works for. */
+function professionOf(
+  unit: UnitInstance,
+  buildings: ReadonlyMap<EntityId, BuildingInstance>,
+): ProfessionId | null {
+  if (unit.task.kind !== 'work') return null;
+  const building = buildings.get(unit.task.buildingId);
+  return building ? (productionOf(building.type)?.profession ?? null) : null;
 }
 
 /**
@@ -72,6 +83,7 @@ export function UnitFrameDriver() {
           heading: 0,
           activity: unit.activity,
           work: 'build',
+          profession: null,
           carrying: null,
           ownerId: null,
         };
@@ -102,6 +114,7 @@ export function UnitFrameDriver() {
       r.y = ctx.heights.getHeightAt(x, z);
       r.activity = unit.activity;
       r.work = workOf(unit, world.decorations);
+      r.profession = professionOf(unit, look.buildings);
       r.carrying = unit.carrying?.resource ?? null;
       r.ownerId = unit.ownerId;
       renderedUnitList.push(r);

@@ -95,7 +95,7 @@ export const BUILDINGS = {
     cost: { wood: 5, stone: 2 },
     buildTime: 40,
     maxBuilders: 4,
-    production: { node: 'tree', workRadius: 25, processSeconds: 2 },
+    production: { profession: 'woodcutter', node: 'tree', workRadius: 25, processSeconds: 2 },
   },
   quarry: {
     id: 'quarry',
@@ -109,7 +109,7 @@ export const BUILDINGS = {
     cost: { wood: 6, stone: 1 },
     buildTime: 40,
     maxBuilders: 4,
-    production: { node: 'rock', workRadius: 30, processSeconds: 2 },
+    production: { profession: 'stonecutter', node: 'rock', workRadius: 30, processSeconds: 2 },
   },
   market: {
     id: 'market',

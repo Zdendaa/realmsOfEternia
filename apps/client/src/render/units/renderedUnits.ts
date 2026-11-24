@@ -1,4 +1,4 @@
-import type { ResourceId, UnitKind } from '@roe/game-data';
+import type { ProfessionId, ResourceId, UnitKind } from '@roe/game-data';
 import type { EntityId, PlayerId } from '@roe/shared';
 import type { UnitActivity } from '@roe/sim';
 
@@ -14,6 +14,8 @@ export interface RenderedUnit {
   activity: UnitActivity;
   /** What kind of work a working unit does (picks the animation): build, chop or mine. */
   work: UnitWork;
+  /** A worker's profession (its hat and tunic), from its building; null for serfs. */
+  profession: ProfessionId | null;
   /** The resource the unit carries, or null. */
   carrying: ResourceId | null;
   ownerId: PlayerId | null;
