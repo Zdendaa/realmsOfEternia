@@ -51,6 +51,8 @@ Downloads live in `assets-incoming/` (gitignored). They were checked: model, tex
 - Field: sow 2 s per plot, grow 60 s, harvest 2 s per plot → about 4 grain per minute per field.
 - Mill: 4 s per flour. Bakery: 6 s per 2 food. Mine: 8 s per ore, 1 food each.
 
+_Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
+
 ## Milestones
 
 | #    | Scope                                                        | Status |
@@ -60,7 +62,8 @@ Downloads live in `assets-incoming/` (gitignored). They were checked: model, tex
 | 5b.3 | Farm: production union, farmer, grow cycle, grain            |        |
 | 5b.4 | Mill and bakery: process loop, spinning blades, temp. bakery |        |
 | 5b.5 | Gold and iron mines on deposits                              |        |
-| 5.5  | Storehouse (still postponed)                                 |        |
+| 5b.6 | Visual migration to the Medieval Hexagon Pack                |        |
+| 5.5  | Storehouse (from Hexagon props, after 5b.6)                  |        |
 
 ### 5b.1 Population and recruit cost
 
@@ -90,6 +93,15 @@ Downloads live in `assets-incoming/` (gitignored). They were checked: model, tex
 - game-data: deposits in the map, `goldMine` / `ironMine` (Hexagon mine copied in as GLB).
 - sim: `needsDeposit` placement rule, process with a deposit and a food input. Tests.
 - client: deposit markers (tinted rocks, ground tint), ghost hint ("Must be built on a gold deposit"), ore loads.
+
+### 5b.6 Visual migration to the Medieval Hexagon Pack (added 2026-11-24, after 5b.5)
+
+- **First:** evaluate style consistency with a side-by-side screenshot (current settlement vs. the same layout with Hexagon models) before switching anything.
+- All buildings switch to Hexagon models, scaled per building (about 3.5×), with **player-colored roofs** through texel recoloring of the shared atlas (like the serf scarf).
+- Construction sites use the Hexagon construction stages A–C and the scaffolding instead of our own scaffold.
+- Felled trees leave Hexagon tree stumps.
+- A **storehouse** assembled from Hexagon props (crates, sacks, barrels, pallet), which unblocks 5.5.
+- Hexagon towers and walls are reserved for Phase 6 (fortifications), not used here.
 
 ## Not in scope
 
