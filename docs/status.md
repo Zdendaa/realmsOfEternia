@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-24._
 
-**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) 5.3 (carried goods are visible) 5.4 (builders carry the materials to sites) and 5.6 (workers in the lumbermill and quarry) are done. Phase 5 continues with the postponed storehouse (5.5) and the rest of the economy; see the plan. The approved plan and milestone status are in [phase-5-plan.md](phase-5-plan.md).
+**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) 5.3 (carried goods are visible) 5.4 (builders carry the materials to sites) and 5.6 (workers in the lumbermill and quarry) are done. Phase 5 continues with economy depth (population, food chain, mines); see [phase-5b-plan.md](phase-5b-plan.md). The first part of the phase is in [phase-5-plan.md](phase-5-plan.md); the storehouse (5.5) is still postponed.
 
 ## Phases
 
@@ -30,7 +30,7 @@ _Last updated: 2026-11-24._
 | 5.3   | Carrying visual: walk with held load, low-poly bundles on the rig                 | ✅ Done |
 | 5.4   | Material delivery to construction sites                                           | ✅ Done |
 | 5.6   | Workers: lumbermill and quarry                                                    | ✅ Done |
-| 5     | Economy: see [phase-5-plan.md](phase-5-plan.md) for the remaining milestones      | ⏳ Next |
+| 5b    | Economy depth: see [phase-5b-plan.md](phase-5b-plan.md)                           | ⏳ Next |
 
 ## What works today
 

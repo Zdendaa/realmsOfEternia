@@ -168,8 +168,8 @@ Work proceeds one milestone at a time.
 | 1     | Project foundation                 | ✅ Completed |
 | 2     | First real settlement              | ✅ Completed |
 | 3     | Building placement                 | ✅ Completed |
-| 4     | Villagers                          | ⏳ Next      |
-| 5     | Economy                            | Planned      |
+| 4     | Villagers                          | ✅ Completed |
+| 5     | Economy                            | ⏳ Current   |
 | 6     | Fortifications                     | Planned      |
 | 7     | Building upgrades and technologies | Planned      |
 | 8     | Military and combat                | Planned      |
@@ -189,11 +189,11 @@ A visually convincing world around the first human settlement: heightmap terrain
 
 A construction menu with display-only costs; a placement preview snapped to a grid, colored by validity and rotatable; validation shared by client and server (terrain, slope, water, buildings, paths, trees); placed buildings stored as game state and created through commands that the server can validate.
 
-### Phase 4 – Villagers
+### Phase 4 – Villagers ✅
 
 First villagers, basic movement, walking between buildings, simple work behavior and basic pathfinding. Introduces serfs and workers (see 4.4).
 
-### Phase 5 – Economy
+### Phase 5 – Economy ⏳
 
 Resource storage, gathering, transportation, production chains, worker assignment and economy UI. Buildings become construction sites built by serfs with delivered resources (see 4.4).
 

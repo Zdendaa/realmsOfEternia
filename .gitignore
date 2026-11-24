@@ -12,3 +12,6 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+# Raw asset downloads (inspected, then only used files are copied into apps/)
+assets-incoming/
