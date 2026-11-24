@@ -16,5 +16,7 @@ export const PLACEMENT_MESSAGES: Record<PlacementIssue | 'notEnoughResources', s
   path: 'Blocks a path',
   tree: 'Trees in the way',
   rock: 'Rocks in the way',
+  // Replaced by the ore in `issueMessage` ("Must be built on a gold deposit").
+  deposit: 'Must be built on an ore deposit',
   notEnoughResources: 'Not enough resources',
 };

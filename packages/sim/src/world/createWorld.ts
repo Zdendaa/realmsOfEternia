@@ -9,6 +9,7 @@ import {
   sampleCatmullRom,
   scatterDecorations,
   type Decoration,
+  type DepositDefinition,
   type HeightField,
   type MapDefinition,
   type PlacedFootprint,
@@ -24,6 +25,11 @@ const PATH_CLEARANCE = 1;
 const PATH_SAMPLE_SPACING = 0.5;
 /** Cell size of the spatial indexes. */
 const OBSTACLE_CELL = 8;
+/**
+ * Trees and rocks keep this far beyond a deposit's radius, so a mine (centered anywhere on
+ * the deposit; largest half-diagonal ~4.6) always has room.
+ */
+const DEPOSIT_CLEARANCE = 5;
 
 export interface PlacedBuilding extends PlacedFootprint {
   definition: BuildingDefinition;
@@ -60,6 +66,8 @@ export interface SimWorld {
   obstacleIndex: PointGrid<Decoration>;
   /** Spatial index of all sampled path points. */
   pathIndex: PointGrid<Vec2>;
+  /** Ore deposits of the map (mines are built on them). */
+  deposits: readonly DepositDefinition[];
   /** Serfs that start next to the first Town Hall. */
   startingSerfs: number;
 }
@@ -81,7 +89,7 @@ export const inBounds = (b: Bounds, x: number, z: number) =>
 /**
  * Composes terrain, settlement and decorations. Order matters: buildings flatten the
  * terrain first, then paths are sampled and decorations are placed on the flattened
- * ground, keeping clear of buildings and paths.
+ * ground, keeping clear of buildings, paths and ore deposits.
  */
 export function createWorld(map: MapDefinition, settlement: SettlementLayout): SimWorld {
   const footprints = settlement.buildings.map((placement) => {
@@ -104,7 +112,11 @@ export function createWorld(map: MapDefinition, settlement: SettlementLayout): S
   const pathReach = settlement.pathWidth / 2 + PATH_CLEARANCE;
   const pathChecks = paths.map((path) => ({ path, bounds: boundsOf(path, pathReach) }));
   const buildingBounds = boundsOf(footprints, 12);
+  const deposits = map.deposits ?? [];
+  const onDeposit = (x: number, z: number) =>
+    deposits.some((d) => Math.hypot(d.x - x, d.z - z) < d.radius + DEPOSIT_CLEARANCE);
   const isBlocked = (x: number, z: number) =>
+    onDeposit(x, z) ||
     (inBounds(buildingBounds, x, z) &&
       footprints.some((f) => distanceToFootprint(f, x, z, BUILDING_CLEARANCE) === 0)) ||
     pathChecks.some(
@@ -124,6 +136,7 @@ export function createWorld(map: MapDefinition, settlement: SettlementLayout): S
     decorations,
     obstacleIndex: createPointGrid(decorations, OBSTACLE_CELL),
     pathIndex: createPointGrid(paths.flat(), OBSTACLE_CELL),
+    deposits,
     startingSerfs: settlement.startingSerfs,
   };
 }

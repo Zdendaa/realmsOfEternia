@@ -169,6 +169,51 @@ export const BUILDINGS = {
       processSeconds: 2,
     },
   },
+  goldMine: {
+    id: 'goldMine',
+    name: 'Gold Mine',
+    description: 'Must be built on a gold deposit. Its miner digs gold ore, eating 1 food per ore.',
+    modelPath: hexagonModel('building_mine'),
+    // 1.61 × 1.92 pack units × 3.5.
+    scale: HEXAGON_PACK.worldScale,
+    footprint: { w: 6, d: 7 },
+    rotationOffset: 0,
+    buildable: true,
+    cost: { wood: 8, stone: 4 },
+    buildTime: 50,
+    maxBuilders: 4,
+    production: {
+      kind: 'process',
+      profession: 'miner',
+      input: { resource: 'food', amount: 1 },
+      output: { resource: 'gold', amount: 1 },
+      seconds: 8,
+      deposit: 'gold',
+    },
+  },
+  ironMine: {
+    id: 'ironMine',
+    name: 'Iron Mine',
+    description:
+      'Must be built on an iron deposit. Its miner digs iron ore, eating 1 food per ore.',
+    modelPath: hexagonModel('building_mine'),
+    // 1.61 × 1.92 pack units × 3.5.
+    scale: HEXAGON_PACK.worldScale,
+    footprint: { w: 6, d: 7 },
+    rotationOffset: 0,
+    buildable: true,
+    cost: { wood: 8, stone: 4 },
+    buildTime: 50,
+    maxBuilders: 4,
+    production: {
+      kind: 'process',
+      profession: 'miner',
+      input: { resource: 'food', amount: 1 },
+      output: { resource: 'iron', amount: 1 },
+      seconds: 8,
+      deposit: 'iron',
+    },
+  },
   market: {
     id: 'market',
     name: 'Market',
@@ -189,6 +234,12 @@ export type BuildingId = keyof typeof BUILDINGS;
 /** The production settings of a building type, if it is a production building. */
 export const productionOf = (type: BuildingId): BuildingDefinition['production'] =>
   (BUILDINGS[type] as BuildingDefinition).production;
+
+/** The deposit kind a building must stand on (mines), if any. */
+export const depositOf = (type: BuildingId) => {
+  const production = productionOf(type);
+  return production?.kind === 'process' ? production.deposit : undefined;
+};
 
 /** True for buildings units can walk across (fields). */
 export const isWalkableBuilding = (type: BuildingId): boolean =>

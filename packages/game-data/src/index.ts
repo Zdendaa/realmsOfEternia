@@ -10,6 +10,7 @@ export { HEXAGON_PACK } from './assets/hexagonPack.js';
 export { MEDIEVAL_PACK, type MaterialOverride } from './assets/medievalPack.js';
 export {
   BUILDINGS,
+  depositOf,
   housingOf,
   isBuildingId,
   isWalkableBuilding,

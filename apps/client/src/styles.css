@@ -134,9 +134,13 @@ body,
   padding: 8px;
 }
 
+/*
+ * A grid with --columns columns (set by the menu: one row for up to 7 buildings, otherwise
+ * two balanced rows), so it stays clear of the controls panel.
+ */
 .construction-list {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 7), auto);
   justify-content: center;
   gap: 6px;
   margin: 0;
@@ -322,8 +326,9 @@ body,
     bottom: 140px;
   }
 
+  /* Narrow screens: as many columns as fit. */
   .construction-list {
-    flex-wrap: wrap;
+    grid-template-columns: repeat(auto-fit, 92px);
   }
 }
 

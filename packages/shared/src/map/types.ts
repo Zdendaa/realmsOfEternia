@@ -62,6 +62,25 @@ export interface LakeDefinition {
   irregularity: number;
 }
 
+/** Ore found in a deposit. */
+export type DepositKind = 'gold' | 'iron';
+
+/**
+ * A hand-authored ore deposit: mines of its kind must be built on it (their center within
+ * `radius`). Trees and rocks keep clear of it.
+ */
+export interface DepositDefinition {
+  kind: DepositKind;
+  x: number;
+  z: number;
+  radius: number;
+  /**
+   * Ore in the deposit. Unused while deposits are infinite (Phase 5b); kept in the data so
+   * they can become finite later.
+   */
+  amount: number;
+}
+
 export interface WaterSettings {
   lakes: readonly LakeDefinition[];
 }
@@ -79,6 +98,8 @@ export interface MapDefinition {
   border: BorderSettings;
   /** Lakes. Water is never buildable and never gets decorations. */
   water?: WaterSettings;
+  /** Ore deposits (gold, iron). */
+  deposits?: readonly DepositDefinition[];
   decorations: readonly DecorationRule[];
 }
 

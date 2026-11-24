@@ -32,6 +32,7 @@ export {
 export {
   checkPlacement,
   PLACEMENT_RULES,
+  depositAt,
   quarterTurnsToRadians,
   type PlacementCheck,
   type PlacementIssue,

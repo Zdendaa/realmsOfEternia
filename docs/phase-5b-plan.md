@@ -61,7 +61,7 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 | 5b.2 | Profession looks (hats, tools, tint, loads)                  | ✅     |
 | 5b.3 | Farm: production union, farmer, grow cycle, grain            | ✅     |
 | 5b.4 | Mill and bakery: process loop, spinning blades, temp. bakery | ✅     |
-| 5b.5 | Gold and iron mines on deposits                              |        |
+| 5b.5 | Gold and iron mines on deposits                              | ✅     |
 | 5b.6 | Visual migration to the Medieval Hexagon Pack                |        |
 | 5.5  | Storehouse (from Hexagon props, after 5b.6)                  |        |
 
@@ -96,6 +96,7 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 - game-data: deposits in the map, `goldMine` / `ironMine` (Hexagon mine copied in as GLB).
 - sim: `needsDeposit` placement rule, process with a deposit and a food input. Tests.
 - client: deposit markers (tinted rocks, ground tint), ghost hint ("Must be built on a gold deposit"), ore loads.
+- Done 2026-11-24: deposits are `MapDefinition.deposits` (shared), a mine's `process` production names its `deposit`, and the rule is the placement issue `deposit` (center within the deposit radius). Both mines use the Hexagon mine (yellow variant, 3.5×, footprint 6 × 7; its entrance already faces +Z). Miners carry 3. Deposits on the prototype map: gold (−42, −18), iron (18, 42), radius 3, on flat ground found by scanning placements. The construction menu (now ten buildings) became two balanced rows.
 
 ### 5b.6 Visual migration to the Medieval Hexagon Pack (added 2026-11-24, after 5b.5)
 

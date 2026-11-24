@@ -14,6 +14,13 @@ export const PROTOTYPE_MAP = {
     // A lake in the flat south-western lowland, away from the village and both roads.
     lakes: [{ x: -46, z: 42, radius: 15, depth: 2.4, irregularity: 0.22 }],
   },
+  // Ore deposits ~45 units from the Town Hall on flat ground (a mine fits anywhere on
+  // them), away from the roads and the lake: gold to the west-north-west beyond the
+  // fields, iron to the south-east. `amount` is unused while deposits are infinite.
+  deposits: [
+    { kind: 'gold', x: -42, z: -18, radius: 3, amount: 400 },
+    { kind: 'iron', x: 18, z: 42, radius: 3, amount: 600 },
+  ],
   decorations: [
     {
       kind: 'tree',

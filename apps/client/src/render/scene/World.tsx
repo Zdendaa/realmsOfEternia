@@ -10,6 +10,7 @@ import { Suspense, useMemo } from 'react';
 import type { ClientWorld } from '../../world/decorateWorld';
 import { ConstructionSites, type SiteView } from '../construction/ConstructionSites';
 import { ATMOSPHERE } from './atmosphere';
+import { Deposits } from './Deposits';
 import { GroundCover } from './GroundCover';
 import { createGroundLevel, FLATTEN_REACH } from './groundLevel';
 import { Lighting } from './Lighting';
@@ -129,6 +130,7 @@ export function World({ world, heights, buildings, resourceNodes }: WorldProps) 
         blockers={playerFootprints}
       />
       <Trees items={trees} groundLevel={groundLevel} resourceNodes={resourceNodes} />
+      <Deposits deposits={world.deposits} heights={heights} buildings={buildings} />
       <Rocks items={rocks} groundLevel={groundLevel} resourceNodes={resourceNodes} />
       <Suspense fallback={null}>
         <Settlement buildings={placedBuildings} props={props} />

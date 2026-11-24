@@ -1,4 +1,4 @@
-import { BUILDINGS, isBuildingId } from '@roe/game-data';
+import { BUILDINGS, depositOf, isBuildingId } from '@roe/game-data';
 import {
   distanceToFootprint,
   footprintBounds,
@@ -6,6 +6,8 @@ import {
   footprintsOverlap,
   isInPlayableArea,
   sampleFootprint,
+  type DepositDefinition,
+  type DepositKind,
   type HeightField,
   type PlacedFootprint,
 } from '@roe/shared';
@@ -42,12 +44,26 @@ export type PlacementIssue =
   | 'building'
   | 'path'
   | 'tree'
-  | 'rock';
+  | 'rock'
+  /** A mine whose center isn't on a deposit of its kind. */
+  | 'deposit';
 
 export interface PlacementCheck {
   ok: boolean;
   /** Every rule that failed, in check order. Empty when `ok`. */
   issues: PlacementIssue[];
+}
+
+/** The deposit of `kind` whose area contains (x, z), if any (a mine's center must be on one). */
+export function depositAt(
+  world: SimWorld,
+  kind: DepositKind,
+  x: number,
+  z: number,
+): DepositDefinition | undefined {
+  return world.deposits.find(
+    (d) => d.kind === kind && (d.x - x) ** 2 + (d.z - z) ** 2 <= d.radius * d.radius,
+  );
 }
 
 /** Rotation in radians for a number of 90° steps. */
@@ -124,6 +140,10 @@ export function checkPlacement(
     );
     if (blocked) issues.push(kind);
   }
+
+  // needsDeposit: mines stand on a deposit of their ore.
+  const deposit = depositOf(command.building);
+  if (deposit && !depositAt(world, deposit, command.x, command.z)) issues.push('deposit');
 
   return { ok: issues.length === 0, issues };
 }

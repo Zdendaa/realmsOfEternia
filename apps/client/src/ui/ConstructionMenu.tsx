@@ -1,12 +1,13 @@
 import {
   BUILDINGS,
+  depositOf,
   RESOURCES,
   type BuildingDefinition,
   type BuildingId,
   type ResourceAmounts,
 } from '@roe/game-data';
 import { EMPTY_STOCK, missingResources, type CommandIssue } from '@roe/sim';
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
 import { usePlacementStore } from '../state/placementStore';
 import { CostList } from './CostList';
@@ -15,6 +16,11 @@ import { PLACEMENT_MESSAGES } from './placementMessages';
 const BUILDABLE = Object.values(BUILDINGS).filter((b) => b.buildable) as (BuildingDefinition & {
   id: BuildingId;
 })[];
+
+/** More buildings than this go into two balanced rows (the menu must clear the side panels). */
+const MAX_ONE_ROW = 7;
+const COLUMNS =
+  BUILDABLE.length <= MAX_ONE_ROW ? BUILDABLE.length : Math.ceil(BUILDABLE.length / 2);
 
 /** "Not enough wood and stone" for the resources the stock can't cover. */
 function shortageMessage(building: BuildingId, stock: Readonly<ResourceAmounts>) {
@@ -28,6 +34,10 @@ function shortageMessage(building: BuildingId, stock: Readonly<ResourceAmounts>)
 
 function issueMessage(issue: CommandIssue, building: BuildingId, stock: Readonly<ResourceAmounts>) {
   if (issue === 'notEnoughResources') return shortageMessage(building, stock);
+  const deposit = depositOf(building);
+  if (issue === 'deposit' && deposit) {
+    return `Must be built on ${deposit === 'iron' ? 'an iron' : 'a gold'} deposit`;
+  }
   return issue in PLACEMENT_MESSAGES
     ? PLACEMENT_MESSAGES[issue as keyof typeof PLACEMENT_MESSAGES]
     : 'Cannot build here';
@@ -63,7 +73,7 @@ export function ConstructionMenu() {
             : 'Click to build · R rotate · Shift+click build more · Esc cancel'}
         </p>
       )}
-      <ul className="construction-list">
+      <ul className="construction-list" style={{ '--columns': COLUMNS } as CSSProperties}>
         {BUILDABLE.map((building) => {
           const affordable = missingResources(stock, building.cost).length === 0;
           return (

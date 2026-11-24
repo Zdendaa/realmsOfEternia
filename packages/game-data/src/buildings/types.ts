@@ -1,4 +1,4 @@
-import type { DecorationKind, Footprint } from '@roe/shared';
+import type { DecorationKind, DepositKind, Footprint } from '@roe/shared';
 import type { ResourceCost, ResourceId } from '../resources/definitions.js';
 import type { ProfessionId } from '../units/professions.js';
 
@@ -58,6 +58,8 @@ export interface ProcessProduction {
   output: ResourceAmount;
   /** Seconds of work per step (one input → one output). */
   seconds: number;
+  /** Mines: must be built on a deposit of this kind (placement rule). */
+  deposit?: DepositKind;
 }
 
 /**
