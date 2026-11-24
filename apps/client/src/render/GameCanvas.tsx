@@ -13,6 +13,7 @@ import { World } from './scene/World';
 import { SelectionMarkers } from './selection/SelectionMarkers';
 import { SelectionRings } from './selection/SelectionRings';
 import { SimulationDriver } from './simulation/SimulationDriver';
+import { UnitFrameDriver } from './units/UnitFrameDriver';
 import { Units } from './units/Units';
 
 /** Default view: about 50° pitch, 55 units from the map center. */
@@ -42,9 +43,10 @@ export function GameCanvas() {
     >
       {/* The driver must come first: its frame callback advances the tick before others read it. */}
       <SimulationDriver />
+      {/* Then the per-frame unit data that unit renderers, rings and picking read. */}
+      <UnitFrameDriver />
       <World world={world} heights={heights} buildings={buildings} />
       <Units />
-      {/* Reads the unit positions Units wrote this frame, so it comes after it. */}
       <SelectionRings />
       <SelectionMarkers />
       <PlacementPreview />

@@ -1,15 +1,24 @@
-import type { EntityId } from '@roe/shared';
+import type { EntityId, PlayerId } from '@roe/shared';
+import type { UnitActivity } from '@roe/sim';
 
 export interface RenderedUnit {
+  id: EntityId;
   x: number;
   /** Ground height under the unit (without animation). */
   y: number;
   z: number;
+  /** Facing (Y rotation, radians; 0 = +Z), smoothed toward the walking direction. */
+  heading: number;
+  activity: UnitActivity;
+  ownerId: PlayerId | null;
 }
 
 /**
- * Interpolated unit positions as drawn in the current frame, by unit id. Written by
- * `Units` every frame; selection rings and screen-space picking read it, so they match
- * what the player sees. A plain module value: per-frame data never goes through React.
+ * Units as drawn in the current frame: interpolated between ticks, with smoothed facing.
+ * Written once per frame by `UnitFrameDriver`; unit renderers, selection rings and
+ * screen-space picking read it, so they all match what the player sees. Plain module
+ * values: per-frame data never goes through React.
  */
 export const renderedUnits = new Map<EntityId, RenderedUnit>();
+/** The same units in state order (the order instances are written in). */
+export const renderedUnitList: RenderedUnit[] = [];
