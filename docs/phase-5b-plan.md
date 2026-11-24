@@ -106,7 +106,8 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 - Felled trees leave Hexagon tree stumps.
 - A **storehouse** assembled from Hexagon props (crates, sacks, barrels, pallet), which unblocks 5.5.
 - Hexagon towers and walls are reserved for Phase 7 (fortifications), not used here.
-- Progress 2026-11-24: style comparison approved. Buildings switched: scale 4× (castle 3.5× as the landmark), footprints re-measured (models incl. child parts, widened where off-center), house variants home_A / home_B by building id, player-colored roofs (atlas cell [2, 3], found by diffing the yellow and blue variants' UVs), dirt yards around bases and entrances, all entrances already face +Z (rotation offsets 0), the market moved 0.5 off the north road. Windmill sails and the lumbermill saw turn while their worker processes. Still open: Hexagon construction stages and scaffolding, tree stumps, the storehouse (5.5); fields and the quarry keep Builder Pack models.
+- Progress 2026-11-24: style comparison approved. Buildings switched: scale 4× (castle 3.5× as the landmark), footprints re-measured (models incl. child parts, widened where off-center), house variants home_A / home_B by building id, player-colored roofs (atlas cell [2, 3], found by diffing the yellow and blue variants' UVs), dirt yards around bases and entrances, all entrances already face +Z (rotation offsets 0), the market moved 0.5 off the north road. Windmill sails and the lumbermill saw turn while their worker processes. Fields and the quarry keep Builder Pack models.
+- Construction sites (2026-11-24): Hexagon stages A–C by thirds of the work, scaffolding from stage B, a flag in the owner's color; fields keep the rising reveal; the code-built scaffold is gone. The ghost shows the real model with the player's roof color and a validity tint. Still open: tree stumps, the storehouse (5.5), pruning unused models.
 
 ## Not in scope
 

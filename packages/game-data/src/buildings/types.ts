@@ -90,6 +90,12 @@ export interface BuildingDefinition {
    * the footprint.
    */
   modelVariants?: readonly string[];
+  /**
+   * How its construction site looks: `stages` (default) shows the Hexagon pack's building
+   * stages and scaffolding; `reveal` raises the finished model from the ground (fields,
+   * whose crop tiles don't suit a building shell).
+   */
+  construction?: 'stages' | 'reveal';
   /** Draws a trampled dirt yard around its base and in front of its entrance (cosmetic). */
   yard?: boolean;
   /** When set, the model is drawn as a grid of tiles centered on the building. */

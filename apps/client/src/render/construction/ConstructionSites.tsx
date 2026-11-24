@@ -1,9 +1,15 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { BUILDINGS, modelPathOf, tileOffsets, type BuildingDefinition } from '@roe/game-data';
+import {
+  BUILDINGS,
+  HEXAGON_PACK,
+  modelPathOf,
+  tileOffsets,
+  type BuildingDefinition,
+} from '@roe/game-data';
 import type { BuildingInstance, GameState } from '@roe/sim';
-import { Suspense, useEffect, useMemo, useRef } from 'react';
-import type { Material } from 'three';
+import { Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import type { Material, Object3D } from 'three';
 import {
   Box3,
   DoubleSide,
@@ -19,7 +25,8 @@ import { useGameStore } from '../../state/gameStore';
 import { lowerCrop } from '../scene/settlement/cropHeight';
 import { applyMaterialOverrides, publicUrl } from '../scene/settlement/modelAssets';
 import { simClock } from '../simulation/simClock';
-import { createScaffoldGeometry } from './scaffold';
+import { singleTeamMaterial } from '../scene/settlement/teamColorMaterial';
+import { ownerColor } from '../units/unitColors';
 
 /** A construction site to draw, with its ground height. */
 export interface SiteView {
@@ -31,11 +38,20 @@ const BAR_WIDTH = 2.4;
 const BAR_HEIGHT = 0.22;
 /** The first sliver of the building shows right away, as a foundation. */
 const FOUNDATION = 0.04;
-/** Scaffolds stop at this height: tall parts (mill sails, towers) rise above them. */
-const MAX_SCAFFOLD_HEIGHT = 4.5;
+/** Stages fill this share of the footprint (the scaffolding yard takes all of it). */
+const STAGE_FILL = 0.9;
+/** The flag at 6× (~1.7 units tall), this far in from the footprint corner. */
+const FLAG_SCALE = 6;
+const FLAG_INSET = 0.4;
+
+const CONSTRUCTION = HEXAGON_PACK.construction;
+/** Stages A–C, then the scaffolding, then the flag (the order `useStageParts` reads). */
+const CONSTRUCTION_URLS = [...CONSTRUCTION.stages, CONSTRUCTION.scaffolding, CONSTRUCTION.flag].map(
+  publicUrl,
+);
+useGLTF.preload(CONSTRUCTION_URLS, false);
 
 // Shared by every site; never disposed (module lifetime).
-const woodMaterial = new MeshStandardMaterial({ color: '#8b6a43', roughness: 0.9 });
 const dirtMaterial = new MeshStandardMaterial({
   color: '#8a6d4a',
   roughness: 1,
@@ -103,17 +119,88 @@ function useClippedModel(definition: BuildingDefinition, modelPath: string) {
   return built;
 }
 
-function ConstructionSite({ building, y }: SiteView) {
+/**
+ * The pack's building stages, its scaffolding and a flag for one site, scaled to the
+ * footprint: one uniform scale for all stages (so they don't jump in size) and one for
+ * the scaffolding yard around them. Returns the parts to toggle and the height (world).
+ */
+function useStageParts(definition: BuildingDefinition, owner: BuildingInstance['ownerId']) {
+  const loaded = useGLTF(CONSTRUCTION_URLS, false);
+  const built = useMemo(() => {
+    const { w, d } = definition.footprint;
+    const stageScale =
+      Math.min(w / CONSTRUCTION.stageSize.w, d / CONSTRUCTION.stageSize.d) * STAGE_FILL;
+    const scaffoldScale = Math.min(
+      w / CONSTRUCTION.scaffoldingSize.w,
+      d / CONSTRUCTION.scaffoldingSize.d,
+    );
+    const place = (index: number, scale: number) => {
+      const scene = loaded[index]?.scene;
+      if (!scene) throw new Error(`Construction model ${index} missing`);
+      const object = scene.clone(true);
+      object.scale.setScalar(scale);
+      object.traverse((o) => {
+        if (o instanceof Mesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      return object;
+    };
+    const stages = CONSTRUCTION.stages.map((_, i) => place(i, stageScale));
+    const scaffolding = place(CONSTRUCTION.stages.length, scaffoldScale);
+
+    // A flag in the owner's color at the front right corner.
+    const flag = place(CONSTRUCTION.stages.length + 1, FLAG_SCALE);
+    flag.position.set(w / 2 - FLAG_INSET, 0, d / 2 - FLAG_INSET);
+    const materials: Material[] = [];
+    const team = owner === null ? null : ownerColor(owner);
+    flag.traverse((o) => {
+      if (!(o instanceof Mesh)) return;
+      const material = singleTeamMaterial(o.material as Material, team);
+      materials.push(material);
+      o.material = material;
+    });
+
+    const group = new Group();
+    group.add(...stages, scaffolding, flag);
+    const height = new Box3().setFromObject(group).getSize(new Vector3()).y;
+    return { group, stages, scaffolding, height, materials };
+  }, [loaded, definition, owner]);
+
+  useEffect(() => () => built.materials.forEach((m) => m.dispose()), [built]);
+  return built;
+}
+
+/** The pack's stage for a share of the work done: A, then B, then C (thirds). */
+const stageIndex = (progress: number) =>
+  Math.min(CONSTRUCTION.stages.length - 1, Math.floor(progress * CONSTRUCTION.stages.length));
+
+/** Shows the stage for `progress`, and the scaffolding from the second stage on. */
+function showStage(
+  parts: { stages: readonly Object3D[]; scaffolding: Object3D },
+  progress: number,
+) {
+  const index = stageIndex(progress);
+  parts.stages.forEach((stage, i) => {
+    stage.visible = i === index;
+  });
+  parts.scaffolding.visible = index >= 1;
+}
+
+/** Dirt, the site's look (children) and a camera-facing progress bar above it. */
+function SiteFrame({
+  building,
+  y,
+  barHeight,
+  onProgress,
+  children,
+}: SiteView & {
+  barHeight: number;
+  onProgress: (progress: number) => void;
+  children: ReactNode;
+}) {
   const definition: BuildingDefinition = BUILDINGS[building.type];
-  const { group, height, revealTo } = useClippedModel(
-    definition,
-    modelPathOf(definition, building.id),
-  );
-  const scaffoldHeight = Math.min(Math.max(height * 1.02, 1), MAX_SCAFFOLD_HEIGHT);
-  const scaffold = useMemo(
-    () => createScaffoldGeometry(definition.footprint, scaffoldHeight),
-    [definition, scaffoldHeight],
-  );
   const dirt = useMemo(
     () =>
       new PlaneGeometry(definition.footprint.w + 0.6, definition.footprint.d + 0.6).rotateX(
@@ -123,19 +210,12 @@ function ConstructionSite({ building, y }: SiteView) {
   );
   const barRef = useRef<Group>(null);
   const fillRef = useRef<Mesh>(null);
-
-  useEffect(
-    () => () => {
-      scaffold.dispose();
-      dirt.dispose();
-    },
-    [scaffold, dirt],
-  );
+  useEffect(() => () => dirt.dispose(), [dirt]);
 
   useFrame(({ camera }) => {
     const { state, previous } = useGameStore.getState();
     const progress = progressOf(state, previous, building.id, simClock.alpha);
-    revealTo(y + height * (FOUNDATION + (1 - FOUNDATION) * progress));
+    onProgress(progress);
     if (fillRef.current) fillRef.current.scale.x = Math.max(0.001, BAR_WIDTH * progress);
     barRef.current?.quaternion.copy(camera.quaternion);
   });
@@ -144,10 +224,9 @@ function ConstructionSite({ building, y }: SiteView) {
     <group position={[building.x, y, building.z]}>
       <group rotation={[0, building.rotation, 0]}>
         <mesh geometry={dirt} material={dirtMaterial} position={[0, 0.03, 0]} receiveShadow />
-        <primitive object={group} />
-        <mesh geometry={scaffold} material={woodMaterial} castShadow receiveShadow />
+        {children}
       </group>
-      <group ref={barRef} position={[0, scaffoldHeight + 1.2, 0]}>
+      <group ref={barRef} position={[0, barHeight + 1.2, 0]}>
         <mesh
           geometry={barGeometry}
           material={barBackMaterial}
@@ -167,16 +246,54 @@ function ConstructionSite({ building, y }: SiteView) {
 }
 
 /**
- * Construction sites: dirt, scaffold, the real model revealed from the ground up as work
- * progresses, and a progress bar. Progress is read every frame from the store (no React
- * re-render per tick); a finished site leaves this list and joins the instanced buildings.
+ * A building site: the pack's stage for the progress (materials, frame, walls), the
+ * scaffolding yard from the second stage on, and the owner's flag.
+ */
+function StageSite({ building, y }: SiteView) {
+  const definition: BuildingDefinition = BUILDINGS[building.type];
+  const parts = useStageParts(definition, building.ownerId);
+  const { group, height } = parts;
+  const show = (progress: number) => showStage(parts, progress);
+  return (
+    <SiteFrame building={building} y={y} barHeight={height} onProgress={show}>
+      <primitive object={group} />
+    </SiteFrame>
+  );
+}
+
+/** A field site: the finished field rises from the ground as work progresses. */
+function RevealSite({ building, y }: SiteView) {
+  const definition: BuildingDefinition = BUILDINGS[building.type];
+  const { group, height, revealTo } = useClippedModel(
+    definition,
+    modelPathOf(definition, building.id),
+  );
+  const reveal = (progress: number) =>
+    revealTo(y + height * (FOUNDATION + (1 - FOUNDATION) * progress));
+  return (
+    <SiteFrame building={building} y={y} barHeight={height} onProgress={reveal}>
+      <primitive object={group} />
+    </SiteFrame>
+  );
+}
+
+/**
+ * Construction sites: dirt, the site's look and a progress bar. Buildings show the Hexagon
+ * pack's building stages A–C (switching by thirds of the work) with its scaffolding and
+ * a flag in the owner's color; fields rise from the ground. Progress is read every frame
+ * from the store (no React re-render per tick); a finished site leaves this list and
+ * joins the instanced buildings.
  */
 export function ConstructionSites({ sites }: { sites: readonly SiteView[] }) {
   return (
     <>
       {sites.map((site) => (
         <Suspense key={site.building.id} fallback={null}>
-          <ConstructionSite building={site.building} y={site.y} />
+          {(BUILDINGS[site.building.type] as BuildingDefinition).construction === 'reveal' ? (
+            <RevealSite building={site.building} y={site.y} />
+          ) : (
+            <StageSite building={site.building} y={site.y} />
+          )}
         </Suspense>
       ))}
     </>

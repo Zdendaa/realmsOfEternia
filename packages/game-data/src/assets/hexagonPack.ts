@@ -24,4 +24,23 @@ export const HEXAGON_PACK = {
    */
   atlasGrid: [8, 4] as const,
   teamCell: [2, 3] as const,
+  /**
+   * Construction sites (client): the pack's three building stages (materials → foundation
+   * and frame → walls and part of the roof), shown one after another by progress, with
+   * the scaffolding yard from the second stage on and a flag in the owner's color.
+   * `stageSize` / `scaffoldingSize` are the largest model extents (pack units, w × d) the
+   * site scales to its footprint.
+   */
+  construction: {
+    stages: [
+      'assets/models/hexagon/construction_stage_A.glb',
+      'assets/models/hexagon/construction_stage_B.glb',
+      'assets/models/hexagon/construction_stage_C.glb',
+    ],
+    stageSize: { w: 1.16, d: 1.14 },
+    scaffolding: 'assets/models/hexagon/construction_scaffolding.glb',
+    scaffoldingSize: { w: 1.9, d: 2.11 },
+    /** A banner on a pole (0.28 pack units tall); its cloth is the team cell. */
+    flag: 'assets/models/hexagon/flag.glb',
+  },
 } as const;

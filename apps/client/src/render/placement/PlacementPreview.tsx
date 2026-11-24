@@ -15,36 +15,53 @@ import {
 } from '@roe/sim';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import {
+  Color,
   DoubleSide,
   Group,
   Mesh,
   MeshBasicMaterial,
-  MeshStandardMaterial,
   PlaneGeometry,
   Vector3,
+  type Material,
   type Object3D,
 } from 'three';
 import { usePlacementInput } from '../../input/usePlacementInput';
 import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import { usePlacementStore } from '../../state/placementStore';
 import { lowerCrop } from '../scene/settlement/cropHeight';
-import { publicUrl } from '../scene/settlement/modelAssets';
+import { applyMaterialOverrides, publicUrl } from '../scene/settlement/modelAssets';
+import { singleTeamMaterial, type TintUniform } from '../scene/settlement/teamColorMaterial';
+import { ownerColor } from '../units/unitColors';
 import { pickGround } from './groundPick';
 
 const VALID = '#7fe07a';
 const INVALID = '#ff6b5a';
 const hit = new Vector3();
 
+/** How strongly the valid / invalid color is mixed over the ghost's own colors. */
+const GHOST_TINT = 0.25;
+const GHOST_OPACITY = 0.7;
+
+/**
+ * The ghost's materials: per model material a translucent clone with the roof in the
+ * local player's color and the shared validity tint mixed in (created on demand, cached);
+ * plates in plain valid / invalid colors. `tint.value` switches the model's color.
+ */
 function createGhostMaterials() {
-  const ghost = (color: string) =>
-    new MeshStandardMaterial({
-      color,
-      emissive: color,
-      emissiveIntensity: 0.35,
-      transparent: true,
-      opacity: 0.6,
-      depthWrite: false,
-    });
+  const tint: TintUniform = { value: new Color(VALID) };
+  const team = ownerColor(LOCAL_PLAYER);
+  const models = new Map<Material, Material>();
+  const model = (base: Material) => {
+    let material = models.get(base);
+    if (!material) {
+      material = singleTeamMaterial(base, team, {
+        tint: { uniform: tint, amount: GHOST_TINT },
+        opacity: GHOST_OPACITY,
+      });
+      models.set(base, material);
+    }
+    return material;
+  };
   const plate = (color: string) =>
     new MeshBasicMaterial({
       color,
@@ -54,17 +71,25 @@ function createGhostMaterials() {
       side: DoubleSide,
     });
   return {
-    valid: { model: ghost(VALID), plate: plate(VALID) },
-    invalid: { model: ghost(INVALID), plate: plate(INVALID) },
+    tint,
+    model,
+    plates: { valid: plate(VALID), invalid: plate(INVALID) },
+    dispose() {
+      for (const m of models.values()) m.dispose();
+      this.plates.valid.dispose();
+      this.plates.invalid.dispose();
+    },
   };
 }
 
-/** The tiles of one model variant, all drawn with the ghost material. */
+type GhostMaterials = ReturnType<typeof createGhostMaterials>;
+
+/** The tiles of one model variant, drawn with the ghost versions of their materials. */
 function addGhostTiles(
   variant: Group,
   scene: Object3D,
   definition: BuildingDefinition,
-  material: MeshStandardMaterial,
+  materials: GhostMaterials,
 ) {
   for (const offset of tileOffsets(definition)) {
     const tile = scene.clone(true);
@@ -74,13 +99,21 @@ function addGhostTiles(
     lowerCrop(tile, definition);
     tile.traverse((object) => {
       if (object instanceof Mesh) {
-        object.material = material;
+        object.material = materials.model(object.material as Material);
         object.castShadow = false;
-        object.userData.ghostPart = 'model';
       }
     });
     variant.add(tile);
   }
+}
+
+/** Valid / invalid: the model's tint and the plate's color. */
+function showValidity(root: Object3D, materials: GhostMaterials, ok: boolean) {
+  materials.tint.value.set(ok ? VALID : INVALID);
+  const plate = ok ? materials.plates.valid : materials.plates.invalid;
+  root.traverse((object) => {
+    if (object instanceof Mesh && object.userData.ghostPart === 'plate') object.material = plate;
+  });
 }
 
 /** Shows only the variant group of the given model. */
@@ -122,11 +155,12 @@ function Ghost({ building, quarterTurns }: GhostProps) {
       const variant = new Group();
       variant.userData.modelPath = path;
       group.add(variant);
-      addGhostTiles(variant, scene, definition, materials.valid.model);
+      applyMaterialOverrides(scene);
+      addGhostTiles(variant, scene, definition, materials);
     });
     const plate = new Mesh(
       new PlaneGeometry(definition.footprint.w, definition.footprint.d),
-      materials.valid.plate,
+      materials.plates.valid,
     );
     plate.rotation.x = -Math.PI / 2;
     plate.position.y = 0.08;
@@ -137,15 +171,7 @@ function Ghost({ building, quarterTurns }: GhostProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [definition, materials, loaded.length]);
 
-  useEffect(
-    () => () => {
-      Object.values(materials).forEach((set) => {
-        set.model.dispose();
-        set.plate.dispose();
-      });
-    },
-    [materials],
-  );
+  useEffect(() => () => materials.dispose(), [materials]);
 
   useFrame(({ camera, pointer, raycaster }) => {
     const group = groupRef.current;
@@ -178,11 +204,7 @@ function Ghost({ building, quarterTurns }: GhostProps) {
     const command: PlaceBuildingCommand = { type: 'placeBuilding', building, x, z, quarterTurns };
     const check = validateCommand(ctx, state, LOCAL_PLAYER, command);
     usePlacementStore.getState().setCandidate(command, check);
-    const set = check.ok ? materials.valid : materials.invalid;
-    group.traverse((object) => {
-      if (!(object instanceof Mesh)) return;
-      object.material = object.userData.ghostPart === 'plate' ? set.plate : set.model;
-    });
+    showValidity(group, materials, check.ok);
   });
 
   return (

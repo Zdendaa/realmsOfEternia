@@ -76,6 +76,7 @@ export const BUILDINGS = {
     modelPath: model('farm_plot'),
     modelTiling: { cols: 2, rows: 3, stepX: PLOT_STEP.x, stepZ: PLOT_STEP.z },
     cropMesh: 'farm_wheat',
+    construction: 'reveal',
     scale: S,
     // 2 × 3 plots of 4.42 × 3.85, spaced 4.6 × 4.1.
     footprint: { w: 9.5, d: 12.5 },

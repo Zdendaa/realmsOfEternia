@@ -1,6 +1,6 @@
 import { HEXAGON_PACK } from '@roe/game-data';
 import type { PlayerId } from '@roe/shared';
-import { MeshStandardMaterial, type Material } from 'three';
+import { Color, MeshStandardMaterial, type Material } from 'three';
 import { measureCellLuma } from '../../units/baked/bakedSkinMaterial';
 import { ownerColor } from '../../units/unitColors';
 
@@ -47,12 +47,7 @@ export function teamColorMaterial(base: Material): Material {
   if (!isTeamColorable(base)) return base;
   const cached = cache.get(base);
   if (cached) return cached;
-  const luma = measureCellLuma(
-    base.map?.image as CanvasImageSource | undefined,
-    HEXAGON_PACK.atlasGrid,
-  );
-  const cellLuma = luma?.[TEAM_ROW * COLUMNS + TEAM_COLUMN] ?? 0;
-  const gain = cellLuma > 0.01 ? 1 / cellLuma : FALLBACK_GAIN;
+  const gain = teamGain(base);
   const material = base.clone();
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uTeamGain = { value: gain };
@@ -69,4 +64,78 @@ export function teamColorMaterial(base: Material): Material {
 export function writeTeamColor(out: Float32Array, index: number, owner: PlayerId | null): void {
   if (owner === null) out.set(KEEP_TEAM_COLOR, index * 3);
   else ownerColor(owner).toArray(out, index * 3);
+}
+
+/** Gain that maps the team cell's mean brightness to 1, measured from the atlas once. */
+function teamGain(material: MeshStandardMaterial): number {
+  const luma = measureCellLuma(
+    material.map?.image as CanvasImageSource | undefined,
+    HEXAGON_PACK.atlasGrid,
+  );
+  const cellLuma = luma?.[TEAM_ROW * COLUMNS + TEAM_COLUMN] ?? 0;
+  return cellLuma > 0.01 ? 1 / cellLuma : FALLBACK_GAIN;
+}
+
+/** A shared tint, e.g. the placement ghost's valid / invalid color; change `value` to update. */
+export interface TintUniform {
+  value: Color;
+}
+
+export interface SingleMaterialOptions {
+  /** Mixed over the final color by `amount` (the ghost's validity). */
+  tint?: { uniform: TintUniform; amount: number };
+  /** Below 1: transparent, without depth writes (the ghost). */
+  opacity?: number;
+}
+
+/**
+ * A clone of `base` for one non-instanced object (construction-site flag, placement
+ * ghost): the team cell takes `team` (null keeps it; only the Hexagon atlas has one), and
+ * an optional tint is mixed over everything. The caller disposes it.
+ */
+export function singleTeamMaterial(
+  base: Material,
+  team: Color | null,
+  options: SingleMaterialOptions = {},
+): Material {
+  const material = base.clone();
+  const atlas = isTeamColorable(base);
+  const { tint, opacity = 1 } = options;
+  if (opacity < 1) {
+    material.transparent = true;
+    material.opacity = opacity;
+    material.depthWrite = false;
+  }
+  const teamColor = team ? team.clone() : null;
+  const gain = atlas ? teamGain(base) : 1;
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uTeamGain = { value: gain };
+    shader.uniforms.uTeamColor = { value: teamColor ?? new Color(-1, -1, -1) };
+    shader.uniforms.uTint = tint ? tint.uniform : { value: new Color() };
+    const recolor =
+      atlas && teamColor
+        ? `
+#ifdef USE_MAP
+{
+  vec2 teamCell = floor(vMapUv * vec2(${COLUMNS}.0, ${ROWS}.0));
+  if (teamCell == vec2(${TEAM_COLUMN}.0, ${TEAM_ROW}.0)) {
+    float teamLuma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+    diffuseColor.rgb = uTeamColor * clamp(teamLuma * uTeamGain, 0.0, 1.5);
+  }
+}
+#endif`
+        : '';
+    const mix = tint
+      ? `diffuseColor.rgb = mix(diffuseColor.rgb, uTint, ${tint.amount.toFixed(3)});`
+      : '';
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nuniform float uTeamGain;\nuniform vec3 uTeamColor;\nuniform vec3 uTint;',
+      )
+      .replace('#include <color_fragment>', `#include <color_fragment>\n${recolor}\n${mix}`);
+  };
+  material.customProgramCacheKey = () =>
+    `single-team:${atlas && teamColor ? 1 : 0}:${tint ? tint.amount : 0}`;
+  return material;
 }
