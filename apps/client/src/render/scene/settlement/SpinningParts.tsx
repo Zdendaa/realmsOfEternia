@@ -6,6 +6,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import {
   DynamicDrawUsage,
   Euler,
+  InstancedBufferAttribute,
   Matrix4,
   Mesh,
   Quaternion,
@@ -18,6 +19,7 @@ import {
 import { useGameStore } from '../../../state/gameStore';
 import { busyBuildings } from './busyBuildings';
 import { applyMaterialOverrides, publicUrl } from './modelAssets';
+import { isTeamColorable, teamColorMaterial, writeTeamColor } from './teamColorMaterial';
 
 /** A complete building with a spinning part, and its ground height. */
 export interface AnimatedBuilding {
@@ -31,6 +33,8 @@ const SPIN_EASE = 0.8;
 interface SpinPart {
   geometry: BufferGeometry;
   material: Material;
+  /** Uses the Hexagon atlas: takes the owner's color in the team cell. */
+  teamColored: boolean;
   /** The mesh relative to the spinning node. */
   local: Matrix4;
 }
@@ -55,7 +59,8 @@ function useSpinningNode(modelPath: string, nodeName: string) {
       if (material) {
         parts.push({
           geometry: o.geometry,
-          material,
+          material: teamColorMaterial(material),
+          teamColored: isTeamColorable(material),
           local: toHub.clone().multiply(o.matrixWorld),
         });
       }
@@ -100,8 +105,14 @@ function SpinLayer({
       ),
       speed: new Float64Array(buildings.length),
     };
-    for (const mesh of refs.current) mesh?.instanceMatrix.setUsage(DynamicDrawUsage);
-  }, [buildings]);
+    const colors = new Float32Array(buildings.length * 3);
+    buildings.forEach(({ building }, i) => writeTeamColor(colors, i, building.ownerId));
+    refs.current.forEach((mesh, k) => {
+      if (!mesh) return;
+      mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+      if (parts[k]?.teamColored) mesh.instanceColor = new InstancedBufferAttribute(colors, 3);
+    });
+  }, [buildings, parts]);
 
   useFrame((_, delta) => {
     const busy = busyBuildings(useGameStore.getState().state.units);

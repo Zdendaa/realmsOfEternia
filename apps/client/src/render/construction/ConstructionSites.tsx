@@ -1,6 +1,6 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { BUILDINGS, tileOffsets, type BuildingDefinition } from '@roe/game-data';
+import { BUILDINGS, modelPathOf, tileOffsets, type BuildingDefinition } from '@roe/game-data';
 import type { BuildingInstance, GameState } from '@roe/sim';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import type { Material } from 'three';
@@ -64,8 +64,8 @@ function progressOf(state: GameState, previous: GameState, id: number, alpha: nu
  * be revealed from the ground up. Returns the model group, its height and `revealTo`,
  * which clips everything above a world-space height.
  */
-function useClippedModel(definition: BuildingDefinition) {
-  const { scene } = useGLTF(publicUrl(definition.modelPath), false);
+function useClippedModel(definition: BuildingDefinition, modelPath: string) {
+  const { scene } = useGLTF(publicUrl(modelPath), false);
   const built = useMemo(() => {
     applyMaterialOverrides(scene);
     const plane = new Plane(new Vector3(0, -1, 0), 0);
@@ -105,7 +105,10 @@ function useClippedModel(definition: BuildingDefinition) {
 
 function ConstructionSite({ building, y }: SiteView) {
   const definition: BuildingDefinition = BUILDINGS[building.type];
-  const { group, height, revealTo } = useClippedModel(definition);
+  const { group, height, revealTo } = useClippedModel(
+    definition,
+    modelPathOf(definition, building.id),
+  );
   const scaffoldHeight = Math.min(Math.max(height * 1.02, 1), MAX_SCAFFOLD_HEIGHT);
   const scaffold = useMemo(
     () => createScaffoldGeometry(definition.footprint, scaffoldHeight),

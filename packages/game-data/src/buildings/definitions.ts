@@ -9,20 +9,27 @@ const hexagonModel = (file: string) => `${HEXAGON_PACK.modelDir}${file}.glb`;
 /** farm_plot tile spacing inside a field: its footprint plus a thin furrow. */
 const PLOT_STEP = { x: 4.6, z: 4.1 };
 
+const H = HEXAGON_PACK.worldScale;
+
 /**
- * Building catalog. Footprints come from measured model bounding boxes (pack units):
- * castle 1.81×1.85, house 1.69×1.66, farm_plot 1.47×1.28, mill 1.69×1.67,
- * well 1.02×1.02, lumbermill 1.82×1.66, market 1.47×1.67, mine 1.61×1.88.
+ * Building catalog. Footprints come from measured model bounding boxes × scale, rounded
+ * up to 0.5 and widened where a model is off-center. Hexagon pack (pack units, incl.
+ * child parts): castle 1.98×2.26, home_A 0.79×0.85, home_B 0.88×1.10, well 0.65×0.75,
+ * windmill 1.13×0.82, lumbermill 1.37×1.19, market 1.80×1.32, blacksmith 1.29×1.25,
+ * mine 1.61×1.92. Builder pack: farm_plot 1.47×1.28, mine (quarry) 1.61×1.88.
+ * Every model's entrance faces +Z (checked from front and back renders), so
+ * `rotationOffset` is 0 throughout.
  */
 export const BUILDINGS = {
   townHall: {
     id: 'townHall',
     name: 'Town Hall',
     description: 'Seat of your realm. One per player.',
-    modelPath: model('castle'),
-    // The landmark is 1.5× the base scale (pack castles are tile-sized like houses).
-    scale: S * 1.5,
-    footprint: { w: 8.5, d: 8.5 },
+    modelPath: hexagonModel('building_castle'),
+    // The landmark: a tall castle (~14 units) at 3.5×, as in the style comparison.
+    scale: 3.5,
+    footprint: { w: 7, d: 8 },
+    yard: true,
     rotationOffset: 0,
     buildable: false,
     cost: {},
@@ -34,9 +41,12 @@ export const BUILDINGS = {
     id: 'house',
     name: 'House',
     description: 'Home for settlers: room for 4 more serfs or workers.',
-    modelPath: model('house'),
-    scale: S,
-    footprint: { w: 5, d: 5 },
+    modelPath: hexagonModel('building_home_A'),
+    // Two house styles, picked by position; the footprint fits the larger (home_B).
+    modelVariants: [hexagonModel('building_home_A'), hexagonModel('building_home_B')],
+    scale: H,
+    footprint: { w: 3.5, d: 4.5 },
+    yard: true,
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 4, stone: 2 },
@@ -48,9 +58,10 @@ export const BUILDINGS = {
     id: 'well',
     name: 'Well',
     description: 'Fresh water for the village.',
-    modelPath: model('well'),
-    scale: S,
+    modelPath: hexagonModel('building_well'),
+    scale: H,
     footprint: { w: 3, d: 3 },
+    yard: true,
     rotationOffset: 0,
     buildable: true,
     cost: { stone: 3 },
@@ -87,15 +98,16 @@ export const BUILDINGS = {
     id: 'mill',
     name: 'Mill',
     description: 'Its miller grinds grain from the Town Hall into flour.',
-    modelPath: model('mill'),
-    scale: S,
-    footprint: { w: 5, d: 5 },
+    modelPath: hexagonModel('building_windmill'),
+    scale: H,
+    footprint: { w: 5, d: 4 },
+    yard: true,
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 6, stone: 4 },
     buildTime: 45,
     maxBuilders: 4,
-    spinningPart: { mesh: 'mill_blades', axis: 'z', turnsPerSecond: 0.25 },
+    spinningPart: { mesh: 'building_windmill_top_fan_yellow', axis: 'z', turnsPerSecond: 0.25 },
     production: {
       kind: 'process',
       profession: 'miller',
@@ -112,9 +124,9 @@ export const BUILDINGS = {
     // stands in until there is a bakery model. Phase 6 (military) wants it as the blacksmith.
     modelPath: hexagonModel('building_bakery_temp'),
     temporary: true,
-    // 1.29 × 1.25 pack units × 3.5.
-    scale: HEXAGON_PACK.worldScale,
-    footprint: { w: 5, d: 4.5 },
+    scale: H,
+    footprint: { w: 5.5, d: 5 },
+    yard: true,
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 5, stone: 4 },
@@ -133,9 +145,12 @@ export const BUILDINGS = {
     id: 'lumbermill',
     name: 'Lumbermill',
     description: 'Its woodcutter fells trees nearby. Build it near the forest.',
-    modelPath: model('lumbermill'),
-    scale: S,
-    footprint: { w: 5.5, d: 5 },
+    modelPath: hexagonModel('building_lumbermill'),
+    scale: H,
+    footprint: { w: 5.5, d: 6 },
+    yard: true,
+    // The saw blade turns while the woodcutter prepares the wood.
+    spinningPart: { mesh: 'building_lumbermill_saw_yellow', axis: 'x', turnsPerSecond: 1.5 },
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 5, stone: 2 },
@@ -174,9 +189,9 @@ export const BUILDINGS = {
     name: 'Gold Mine',
     description: 'Must be built on a gold deposit. Its miner digs gold ore, eating 1 food per ore.',
     modelPath: hexagonModel('building_mine'),
-    // 1.61 × 1.92 pack units × 3.5.
-    scale: HEXAGON_PACK.worldScale,
-    footprint: { w: 6, d: 7 },
+    scale: H,
+    footprint: { w: 6.5, d: 8.5 },
+    yard: true,
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 8, stone: 4 },
@@ -197,9 +212,9 @@ export const BUILDINGS = {
     description:
       'Must be built on an iron deposit. Its miner digs iron ore, eating 1 food per ore.',
     modelPath: hexagonModel('building_mine'),
-    // 1.61 × 1.92 pack units × 3.5.
-    scale: HEXAGON_PACK.worldScale,
-    footprint: { w: 6, d: 7 },
+    scale: H,
+    footprint: { w: 6.5, d: 8.5 },
+    yard: true,
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 8, stone: 4 },
@@ -218,9 +233,10 @@ export const BUILDINGS = {
     id: 'market',
     name: 'Market',
     description: 'Trade goods with neighbours.',
-    modelPath: model('market'),
-    scale: S,
-    footprint: { w: 4.5, d: 5 },
+    modelPath: hexagonModel('building_market'),
+    scale: H,
+    footprint: { w: 7.5, d: 6 },
+    yard: true,
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 6, stone: 6, gold: 2 },
@@ -240,6 +256,17 @@ export const depositOf = (type: BuildingId) => {
   const production = productionOf(type);
   return production?.kind === 'process' ? production.deposit : undefined;
 };
+
+/**
+ * The model of building `id`: one of its `modelVariants`, picked by id, so neighbours
+ * built one after another alternate (the starting houses have consecutive ids) and the
+ * placement ghost can show the variant of the id the next building will get. Cosmetic.
+ */
+export function modelPathOf(definition: BuildingDefinition, id: number): string {
+  const variants = definition.modelVariants;
+  if (!variants || variants.length === 0) return definition.modelPath;
+  return variants[Math.abs(Math.trunc(id)) % variants.length] as string;
+}
 
 /** True for buildings units can walk across (fields). */
 export const isWalkableBuilding = (type: BuildingId): boolean =>

@@ -1,6 +1,12 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { BUILDINGS, tileOffsets, type BuildingId } from '@roe/game-data';
+import {
+  BUILDINGS,
+  modelPathOf,
+  tileOffsets,
+  type BuildingDefinition,
+  type BuildingId,
+} from '@roe/game-data';
 import {
   PLACEMENT_RULES,
   quarterTurnsToRadians,
@@ -16,6 +22,7 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
   Vector3,
+  type Object3D,
 } from 'three';
 import { usePlacementInput } from '../../input/usePlacementInput';
 import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
@@ -52,6 +59,39 @@ function createGhostMaterials() {
   };
 }
 
+/** The tiles of one model variant, all drawn with the ghost material. */
+function addGhostTiles(
+  variant: Group,
+  scene: Object3D,
+  definition: BuildingDefinition,
+  material: MeshStandardMaterial,
+) {
+  for (const offset of tileOffsets(definition)) {
+    const tile = scene.clone(true);
+    tile.position.set(offset.x, 0, offset.z);
+    tile.rotation.y = definition.rotationOffset;
+    tile.scale.setScalar(definition.scale);
+    lowerCrop(tile, definition);
+    tile.traverse((object) => {
+      if (object instanceof Mesh) {
+        object.material = material;
+        object.castShadow = false;
+        object.userData.ghostPart = 'model';
+      }
+    });
+    variant.add(tile);
+  }
+}
+
+/** Shows only the variant group of the given model. */
+function showVariant(root: Object3D, modelPath: string) {
+  root.traverse((object) => {
+    if (typeof object.userData.modelPath === 'string') {
+      object.visible = object.userData.modelPath === modelPath;
+    }
+  });
+}
+
 interface GhostProps {
   building: BuildingId;
   quarterTurns: number;
@@ -64,8 +104,10 @@ interface GhostProps {
  * stock or the felled trees change, not every frame.
  */
 function Ghost({ building, quarterTurns }: GhostProps) {
-  const definition = BUILDINGS[building];
-  const { scene } = useGLTF(publicUrl(definition.modelPath), false);
+  const definition: BuildingDefinition = BUILDINGS[building];
+  // Every model variant; the one the next building would get is shown (`modelPathOf`).
+  const paths = definition.modelVariants ?? [definition.modelPath];
+  const loaded = useGLTF(paths.map(publicUrl), false);
   const materials = useMemo(() => createGhostMaterials(), []);
   const groupRef = useRef<Group>(null);
   const lastKey = useRef('');
@@ -74,21 +116,14 @@ function Ghost({ building, quarterTurns }: GhostProps) {
 
   const model = useMemo(() => {
     const group = new Group();
-    for (const offset of tileOffsets(definition)) {
-      const tile = scene.clone(true);
-      tile.position.set(offset.x, 0, offset.z);
-      tile.rotation.y = definition.rotationOffset;
-      tile.scale.setScalar(definition.scale);
-      lowerCrop(tile, definition);
-      tile.traverse((object) => {
-        if (object instanceof Mesh) {
-          object.material = materials.valid.model;
-          object.castShadow = false;
-          object.userData.ghostPart = 'model';
-        }
-      });
-      group.add(tile);
-    }
+    paths.forEach((path, i) => {
+      const scene = loaded[i]?.scene;
+      if (!scene) return;
+      const variant = new Group();
+      variant.userData.modelPath = path;
+      group.add(variant);
+      addGhostTiles(variant, scene, definition, materials.valid.model);
+    });
     const plate = new Mesh(
       new PlaneGeometry(definition.footprint.w, definition.footprint.d),
       materials.valid.plate,
@@ -98,7 +133,9 @@ function Ghost({ building, quarterTurns }: GhostProps) {
     plate.userData.ghostPart = 'plate';
     group.add(plate);
     return group;
-  }, [scene, definition, materials]);
+    // `loaded` is a new array every render; the files behind it never change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [definition, materials, loaded.length]);
 
   useEffect(
     () => () => {
@@ -125,6 +162,7 @@ function Ghost({ building, quarterTurns }: GhostProps) {
     const z = Math.round(hit.z / grid) * grid;
     group.visible = true;
     group.position.set(x, heights.getHeightAt(x, z), z);
+    showVariant(group, modelPathOf(definition, state.nextEntityId));
     group.rotation.y = quarterTurnsToRadians(quarterTurns);
 
     const key = `${building}:${x}:${z}:${quarterTurns}:${state.buildings.length}`;

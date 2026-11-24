@@ -84,6 +84,14 @@ export interface BuildingDefinition {
   description: string;
   /** Model file, relative to the client's public root. */
   modelPath: string;
+  /**
+   * Alternative models (including `modelPath`), picked per building by its id
+   * (`modelPathOf`): purely cosmetic variety, e.g. two house styles. Every variant fits
+   * the footprint.
+   */
+  modelVariants?: readonly string[];
+  /** Draws a trampled dirt yard around its base and in front of its entrance (cosmetic). */
+  yard?: boolean;
   /** When set, the model is drawn as a grid of tiles centered on the building. */
   modelTiling?: ModelTiling;
   /**

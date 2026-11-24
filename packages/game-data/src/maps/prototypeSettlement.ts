@@ -51,7 +51,7 @@ const v = (x: number, z: number): Vec2 => ({ x, z });
 const square = v(4, 2);
 
 const townHall = place('townHall', -2, -5, 45);
-const market = place('market', 10.5, -6, -90);
+const market = place('market', 11, -6, -90);
 const well = place('well', 8.5, 5.5, 20);
 
 const houseNE = place('house', 10.5, -15, -90);

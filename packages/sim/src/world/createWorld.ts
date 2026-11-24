@@ -27,9 +27,9 @@ const PATH_SAMPLE_SPACING = 0.5;
 const OBSTACLE_CELL = 8;
 /**
  * Trees and rocks keep this far beyond a deposit's radius, so a mine (centered anywhere on
- * the deposit; largest half-diagonal ~4.6) always has room.
+ * the deposit; half-diagonal ~5.35) always has room.
  */
-const DEPOSIT_CLEARANCE = 5;
+const DEPOSIT_CLEARANCE = 6;
 
 export interface PlacedBuilding extends PlacedFootprint {
   definition: BuildingDefinition;

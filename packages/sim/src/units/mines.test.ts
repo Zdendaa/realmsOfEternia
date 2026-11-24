@@ -91,7 +91,7 @@ describe('mines', () => {
     const withDeposit = createWorld({ ...RESOURCE_MAP, deposits: [deposit] }, TOWN);
     const near = (w: typeof without) =>
       w.decorations.filter(
-        (d) => Math.hypot(d.x - deposit.x, d.z - deposit.z) < deposit.radius + 5,
+        (d) => Math.hypot(d.x - deposit.x, d.z - deposit.z) < deposit.radius + 6,
       );
     expect(near(without).length).toBeGreaterThan(0); // the test map has some there
     expect(near(withDeposit)).toEqual([]);

@@ -1,3 +1,4 @@
+import { BUILDINGS } from '@roe/game-data';
 import { footprintsOverlap, type HeightField } from '@roe/shared';
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../state/gameState.js';
@@ -39,7 +40,9 @@ describe('checkPlacement', () => {
   });
 
   it('rejects footprints that leave the playable area', () => {
-    expect(check(place('house', 58, 0)).issues).toContain('outOfBounds');
+    // The playable area ends at x = 60; a house reaching past it is out.
+    const halfWidth = BUILDINGS.house.footprint.w / 2;
+    expect(check(place('house', Math.ceil(60 - halfWidth), 0)).issues).toContain('outOfBounds');
   });
 
   it('rejects building in water', () => {
@@ -47,10 +50,13 @@ describe('checkPlacement', () => {
   });
 
   it('enforces a gap to existing buildings', () => {
-    // The starting house spans x -2.5..2.5. At x = 6 the gap is exactly 1: too close.
-    expect(check(place('house', 3, 0)).issues).toContain('building');
-    expect(check(place('house', 6, 0)).issues).toContain('building');
-    expect(check(place('house', 7, 0)).ok).toBe(true);
+    // Two houses side by side (the starting one at x = 0): the gap between their edges is
+    // x − w. Up to 1 (the minimum gap, inclusive) is too close.
+    const w = BUILDINGS.house.footprint.w;
+    const closest = Math.floor(w + 1); // the last grid position with a gap ≤ 1
+    expect(check(place('house', 1, 0)).issues).toContain('building'); // overlapping
+    expect(check(place('house', closest, 0)).issues).toContain('building');
+    expect(check(place('house', closest + 1, 0)).ok).toBe(true);
   });
 
   it('keeps buildings off paths', () => {

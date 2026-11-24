@@ -1,11 +1,6 @@
 import { BUILDINGS, type BuildingDefinition } from '@roe/game-data';
 import { distanceToFootprint, footprintBounds, type HeightField } from '@roe/shared';
-import {
-  isStartingBuilding,
-  toPlacedFootprint,
-  type BuildingInstance,
-  type PlacedBuilding,
-} from '@roe/sim';
+import { isStartingBuilding, toPlacedFootprint, type BuildingInstance } from '@roe/sim';
 import { Suspense, useMemo } from 'react';
 import type { ClientWorld } from '../../world/decorateWorld';
 import { ConstructionSites, type SiteView } from '../construction/ConstructionSites';
@@ -18,7 +13,7 @@ import { Paths } from './Paths';
 import { Rocks } from './Rocks';
 import { FieldCrops, type CropField } from './settlement/FieldCrops';
 import { ChimneySmoke } from './settlement/ChimneySmoke';
-import { Settlement } from './settlement/Settlement';
+import { Settlement, type OwnedBuilding } from './settlement/Settlement';
 import { SpinningParts, type AnimatedBuilding } from './settlement/SpinningParts';
 import { Sky } from './Sky';
 import { Terrain } from './Terrain';
@@ -50,10 +45,12 @@ export function World({ world, heights, buildings, resourceNodes }: WorldProps) 
     () =>
       buildings
         .filter((b) => b.status === 'complete')
-        .map((b): PlacedBuilding => ({
+        .map((b): OwnedBuilding => ({
           ...toPlacedFootprint(b),
           definition: BUILDINGS[b.type],
           y: heights.getHeightAt(b.x, b.z),
+          id: b.id,
+          ownerId: b.ownerId,
         })),
     [buildings, heights],
   );

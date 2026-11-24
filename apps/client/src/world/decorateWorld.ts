@@ -12,6 +12,7 @@ import {
 import { boundsOf, type PlacedBuilding, type SimWorld } from '@roe/sim';
 import { createGroundCover, type GroundCover } from './groundCover';
 import { createWearSampler } from './wear';
+import { yardPatches } from './yards';
 
 /** Seed offset for prop scattering, independent of other generators. */
 const PROP_SEED_OFFSET = 0x9a0f;
@@ -43,7 +44,10 @@ export interface ClientWorld extends SimWorld {
   groundCover: GroundCover;
 }
 
-/** Trampled ground in front of entrances, around the Town Hall and on squares. */
+/**
+ * Trampled ground on squares, in front of entrances, and as dirt yards around buildings
+ * that have one (`yardPatches`).
+ */
 function createWornPatches(
   buildings: readonly PlacedBuilding[],
   squares: SettlementLayout['squares'],
@@ -51,6 +55,10 @@ function createWornPatches(
   const patches: WornPatch[] = squares.map((s) => ({ ...s }));
   for (const b of buildings) {
     if (b.definition.id === 'field') continue;
+    if (b.definition.yard) {
+      patches.push(...yardPatches(b));
+      continue;
+    }
     const front = entrancePoint(b, 0.8);
     patches.push({ ...front, radius: Math.min(b.footprint.w, b.footprint.d) * 0.4 });
   }

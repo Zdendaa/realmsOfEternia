@@ -14,6 +14,7 @@ export {
   housingOf,
   isBuildingId,
   isWalkableBuilding,
+  modelPathOf,
   productionOf,
   type BuildingId,
 } from './buildings/definitions.js';

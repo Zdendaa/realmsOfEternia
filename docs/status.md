@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-24._
 
-**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) 5.3 (carried goods are visible) 5.4 (builders carry the materials to sites) and 5.6 (workers in the lumbermill and quarry) are done, and of the economy-depth part 5b.1 (population and recruit cost), 5b.2 (professions look different, tools in hand), 5b.3 (farms: farmers sow, grow and harvest grain), 5b.4 (mill and bakery: grain → flour → food) and 5b.5 (gold and iron mines on ore deposits). Phase 5 continues with economy depth (population, food chain, mines); see [phase-5b-plan.md](phase-5b-plan.md). The first part of the phase is in [phase-5-plan.md](phase-5-plan.md); the storehouse (5.5) is still postponed.
+**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) 5.3 (carried goods are visible) 5.4 (builders carry the materials to sites) and 5.6 (workers in the lumbermill and quarry) are done, and of the economy-depth part 5b.1 (population and recruit cost), 5b.2 (professions look different, tools in hand), 5b.3 (farms: farmers sow, grow and harvest grain), 5b.4 (mill and bakery: grain → flour → food) and 5b.5 (gold and iron mines on ore deposits); 5b.6 (move to the Medieval Hexagon Pack) is in progress: the buildings are switched. Phase 5 continues with economy depth (population, food chain, mines); see [phase-5b-plan.md](phase-5b-plan.md). The first part of the phase is in [phase-5-plan.md](phase-5-plan.md); the storehouse (5.5) is still postponed.
 
 ## Phases
 
@@ -39,6 +39,7 @@ _Last updated: 2026-11-24._
 
 - **World:** a 240×240 playable map generated deterministically from a seed. It has rolling hills, a flat 40×40 settlement plateau, noise-clustered forests, scattered rocks, one lake, and about 41,000 instanced grass patches (a short meadow carpet) with about 950 flower clusters. A ring of forested mountains surrounds the map and fades into the fog.
 - **Settlement:** a Town Hall, a market, a well, six houses, a mill with two 2×3 fields and a lumbermill (workers: a woodcutter, a miller and two farmers; population 9 / 34), connected by dirt paths. Two roads leave toward the map edge.
+- **Building style:** the buildings are KayKit Medieval Hexagon Pack models at 4× (slightly larger than units, as in most RTS games): a tall castle as the Town Hall (3.5×, about 14 units high, the village landmark), two house styles (half-timbered cottage and a taller house with steps) that alternate by building id, a roofed well, a windmill whose sails turn while the miller works, a lumbermill (its saw blade turns while the woodcutter prepares wood), a market with stalls, the bakery and the mines. Roofs, banners and trims take the owner's color (blue for the local player; neutral buildings keep the pack's yellow), keeping the roof shading. Every building stands in a trampled dirt yard that reaches about two units past its walls and widens in front of the entrance; placed buildings get theirs when they are placed. Fields and the quarry keep their Builder Pack models (the Hexagon pack has no 2 × 3 field or quarry).
 - **Rendering:**
   - sky dome, fog, ACES tone mapping
   - a sun at about 48° whose shadows follow the camera
@@ -77,9 +78,11 @@ _Last updated: 2026-11-24._
 
 - **Temporary models:** the bakery is the Medieval Hexagon Pack's blacksmith (yellow variant: a straw-roofed shed with a domed stone oven), flagged `temporary` in game-data until a bakery model exists. Phase 6 (military) will want it as the blacksmith. Hexagon buildings are scaled 3.5× (Builder Pack 3×); the Hexagon pack's CC0 license is in `assets/models/hexagon/`.
 
+- **Construction sites and the ghost show yellow roofs:** a site reveals the real model with plain materials, so its roof turns to the player color only when it is finished (the Hexagon construction stages come next in 5b.6).
+- **Two packs side by side:** fields (farm_plot) and the quarry (mine) are still Builder Pack models, and the small props around houses (round garden trees, rocks) too.
 - **Pack style:** the KayKit pack has no standalone village clutter; barrels, crates and fences are baked into the buildings. Its farm plots are blocky crop boxes.
 - **Mixed tree styles:** garden trees from the pack are round, while forest trees are our own conifers.
-- **Production build size:** the build includes the whole medieval pack (about 4.6 MB, including 196 unused tile models) and all character assets (9.4 MB: six characters and all eight Rig_Medium animation libraries, of which three are loaded). Unused files can be pruned before release.
+- **Production build size:** the build includes the whole medieval pack (about 4.6 MB, including 196 unused tile models and, since 5b.6, the Builder Pack castle, house, well, mill, lumbermill and market) and all character assets (9.4 MB: six characters and all eight Rig_Medium animation libraries, of which three are loaded). Unused files can be pruned before release.
 
 ### Input
 
@@ -109,7 +112,7 @@ _Last updated: 2026-11-24._
 - **No persistence:** placed buildings disappear on reload (by design for now).
 - **Builders are the only carriers:** there are no separate carrier jobs, and serfs beyond a site's `maxBuilders` don't help carrying. Delivered material isn't shown as piles on the site.
 - **The server's settlement has no stock:** it stays neutral, so players on the server can't place buildings until matches have start positions.
-- **Placed buildings get no paths and no worn ground** at their entrances.
+- **Placed buildings get no paths** to their entrances (they do get a worn dirt yard).
 - **Cosmetic layers are client-only by design:** props, worn ground and grass live in the client (`decorateWorld`); everything gameplay-relevant comes from `@roe/sim`.
 - **Settlement data is hand-authored** for one map. There are no generators or editors yet.
 - **Footprints are bounding boxes,** slightly larger than the buildings. Selection and collision will need finer shapes.
