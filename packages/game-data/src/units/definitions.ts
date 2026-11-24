@@ -6,9 +6,9 @@ export const UNITS = {
     id: 'serf',
     name: 'Serf',
     description: 'Builds construction sites. Recruited at the Town Hall.',
-    // A brisk walk. The character's walk cycle plays at speed / ~1.0 units/s (~2.4×) to
-    // keep the feet planted; see CHARACTER_PACK.serf.
-    speed: 2.4,
+    // A brisk walk. The character's walk cycle plays at speed / ~0.62 units/s (~3.2×) to
+    // keep the feet planted: quick steps, which read fine at RTS zoom. See CHARACTER_PACK.serf.
+    speed: 2,
     radius: 0.4,
     maxPerPlayer: 200,
   },

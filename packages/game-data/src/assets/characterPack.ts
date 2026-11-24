@@ -38,14 +38,12 @@ export const CHARACTER_PACK = {
     // blue scarf that the renderer recolors per player.
     model: 'adventurers/Ranger.glb',
     hiddenMeshes: ['Ranger_Cape', 'Ranger_Quiver'],
-    // ~2.3 model units tall → ~2.3 world units: 1.6× the house-matched 0.62, so the walk
-    // cycle's stride is long enough for the serf's walking speed. At 2.4 units/s
-    // Walking_B plays at ~2.4× instead of ~3.9× at scale 0.62.
-    scale: 0.99,
+    // ~2.3 model units tall → ~1.4 world units, matching the medieval buildings.
+    scale: 0.62,
     height: 2.3,
     animations: {
       idle: { file: `${MEDIUM}Rig_Medium_General.glb`, clip: 'Idle_A' },
-      // The walk with the longest stride: ~1.07 model units per 1.07 s cycle, i.e. ~1.0
+      // The walk with the longest stride: ~1.07 model units per 1.07 s cycle, i.e. ~0.62
       // world units/s at this scale. The renderer speeds it up to the serf's walking speed
       // from the measured stride, so the feet stay planted.
       walk: { file: `${MEDIUM}Rig_Medium_MovementBasic.glb`, clip: 'Walking_B' },
