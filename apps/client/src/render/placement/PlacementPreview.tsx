@@ -2,9 +2,9 @@ import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { BUILDINGS, type BuildingId } from '@roe/game-data';
 import {
-  checkPlacement,
   PLACEMENT_RULES,
   quarterTurnsToRadians,
+  validateCommand,
   type PlaceBuildingCommand,
 } from '@roe/sim';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
@@ -18,7 +18,7 @@ import {
   Vector3,
 } from 'three';
 import { usePlacementInput } from '../../input/usePlacementInput';
-import { useGameStore } from '../../state/gameStore';
+import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import { usePlacementStore } from '../../state/placementStore';
 import { publicUrl } from '../scene/settlement/modelAssets';
 import { tileOffsets } from '../scene/settlement/tiling';
@@ -59,8 +59,9 @@ interface GhostProps {
 
 /**
  * Translucent preview of the building under the mouse, snapped to the grid and colored
- * by the same `checkPlacement` the server runs. Validation re-runs only when the snapped
- * cell, rotation or game state changes, not every frame.
+ * by the same `validateCommand` the server runs (placement rules and the cost).
+ * Validation re-runs only when the snapped cell, rotation, buildings or the player's
+ * stock change, not every frame.
  */
 function Ghost({ building, quarterTurns }: GhostProps) {
   const definition = BUILDINGS[building];
@@ -68,6 +69,7 @@ function Ghost({ building, quarterTurns }: GhostProps) {
   const materials = useMemo(() => createGhostMaterials(), []);
   const groupRef = useRef<Group>(null);
   const lastKey = useRef('');
+  const lastStock = useRef<unknown>(null);
 
   const model = useMemo(() => {
     const group = new Group();
@@ -109,7 +111,7 @@ function Ghost({ building, quarterTurns }: GhostProps) {
   useFrame(({ camera, pointer, raycaster }) => {
     const group = groupRef.current;
     if (!group) return;
-    const { world, state, heights } = useGameStore.getState();
+    const { ctx, state, heights } = useGameStore.getState();
     raycaster.setFromCamera(pointer, camera);
     if (!pickGround(raycaster.ray, heights, hit)) {
       group.visible = false;
@@ -124,11 +126,13 @@ function Ghost({ building, quarterTurns }: GhostProps) {
     group.rotation.y = quarterTurnsToRadians(quarterTurns);
 
     const key = `${building}:${x}:${z}:${quarterTurns}:${state.buildings.length}`;
-    if (key === lastKey.current) return;
+    const stock = state.stocks[LOCAL_PLAYER];
+    if (key === lastKey.current && stock === lastStock.current) return;
     lastKey.current = key;
+    lastStock.current = stock;
 
     const command: PlaceBuildingCommand = { type: 'placeBuilding', building, x, z, quarterTurns };
-    const check = checkPlacement(world, state, command, heights);
+    const check = validateCommand(ctx, state, LOCAL_PLAYER, command);
     usePlacementStore.getState().setCandidate(command, check);
     const set = check.ok ? materials.valid : materials.invalid;
     group.traverse((object) => {

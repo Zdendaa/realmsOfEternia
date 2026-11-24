@@ -33,7 +33,7 @@ export interface BuildingDefinition {
   rotationOffset: number;
   /** Whether players may place it from the construction menu. */
   buildable: boolean;
-  /** Construction cost. Displayed only until the economy exists. */
+  /** Construction cost, paid from the player's stock when the site is placed. */
   cost: ResourceCost;
   /** Seconds one serf needs to build it. More builders work linearly faster. */
   buildTime: number;

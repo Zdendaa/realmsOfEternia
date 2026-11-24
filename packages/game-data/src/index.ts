@@ -8,8 +8,11 @@ export { MEDIEVAL_PACK, type MaterialOverride } from './assets/medievalPack.js';
 export { BUILDINGS, isBuildingId, type BuildingId } from './buildings/definitions.js';
 export type { BuildingDefinition, ModelTiling } from './buildings/types.js';
 export { PROPS, type PropDefinition, type PropId } from './props/definitions.js';
+export { STARTING_RESOURCES } from './economy/startingResources.js';
 export {
+  RESOURCE_IDS,
   RESOURCES,
+  type ResourceAmounts,
   type ResourceCost,
   type ResourceDefinition,
   type ResourceId,

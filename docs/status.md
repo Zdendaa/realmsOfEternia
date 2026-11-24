@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-24._
 
-**Current state:** Phase 4 (serfs and construction sites) is complete, including 4.5: serfs are KayKit characters with baked skeletal animation (idle, walking, hammering), instanced in one draw call. Next: Phase 5, the economy; the approved plan and milestone status are in [phase-5-plan.md](phase-5-plan.md).
+**Current state:** Phase 5 (economy) in progress: 5.1 is done (player stocks, construction costs paid at placement, resource bar). Next: 5.2, gathering wood and stone. The approved plan and milestone status are in [phase-5-plan.md](phase-5-plan.md).
 
 ## Phases
 
@@ -25,7 +25,8 @@ _Last updated: 2026-11-24._
 | 4.4   | Construction sites: visuals, progress, right-click assignment                     | ✅ Done |
 | 4.5   | Character models with baked-animation instancing                                  | ✅ Done |
 | 4.6   | Context cursors and command markers                                               | ✅ Done |
-| 5     | Economy (resources, costs paid, production)                                       | ⏳ Next |
+| 5.1   | Resource stock, paid construction costs, resource bar                             | ✅ Done |
+| 5     | Economy: see [phase-5-plan.md](phase-5-plan.md) for the remaining milestones      | ⏳ Next |
 
 ## What works today
 
@@ -37,7 +38,8 @@ _Last updated: 2026-11-24._
   - chunked instancing for trees (5,700) and ground cover, and per-model instancing for buildings
   - procedural terrain detail and stylized water, with no texture downloads
 - **Camera:** WASD and arrow keys, middle drag or the screen edges (toggle in the settings) to pan, right drag to rotate, mouse wheel to zoom. The focus point stays inside the playable area and on the ground.
-- **Building placement:** a construction menu lists the six buildable types with their costs (display only). A ghost follows the mouse, snapped to a 1-unit grid, rotating in 90° steps, green or red by the shared placement rules (area, water, slope, buildings, paths, trees, rocks). A placed building becomes a construction site and flattens the terrain and clears grass under it.
+- **Building placement:** a construction menu lists the six buildable types with their costs; costs the stock can't cover are red, and the ghost says what is missing ("Not enough gold"). A ghost follows the mouse, snapped to a 1-unit grid, rotating in 90° steps, green or red by the shared placement rules (area, water, slope, buildings, paths, trees, rocks). A placed building becomes a construction site, pays its full cost from the stock, and flattens the terrain and clears grass under it.
+- **Resources:** a top bar shows the player's stock of wood, stone, iron, gold, food and mana (original icons), starting at 30 / 20 / 0 / 5 / 20 / 0, with a short +/- flash on every change.
 - **Serfs:** five start in front of the Town Hall; more are recruited there (select the Town Hall → "Recruit serf", up to 200, no cost yet). They are KayKit characters (the Ranger without cape and quiver) with baked skeletal animation: idle, walking (2.0 units/s), hammering while building, each unit out of phase with the others, and the scarf in the player color. Primitive placeholder serfs show while the models load, or if they fail to load. Left click or a box selects them (Shift adds), and a right click sends them to the ground point (spread out) or to a construction site.
 - **Cursors and command feedback:** the cursor shows what a click would do: select over own units and buildings, move over the ground and build over own construction sites while serfs are selected. Water and steep slopes count as ground: serfs go to the nearest walkable spot. "Not allowed" shows over other buildings, trees and rocks (until Phase 5), and where nothing walkable is near or outside the playable area; a right click there does nothing. A move shows chevrons converging where the serfs will end up, in the player color (0.6 s); assigning to a site pulses an outline around it with a hammer icon above.
 - **Construction sites:** dirt, a wooden scaffold and the real model rising from the ground as work progresses, with a progress bar. Idle serfs take sites within 30 units on their own; each working serf adds the same amount of work (linear), up to the building's `maxBuilders` (house 3, mill 4...). A house takes 30 s for one serf, 10 s for three. Selecting a site shows its progress and builders. Finished sites become normal buildings.
@@ -86,7 +88,8 @@ _Last updated: 2026-11-24._
 
 - **Multiplayer isn't wired yet:** the client runs the tick locally. The server runs the same tick and validates commands with the same rules, but keeps its game state privately (no state sync, no client connection yet), and its starting settlement is neutral, so nobody can recruit there.
 - **No persistence:** placed buildings disappear on reload (by design for now).
-- **Construction is free:** costs are shown but not paid, and serfs build without material deliveries (Phase 5).
+- **No material deliveries yet:** costs are paid when a site is placed, but serfs build without carrying materials (Phase 5.4). Resources can't be gathered yet (5.2), so the starting stock is all there is.
+- **The server's settlement has no stock:** it stays neutral, so players on the server can't place buildings until matches have start positions.
 - **Placed buildings get no paths and no worn ground** at their entrances.
 - **Cosmetic layers are client-only by design:** props, worn ground and grass live in the client (`decorateWorld`); everything gameplay-relevant comes from `@roe/sim`.
 - **Settlement data is hand-authored** for one map. There are no generators or editors yet.

@@ -1,4 +1,10 @@
-import { BUILDINGS, isBuildingId, type BuildingId } from '@roe/game-data';
+import {
+  BUILDINGS,
+  isBuildingId,
+  STARTING_RESOURCES,
+  type BuildingId,
+  type ResourceAmounts,
+} from '@roe/game-data';
 import type { EntityId, PlacedFootprint, PlayerId } from '@roe/shared';
 import type { SimWorld } from '../world/createWorld.js';
 import { IDLE, type UnitInstance } from './units.js';
@@ -37,6 +43,11 @@ export interface GameState {
   /** Construction progress by site (building) id. Changes every tick while serfs build. */
   readonly construction: Readonly<Record<EntityId, ConstructionProgress>>;
   readonly units: readonly UnitInstance[];
+  /**
+   * Each player's resources (whole numbers). Goods count once delivered to a storage;
+   * construction costs are paid from here when a site is placed.
+   */
+  readonly stocks: Readonly<Record<PlayerId, Readonly<ResourceAmounts>>>;
   readonly nextEntityId: EntityId;
 }
 
@@ -46,6 +57,13 @@ export interface InitialStateOptions {
    * player; the server keeps it neutral until matches have start positions.
    */
   owner?: PlayerId | null;
+  /**
+   * Further players who start with a stock (the owner always gets one). Matches with
+   * start positions will list every player here.
+   */
+  players?: readonly PlayerId[];
+  /** Starting stock of every listed player; defaults to `STARTING_RESOURCES`. */
+  resources?: Readonly<ResourceAmounts>;
 }
 
 /**
@@ -86,7 +104,10 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
       });
     }
   }
-  return { tick: 0, buildings, construction: {}, units, nextEntityId };
+  const resources = options.resources ?? STARTING_RESOURCES;
+  const stockHolders = [...(owner !== null ? [owner] : []), ...(options.players ?? [])];
+  const stocks = Object.fromEntries(stockHolders.map((player) => [player, { ...resources }]));
+  return { tick: 0, buildings, construction: {}, units, stocks, nextEntityId };
 }
 
 /** True for buildings of the hand-authored starting settlement (not placed by a player). */

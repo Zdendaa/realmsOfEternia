@@ -182,13 +182,96 @@ body,
 .cost-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 6px;
+  gap: 0 7px;
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.3;
   color: var(--hud-muted);
+}
+
+.cost {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost.is-short {
+  color: #f08a7a;
+  font-weight: 600;
+}
+
+.construction-item.is-unaffordable .construction-name {
+  color: var(--hud-muted);
+}
+
+/* Resource bar: top center, between the title (left) and the settings (right). */
+.resource-bar {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+}
+
+.resource-bar ul {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resource-bar li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.resource-amount {
+  min-width: 2.2em;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A short +/- flash under the amount whenever it changes. */
+.resource-delta {
+  position: absolute;
+  left: 26px;
+  top: 100%;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+  animation: resource-delta 1.4s ease-out forwards;
+}
+
+.resource-delta.is-gain {
+  color: #9be08f;
+}
+
+.resource-delta.is-loss {
+  color: #f08a7a;
+}
+
+@keyframes resource-delta {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
 .placement-hint {

@@ -16,6 +16,7 @@ export {
   type RecruitSerfCommand,
 } from './commands/types.js';
 export { workSlots } from './construction/workSlots.js';
+export { canAfford, EMPTY_STOCK, missingResources, stockOf } from './economy/stock.js';
 export { createSimContext, syncContext, type SimContext } from './context/simContext.js';
 export { createPathFinder, type PathFinder, type PathResult } from './nav/astar.js';
 export {

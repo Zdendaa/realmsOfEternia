@@ -9,7 +9,8 @@ import { applyCommand } from './applyCommand.js';
 import { parseCommand } from './types.js';
 
 const world = createWorld(FLAT_MAP, SETTLEMENT);
-const initial = createInitialState(world);
+// A neutral settlement; alice and bob have starting stocks so they can place buildings.
+const initial = createInitialState(world, { players: ['alice', 'bob'] });
 const ctx = createSimContext(world, initial);
 
 describe('parseCommand', () => {

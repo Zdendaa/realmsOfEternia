@@ -1,4 +1,4 @@
-import { BUILDINGS, UNITS } from '@roe/game-data';
+import { BUILDINGS, isBuildingId, UNITS } from '@roe/game-data';
 import {
   entrancePoint,
   isInPlayableArea,
@@ -7,6 +7,7 @@ import {
   type PlayerId,
 } from '@roe/shared';
 import type { SimContext } from '../context/simContext.js';
+import { canAfford, pay, stockOf, withStock } from '../economy/stock.js';
 import { checkPlacement, quarterTurnsToRadians, type PlacementIssue } from '../rules/placement.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import { spawnPoint } from '../state/spawn.js';
@@ -42,7 +43,9 @@ export type CommandIssue =
   /** The issuer already has the maximum number of serfs. */
   | 'unitLimit'
   /** None of the addressed units exists and belongs to the issuer. */
-  | 'noUnits';
+  | 'noUnits'
+  /** The issuer's stock can't pay the cost. */
+  | 'notEnoughResources';
 
 export interface CommandCheck {
   ok: boolean;
@@ -91,6 +94,21 @@ function checkAssign(state: GameState, issuer: PlayerId, command: AssignBuilders
   return serfs.length === 0 ? fail('noUnits') : OK;
 }
 
+/** Placement rules for the spot, then the cost (an unknown building has no cost to check). */
+function checkPlace(
+  ctx: SimContext,
+  state: GameState,
+  issuer: PlayerId,
+  command: PlaceBuildingCommand,
+): CommandCheck {
+  const issues: CommandIssue[] = [...checkPlacement(ctx.world, state, command, ctx.heights).issues];
+  const known = isBuildingId(command.building);
+  if (known && !canAfford(stockOf(state, issuer), BUILDINGS[command.building].cost)) {
+    issues.push('notEnoughResources');
+  }
+  return issues.length === 0 ? OK : fail(...issues);
+}
+
 /** Checks whether `issuer` may execute `command` in `state`. `ctx` must be synced to `state`. */
 export function validateCommand(
   ctx: SimContext,
@@ -100,8 +118,7 @@ export function validateCommand(
 ): CommandCheck {
   switch (command.type) {
     case 'placeBuilding':
-      // Ownership and resources join the rules with the economy.
-      return checkPlacement(ctx.world, state, command, ctx.heights);
+      return checkPlace(ctx, state, issuer, command);
     case 'recruitSerf':
       return checkRecruit(state, issuer, command);
     case 'moveUnits':
@@ -122,8 +139,9 @@ function placeBuilding(state: GameState, issuer: PlayerId, command: PlaceBuildin
     ownerId: issuer,
     status: 'construction',
   };
+  const paid = withStock(state, issuer, pay(stockOf(state, issuer), definition.cost));
   return {
-    ...state,
+    ...paid,
     buildings: [...state.buildings, site],
     construction: {
       ...state.construction,

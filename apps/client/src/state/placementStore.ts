@@ -1,5 +1,5 @@
 import type { BuildingId } from '@roe/game-data';
-import type { PlaceBuildingCommand, PlacementCheck } from '@roe/sim';
+import type { CommandCheck, PlaceBuildingCommand } from '@roe/sim';
 import { create } from 'zustand';
 
 /** Client-only UI state of the construction tool. Never sent to the server. */
@@ -10,10 +10,10 @@ interface PlacementStore {
   quarterTurns: number;
   /** The command a click would issue right now, and whether it would pass validation. */
   candidate: PlaceBuildingCommand | null;
-  feedback: PlacementCheck | null;
+  feedback: CommandCheck | null;
   select: (building: BuildingId | null) => void;
   rotate: () => void;
-  setCandidate: (candidate: PlaceBuildingCommand | null, feedback: PlacementCheck | null) => void;
+  setCandidate: (candidate: PlaceBuildingCommand | null, feedback: CommandCheck | null) => void;
 }
 
 export const usePlacementStore = create<PlacementStore>()((set) => ({

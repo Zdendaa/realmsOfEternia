@@ -19,8 +19,10 @@ const walkTicks = (distance: number) =>
   Math.ceil((distance / UNITS.serf.speed + 2) * SIMULATION_TICK_RATE);
 const TOWN_HALL = 1;
 
-/** A fresh game owned by alice, with a synced context and a tiny driver. */
-function game(initial: GameState = createInitialState(world, { owner: 'alice' })) {
+/** A fresh game owned by alice (bob also has a stock), with a synced context and a tiny driver. */
+function game(
+  initial: GameState = createInitialState(world, { owner: 'alice', players: ['bob'] }),
+) {
   const ctx = createSimContext(world, initial);
   let state = initial;
   return {
