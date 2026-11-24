@@ -6,40 +6,77 @@ import {
   UNITS,
   type ResourceId,
 } from '@roe/game-data';
-import type { WorkPhase } from '@roe/sim';
-import type { CommandIssue } from '@roe/sim';
+import {
+  awaitsWorker,
+  EMPTY_STOCK,
+  missingResources,
+  populationOf,
+  type CommandIssue,
+  type WorkPhase,
+} from '@roe/sim';
 import { useState } from 'react';
 import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
 import { useSelectionStore } from '../state/selectionStore';
+import { CostList } from './CostList';
 import { RESOURCE_ICONS } from './icons/resourceIcons';
 
 const ISSUE_MESSAGES: Partial<Record<CommandIssue, string>> = {
   unitLimit: `You already have ${UNITS.serf.maxPerPlayer} serfs.`,
   underConstruction: 'The Town Hall is not finished yet.',
   notOwner: 'This building belongs to someone else.',
+  noHousing: 'No free housing: build a house first.',
+  notEnoughResources: 'Not enough food.',
 };
 
-/** Recruiting at the selected Town Hall. */
+/** Why recruiting is not possible right now (checked live, so the button can be disabled). */
+function recruitBlocker(serfs: number, used: number, capacity: number, foodShort: boolean) {
+  if (serfs >= UNITS.serf.maxPerPlayer) return 'unitLimit';
+  if (used >= capacity) return 'noHousing';
+  if (foodShort) return 'notEnoughResources';
+  return null;
+}
+
+/**
+ * Recruiting at the selected Town Hall: cost, population, and the reason when it isn't
+ * possible (no free housing, not enough food). Re-renders only when those change.
+ */
 function TownHallActions({ buildingId }: { buildingId: number }) {
   const dispatch = useGameStore((s) => s.dispatch);
-  const serfs = useGameStore(
-    (s) => s.state.units.filter((u) => u.type === 'serf' && u.ownerId === LOCAL_PLAYER).length,
-  );
-  const [issue, setIssue] = useState<CommandIssue | null>(null);
+  const stock = useGameStore((s) => s.state.stocks[LOCAL_PLAYER] ?? EMPTY_STOCK);
+  const summary = useGameStore((s) => {
+    const { used, capacity } = populationOf(s.state, LOCAL_PLAYER);
+    let serfs = 0;
+    for (const u of s.state.units) if (u.type === 'serf' && u.ownerId === LOCAL_PLAYER) serfs++;
+    return `${serfs},${used},${capacity}`;
+  });
+  const [serfs = 0, used = 0, capacity = 0] = summary.split(',').map(Number);
+  const [rejected, setRejected] = useState<CommandIssue | null>(null);
+
+  const cost = UNITS.serf.cost;
+  const blocker = recruitBlocker(serfs, used, capacity, missingResources(stock, cost).length > 0);
+  const issue = blocker ?? rejected;
 
   const recruit = () => {
     const check = dispatch({ type: 'recruitSerf', buildingId });
-    setIssue(check.ok ? null : (check.issues[0] ?? null));
+    setRejected(check.ok ? null : (check.issues[0] ?? null));
   };
 
   return (
     <>
       <p className="selection-meta">
-        Serfs: {serfs} / {UNITS.serf.maxPerPlayer}
+        Serfs: {serfs} · population {used} / {capacity}
       </p>
-      <button type="button" className="selection-action" onClick={recruit}>
-        Recruit serf
-      </button>
+      <div className="selection-action-row">
+        <button
+          type="button"
+          className="selection-action"
+          onClick={recruit}
+          disabled={blocker !== null}
+        >
+          Recruit serf
+        </button>
+        <CostList cost={cost} stock={stock} />
+      </div>
       {issue && <p className="selection-issue">{ISSUE_MESSAGES[issue] ?? issue}</p>}
     </>
   );
@@ -119,17 +156,27 @@ const WORK_PHASES: Record<WorkPhase, string> = {
   toStorage: 'Carrying {goods} to the Town Hall',
 };
 
-/** The worker of a production building and what it does (re-renders when the phase changes). */
+/**
+ * The worker of a production building and what it does, or that it waits for housing
+ * (re-renders when the phase changes).
+ */
 function WorkerStatus({ buildingId, type }: { buildingId: number; type: keyof typeof BUILDINGS }) {
   const phase = useGameStore((s) => {
     const worker = s.state.units.find(
       (u) => u.task.kind === 'work' && u.task.buildingId === buildingId,
     );
-    return worker?.task.kind === 'work' ? worker.task.phase : null;
+    if (worker?.task.kind === 'work') return worker.task.phase;
+    const building = s.state.buildings.find((b) => b.id === buildingId);
+    return building && awaitsWorker(building, s.state.units) ? 'awaitsHousing' : null;
   });
   const production = productionOf(type);
   if (!production) return null;
   if (!phase) return <p className="selection-meta">No worker</p>;
+  if (phase === 'awaitsHousing') {
+    return (
+      <p className="selection-issue">Worker: waiting for housing. Build a house to make room.</p>
+    );
+  }
   const goods = RESOURCES[RESOURCE_NODES[production.node].resource].name.toLowerCase();
   const text = WORK_PHASES[phase].replace('{node}', production.node).replace('{goods}', goods);
   return <p className="selection-meta">Worker: {text}</p>;

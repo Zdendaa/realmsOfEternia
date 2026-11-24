@@ -7,7 +7,7 @@ import type { GameState } from '../state/gameState.js';
 import { advanceUnits, invalidateBlockedRoutes, planPaths } from '../units/movement.js';
 import { separateUnits } from '../units/separation.js';
 import { updateSerfs } from '../units/serfBehavior.js';
-import { createWorker, employsWorker, updateWorkers } from '../units/workers.js';
+import { hireWorkers, updateWorkers } from '../units/workers.js';
 
 export interface StepResult {
   state: GameState;
@@ -21,8 +21,8 @@ export interface StepResult {
  *
  * Order: commands → behavior (serfs: tasks, gathering, deliveries; workers) → route
  * invalidation → path planning → walking → separation → construction work → workers for
- * finished production buildings. `ctx` is synced along the way and left matching the
- * returned state. The given state is never mutated.
+ * production buildings that have none (housing permitting). `ctx` is synced along the
+ * way and left matching the returned state. The given state is never mutated.
  */
 export function stepGame(
   ctx: SimContext,
@@ -56,16 +56,8 @@ export function stepGame(
     units,
   );
 
-  // Production buildings finished this tick get their worker (in building order).
-  let nextEntityId = current.nextEntityId;
-  if (buildings !== current.buildings) {
-    const before = new Map(current.buildings.map((b) => [b.id, b.status]));
-    for (const b of buildings) {
-      if (before.get(b.id) !== 'complete' && employsWorker(b)) {
-        units.push(createWorker(b, nextEntityId++));
-      }
-    }
-  }
+  // Production buildings without a worker get one while their owner has free housing.
+  const nextEntityId = hireWorkers(buildings, units, current.nextEntityId);
 
   const next: GameState = {
     ...current,

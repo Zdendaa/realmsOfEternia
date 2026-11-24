@@ -55,7 +55,7 @@ Downloads live in `assets-incoming/` (gitignored). They were checked: model, tex
 
 | #    | Scope                                                        | Status |
 | ---- | ------------------------------------------------------------ | ------ |
-| 5b.1 | Population and recruit cost                                  |        |
+| 5b.1 | Population and recruit cost                                  | ✅     |
 | 5b.2 | Profession looks (hats, tools, tint, loads)                  |        |
 | 5b.3 | Farm: production union, farmer, grow cycle, grain            |        |
 | 5b.4 | Mill and bakery: process loop, spinning blades, temp. bakery |        |

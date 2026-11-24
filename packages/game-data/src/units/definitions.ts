@@ -6,6 +6,7 @@ export const UNITS = {
     id: 'serf',
     name: 'Serf',
     description: 'Builds construction sites. Recruited at the Town Hall.',
+    cost: { food: 2 },
     // A brisk walk. The character's walk cycle plays at speed / ~0.62 units/s (~3.2×) to
     // keep the feet planted: quick steps, which read fine at RTS zoom. See CHARACTER_PACK.serf.
     speed: 2,
@@ -17,9 +18,11 @@ export const UNITS = {
     id: 'worker',
     name: 'Worker',
     description: 'Works in a production building. Arrives when the building is finished.',
+    cost: {},
     speed: 2,
     radius: 0.4,
-    // One per production building; the cap only guards against runaway spawning.
+    // One per production building (and only with free housing); the cap only guards
+    // against runaway spawning.
     maxPerPlayer: 200,
     controllable: false,
   },

@@ -1,8 +1,8 @@
 import { RESOURCE_IDS, RESOURCES, type ResourceAmounts, type ResourceId } from '@roe/game-data';
-import { EMPTY_STOCK } from '@roe/sim';
+import { EMPTY_STOCK, populationOf } from '@roe/sim';
 import { useState } from 'react';
 import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
-import { RESOURCE_ICONS } from './icons/resourceIcons';
+import { POPULATION_ICON, RESOURCE_ICONS } from './icons/resourceIcons';
 
 /** The last change per resource; `serial` restarts the flash animation. */
 type Flashes = Partial<Record<ResourceId, { delta: number; serial: number }>>;
@@ -21,8 +21,37 @@ function nextFlashes(
 }
 
 /**
- * Top resource bar: the local player's stock. It re-renders only when the stock object
- * changes (payments, deliveries), never per tick; each change flashes its +/- delta.
+ * Serfs and workers against housing. The selector returns a string, so the indicator
+ * re-renders only when either number changes (not every tick).
+ */
+function PopulationIndicator() {
+  const summary = useGameStore((s) => {
+    const { used, capacity } = populationOf(s.state, LOCAL_PLAYER);
+    return `${used}/${capacity}`;
+  });
+  const [used = 0, capacity = 0] = summary.split('/').map(Number);
+  const full = used >= capacity;
+  return (
+    <li
+      className={`population ${full ? 'is-full' : ''}`}
+      title={
+        full
+          ? 'Population: no free housing. Build houses for more serfs and workers.'
+          : 'Population: serfs and workers / housing'
+      }
+    >
+      <img src={POPULATION_ICON} alt="Population" width={22} height={22} />
+      <span className="resource-amount">
+        {used} / {capacity}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * Top resource bar: the local player's stock and population. The stock part re-renders
+ * only when the stock object changes (payments, deliveries), never per tick; each change
+ * flashes its +/- delta.
  */
 export function ResourceBar() {
   const stock = useGameStore((s) => s.state.stocks[LOCAL_PLAYER] ?? EMPTY_STOCK);
@@ -56,6 +85,7 @@ export function ResourceBar() {
             </li>
           );
         })}
+        <PopulationIndicator />
       </ul>
     </section>
   );

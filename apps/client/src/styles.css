@@ -237,6 +237,16 @@ body,
   font-variant-numeric: tabular-nums;
 }
 
+/* Population sits after the resources, set off by a thin divider; red when housing is full. */
+.resource-bar li.population {
+  padding-left: 14px;
+  border-left: 1px solid var(--hud-border);
+}
+
+.resource-bar li.population.is-full .resource-amount {
+  color: #f08a7a;
+}
+
 /* A short +/- flash under the amount whenever it changes. */
 .resource-delta {
   position: absolute;
@@ -331,8 +341,20 @@ body,
   cursor: pointer;
 }
 
-.selection-action:hover {
+.selection-action:hover:not(:disabled) {
   background: rgb(255 255 255 / 16%);
+}
+
+.selection-action:disabled {
+  color: var(--hud-muted);
+  cursor: not-allowed;
+}
+
+/* An action button with its cost line next to it. */
+.selection-action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .site-materials {

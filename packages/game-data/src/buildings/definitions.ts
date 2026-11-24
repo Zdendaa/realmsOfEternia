@@ -26,11 +26,12 @@ export const BUILDINGS = {
     cost: {},
     buildTime: 120,
     maxBuilders: 6,
+    housing: 10,
   },
   house: {
     id: 'house',
     name: 'House',
-    description: 'Home for settlers.',
+    description: 'Home for settlers: room for 4 more serfs or workers.',
     modelPath: model('house'),
     scale: S,
     footprint: { w: 5, d: 5 },
@@ -39,6 +40,7 @@ export const BUILDINGS = {
     cost: { wood: 4, stone: 2 },
     buildTime: 30,
     maxBuilders: 3,
+    housing: 4,
   },
   well: {
     id: 'well',
@@ -129,6 +131,10 @@ export type BuildingId = keyof typeof BUILDINGS;
 /** The production settings of a building type, if it is a production building. */
 export const productionOf = (type: BuildingId): BuildingDefinition['production'] =>
   (BUILDINGS[type] as BuildingDefinition).production;
+
+/** Population capacity a complete building of this type adds (0 for most buildings). */
+export const housingOf = (type: BuildingId): number =>
+  (BUILDINGS[type] as BuildingDefinition).housing ?? 0;
 
 /** Narrows an arbitrary string (e.g. from a network message) to a known building id. */
 export function isBuildingId(value: unknown): value is BuildingId {

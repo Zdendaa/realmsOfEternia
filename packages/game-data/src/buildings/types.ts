@@ -50,6 +50,11 @@ export interface BuildingDefinition {
   buildTime: number;
   /** How many serfs can work on its construction site at once. */
   maxBuilders: number;
+  /**
+   * Population capacity the building adds once complete (Town Hall, houses). Every serf
+   * and worker takes one place.
+   */
+  housing?: number;
   /** Set for production buildings (see `ProductionDefinition`). */
   production?: ProductionDefinition;
 }

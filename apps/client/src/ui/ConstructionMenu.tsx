@@ -4,47 +4,17 @@ import {
   type BuildingDefinition,
   type BuildingId,
   type ResourceAmounts,
-  type ResourceId,
 } from '@roe/game-data';
 import { EMPTY_STOCK, missingResources, type CommandIssue } from '@roe/sim';
 import { useEffect } from 'react';
 import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
 import { usePlacementStore } from '../state/placementStore';
-import { RESOURCE_ICONS } from './icons/resourceIcons';
+import { CostList } from './CostList';
 import { PLACEMENT_MESSAGES } from './placementMessages';
 
 const BUILDABLE = Object.values(BUILDINGS).filter((b) => b.buildable) as (BuildingDefinition & {
   id: BuildingId;
 })[];
-
-function CostList({
-  cost,
-  stock,
-}: {
-  cost: BuildingDefinition['cost'];
-  stock: Readonly<ResourceAmounts>;
-}) {
-  const entries = Object.entries(cost) as [ResourceId, number][];
-  return (
-    <ul className="cost-list">
-      {entries.map(([resource, amount]) => (
-        <li
-          key={resource}
-          className={`cost ${stock[resource] < amount ? 'is-short' : ''}`}
-          title={`${amount} ${RESOURCES[resource].name}`}
-        >
-          <img
-            src={RESOURCE_ICONS[resource]}
-            alt={RESOURCES[resource].name}
-            width={12}
-            height={12}
-          />
-          {amount}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /** "Not enough wood and stone" for the resources the stock can't cover. */
 function shortageMessage(building: BuildingId, stock: Readonly<ResourceAmounts>) {

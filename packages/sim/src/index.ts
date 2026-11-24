@@ -17,6 +17,7 @@ export {
   type RecruitSerfCommand,
 } from './commands/types.js';
 export { workSlots } from './construction/workSlots.js';
+export { hasFreeHousing, populationOf, type Population } from './economy/population.js';
 export { canAfford, EMPTY_STOCK, missingResources, stockOf } from './economy/stock.js';
 export { createSimContext, syncContext, type SimContext } from './context/simContext.js';
 export { createPathFinder, type PathFinder, type PathResult } from './nav/astar.js';
@@ -68,6 +69,7 @@ export type {
 export { stepGame, type StepResult } from './tick/stepGame.js';
 export { MOVEMENT_RULES } from './units/movement.js';
 export { SERF_RULES } from './units/serfBehavior.js';
+export { awaitsWorker } from './units/workers.js';
 export { STORAGE_RULES } from './units/gathering.js';
 export {
   boundsOf,

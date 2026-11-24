@@ -7,6 +7,7 @@ import {
   type PlayerId,
 } from '@roe/shared';
 import type { SimContext } from '../context/simContext.js';
+import { hasFreeHousing, populationOf } from '../economy/population.js';
 import { canAfford, pay, stockOf, withStock } from '../economy/stock.js';
 import { checkPlacement, quarterTurnsToRadians, type PlacementIssue } from '../rules/placement.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
@@ -45,6 +46,8 @@ export type CommandIssue =
   | 'notConstructionSite'
   /** The issuer already has the maximum number of serfs. */
   | 'unitLimit'
+  /** Every place in the issuer's houses and Town Hall is taken. */
+  | 'noHousing'
   /** None of the addressed units exists and belongs to the issuer. */
   | 'noUnits'
   /** The issuer's stock can't pay the cost. */
@@ -85,7 +88,10 @@ function checkRecruit(state: GameState, issuer: PlayerId, command: RecruitSerfCo
   if (building.status !== 'complete') return fail('underConstruction');
   const serfs = state.units.filter((u) => u.type === 'serf' && u.ownerId === issuer).length;
   if (serfs >= UNITS.serf.maxPerPlayer) return fail('unitLimit');
-  return OK;
+  const issues: CommandIssue[] = [];
+  if (!hasFreeHousing(populationOf(state, issuer))) issues.push('noHousing');
+  if (!canAfford(stockOf(state, issuer), UNITS.serf.cost)) issues.push('notEnoughResources');
+  return issues.length === 0 ? OK : fail(...issues);
 }
 
 function checkMove(ctx: SimContext, state: GameState, issuer: PlayerId, command: MoveUnitsCommand) {
@@ -189,7 +195,8 @@ function recruitSerf(state: GameState, issuer: PlayerId, command: RecruitSerfCom
     activity: 'idle',
     carrying: null,
   };
-  return { ...state, units: [...state.units, serf], nextEntityId: state.nextEntityId + 1 };
+  const paid = withStock(state, issuer, pay(stockOf(state, issuer), UNITS.serf.cost));
+  return { ...paid, units: [...state.units, serf], nextEntityId: state.nextEntityId + 1 };
 }
 
 /** Sends `units` to spread-out points around (x, z); the nearest unit takes the center. */
