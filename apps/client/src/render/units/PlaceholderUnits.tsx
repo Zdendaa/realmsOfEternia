@@ -1,4 +1,5 @@
 import { useFrame } from '@react-three/fiber';
+import { CHARACTER_PACK } from '@roe/game-data';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   Euler,
@@ -16,8 +17,8 @@ import { ownerColor } from './unitColors';
 import { unitPose } from './unitPose';
 import { UNIT_CAPACITY } from './unitCapacity';
 
-/** Placeholder serfs are modelled 1 unit tall; drawn a bit larger to read at RTS zoom. */
-const UNIT_SCALE = 1.35;
+/** Placeholder serfs are modelled 1 unit tall; drawn as tall as the character model. */
+const UNIT_SCALE = CHARACTER_PACK.serf.height * CHARACTER_PACK.serf.scale;
 
 const matrix = new Matrix4();
 const position = new Vector3();

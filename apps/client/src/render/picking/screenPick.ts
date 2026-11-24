@@ -1,9 +1,10 @@
+import { CHARACTER_PACK } from '@roe/game-data';
 import type { EntityId } from '@roe/shared';
 import { Vector3, type Camera } from 'three';
 import { renderedUnits } from '../units/renderedUnits';
 
-/** Height above the ground that counts as a unit's center on screen. */
-const UNIT_CENTER_HEIGHT = 0.65;
+/** Height above the ground that counts as a unit's center on screen: half its height. */
+const UNIT_CENTER_HEIGHT = 0.5 * CHARACTER_PACK.serf.height * CHARACTER_PACK.serf.scale;
 /** A click this close (px) to a unit's center selects it. */
 const CLICK_RADIUS = 18;
 
