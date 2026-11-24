@@ -14,7 +14,10 @@ export const STARTING_RESOURCES = {
 } as const satisfies ResourceAmounts;
 
 /**
- * Buildings where villagers drop off goods and pick up construction materials.
- * The Storehouse joins later (Phase 5 plan, milestone 5.5).
+ * Buildings where villagers drop off goods and pick up construction materials (the
+ * nearest complete one of the owner). Goods count in the one global stock.
  */
-export const STORAGE_BUILDINGS = ['townHall'] as const satisfies readonly BuildingId[];
+export const STORAGE_BUILDINGS = [
+  'townHall',
+  'storehouse',
+] as const satisfies readonly BuildingId[];

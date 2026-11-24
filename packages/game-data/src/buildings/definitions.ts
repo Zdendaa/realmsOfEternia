@@ -5,11 +5,36 @@ import type { BuildingDefinition } from './types.js';
 const model = (file: string) => `${MEDIEVAL_PACK.modelDir}${file}.gltf.glb`;
 const S = MEDIEVAL_PACK.worldScale;
 const hexagonModel = (file: string) => `${HEXAGON_PACK.modelDir}${file}.glb`;
+const H = HEXAGON_PACK.worldScale;
+const prop = (file: string) => `${HEXAGON_PACK.modelDir}props/${file}.glb`;
+const deg = (degrees: number) => (degrees * Math.PI) / 180;
+
+/**
+ * The storehouse yard (7 × 6, open toward +Z), assembled from Hexagon props at the pack
+ * scale: a tent at the back, a lumber pile and a stone pile beside it, pallets with
+ * crates and sacks, barrels and a wheelbarrow in front, and a flag in the owner's color.
+ */
+const STOREHOUSE_PARTS = [
+  { modelPath: prop('tent'), x: 0, z: -1.5, scale: 5 },
+  { modelPath: prop('resource_lumber'), x: -2.55, z: -0.8, rotation: deg(90), scale: H },
+  { modelPath: prop('resource_stone'), x: 2.45, z: -1.75, rotation: deg(15), scale: H },
+  { modelPath: prop('barrel'), x: 2.9, z: 0.15, scale: H },
+  { modelPath: prop('barrel'), x: 2.2, z: 0.55, rotation: deg(40), scale: H },
+  { modelPath: prop('barrel'), x: 3.0, z: 0.95, rotation: deg(80), scale: H },
+  { modelPath: prop('pallet'), x: -2.2, z: 1.65, scale: H },
+  { modelPath: prop('crate_A_big'), x: -2.45, z: 1.45, y: 0.3, scale: H },
+  { modelPath: prop('crate_A_small'), x: -1.8, z: 1.95, y: 0.3, rotation: deg(25), scale: H },
+  { modelPath: prop('crate_B_big'), x: -2.4, z: 1.45, y: 1.15, rotation: deg(10), scale: H * 0.85 },
+  { modelPath: prop('pallet'), x: -0.6, z: 0.6, rotation: deg(-10), scale: H },
+  { modelPath: prop('sack'), x: -0.85, z: 0.45, y: 0.3, rotation: deg(20), scale: H },
+  { modelPath: prop('sack'), x: -0.35, z: 0.8, y: 0.3, rotation: deg(-30), scale: H },
+  { modelPath: prop('crate_long_A'), x: 1.6, z: 2.25, rotation: deg(-15), scale: H },
+  { modelPath: prop('wheelbarrow'), x: 0.6, z: 1.7, rotation: deg(-35), scale: H },
+  { modelPath: HEXAGON_PACK.construction.flag, x: 3.1, z: 2.6, scale: 6 },
+] as const;
 
 /** farm_plot tile spacing inside a field: its footprint plus a thin furrow. */
 const PLOT_STEP = { x: 4.6, z: 4.1 };
-
-const H = HEXAGON_PACK.worldScale;
 
 /**
  * Building catalog. Footprints come from measured model bounding boxes × scale, rounded
@@ -98,7 +123,7 @@ export const BUILDINGS = {
   mill: {
     id: 'mill',
     name: 'Mill',
-    description: 'Its miller grinds grain from the Town Hall into flour.',
+    description: 'Its miller grinds grain from storage into flour.',
     modelPath: hexagonModel('building_windmill'),
     scale: H,
     footprint: { w: 5, d: 4 },
@@ -229,6 +254,22 @@ export const BUILDINGS = {
       seconds: 8,
       deposit: 'iron',
     },
+  },
+  storehouse: {
+    id: 'storehouse',
+    name: 'Storehouse',
+    description:
+      'A storage yard: villagers drop off goods and pick up building materials here, like at the Town Hall. Build it near your workers.',
+    modelPath: prop('tent'),
+    parts: STOREHOUSE_PARTS,
+    scale: H,
+    footprint: { w: 7, d: 6 },
+    rotationOffset: 0,
+    buildable: true,
+    cost: { wood: 6, stone: 3 },
+    buildTime: 40,
+    maxBuilders: 4,
+    yard: true,
   },
   market: {
     id: 'market',

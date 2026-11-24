@@ -2,6 +2,21 @@ import type { DecorationKind, DepositKind, Footprint } from '@roe/shared';
 import type { ResourceCost, ResourceId } from '../resources/definitions.js';
 import type { ProfessionId } from '../units/professions.js';
 
+/**
+ * One model of a building assembled from several (a storehouse yard from props), placed
+ * in the building's local space: offset in world units (entrance toward +Z), Y rotation in
+ * radians, uniform scale.
+ */
+export interface ModelPartPlacement {
+  modelPath: string;
+  x: number;
+  z: number;
+  /** Height above the ground (stacked on another part). */
+  y?: number;
+  rotation?: number;
+  scale: number;
+}
+
 /** A model repeated on a grid inside one building (e.g. a field of crop tiles). */
 export interface ModelTiling {
   cols: number;
@@ -96,6 +111,11 @@ export interface BuildingDefinition {
    * whose crop tiles don't suit a building shell).
    */
   construction?: 'stages' | 'reveal';
+  /**
+   * When set, the building is drawn as these models (instead of `modelPath`, which then
+   * names the main one). Every part fits the footprint.
+   */
+  parts?: readonly ModelPartPlacement[];
   /** Draws a trampled dirt yard around its base and in front of its entrance (cosmetic). */
   yard?: boolean;
   /** When set, the model is drawn as a grid of tiles centered on the building. */

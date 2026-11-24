@@ -23,6 +23,7 @@ export type {
   BuildingDefinition,
   FarmProduction,
   HarvestProduction,
+  ModelPartPlacement,
   ModelTiling,
   ProcessProduction,
   ProductionDefinition,

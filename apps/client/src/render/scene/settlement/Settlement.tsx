@@ -12,10 +12,11 @@ import { useMemo } from 'react';
 import type { PlacedProp } from '../../../world/decorateWorld';
 import { ModelInstances, type ModelInstance } from './ModelInstances';
 import { publicUrl } from './modelAssets';
+import { modelFilesOf } from './modelFiles';
 
 // Start downloading every settlement model as soon as this module loads.
 for (const definition of Object.values(BUILDINGS) as BuildingDefinition[]) {
-  for (const path of definition.modelVariants ?? [definition.modelPath]) {
+  for (const path of modelFilesOf(definition)) {
     useGLTF.preload(publicUrl(path), false);
   }
 }
@@ -44,18 +45,32 @@ interface SettlementProps {
  * One model instance per building, or one per tile for tiled buildings (fields).
  * Tile offsets are rotated with the building.
  */
-function buildingInstances(b: OwnedBuilding): ModelInstance[] {
+function buildingInstances(b: OwnedBuilding): { modelPath: string; instance: ModelInstance }[] {
   const { definition } = b;
   const rotation = b.rotation + definition.rotationOffset;
   const cos = Math.cos(b.rotation);
   const sin = Math.sin(b.rotation);
+  const at = (x: number, z: number) => ({
+    x: b.x + x * cos + z * sin,
+    z: b.z - x * sin + z * cos,
+  });
+  // Assembled buildings (the storehouse): one instance per part, in the part's model.
+  if (definition.parts) {
+    return definition.parts.map((part) => ({
+      modelPath: part.modelPath,
+      instance: {
+        ...at(part.x, part.z),
+        y: b.y + (part.y ?? 0),
+        rotation: rotation + (part.rotation ?? 0),
+        scale: part.scale,
+        owner: b.ownerId,
+      },
+    }));
+  }
+  const modelPath = modelPathOf(definition, b.id);
   return tileOffsets(definition).map((t) => ({
-    x: b.x + t.x * cos + t.z * sin,
-    y: b.y,
-    z: b.z - t.x * sin + t.z * cos,
-    rotation,
-    scale: definition.scale,
-    owner: b.ownerId,
+    modelPath,
+    instance: { ...at(t.x, t.z), y: b.y, rotation, scale: definition.scale, owner: b.ownerId },
   }));
 }
 
@@ -75,12 +90,7 @@ export function Settlement({ buildings, props }: SettlementProps) {
   const groups = useMemo(
     () =>
       groupByModel([
-        ...buildings.flatMap((b) =>
-          buildingInstances(b).map((instance) => ({
-            modelPath: modelPathOf(b.definition, b.id),
-            instance,
-          })),
-        ),
+        ...buildings.flatMap(buildingInstances),
         ...props.map((p) => ({ modelPath: p.definition.modelPath, instance: p })),
       ]),
     [buildings, props],

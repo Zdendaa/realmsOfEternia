@@ -162,21 +162,21 @@ const WORK_PHASES: Record<ProductionDefinition['kind'], Partial<Record<WorkPhase
     working: 'Harvesting a {node}',
     toBuilding: 'Bringing {goods} back',
     processing: 'Preparing {goods}',
-    toStorage: 'Carrying {goods} to the Town Hall',
+    toStorage: 'Carrying {goods} to storage',
   },
   farm: {
     waiting: 'Waiting for the {goods} to ripen',
     toPlot: 'Walking to the next plot',
     sowing: 'Sowing',
     harvesting: 'Reaping {goods}',
-    toStorage: 'Carrying {goods} to the Town Hall',
+    toStorage: 'Carrying {goods} to storage',
   },
   process: {
-    waiting: 'Waiting for {input} in the Town Hall',
-    fetching: 'Fetching {input} from the Town Hall',
+    waiting: 'Waiting for {input} in storage',
+    fetching: 'Fetching {input} from storage',
     toBuilding: 'Bringing {input} in',
     processing: 'Making {goods} inside',
-    toStorage: 'Carrying {goods} to the Town Hall',
+    toStorage: 'Carrying {goods} to storage',
   },
 };
 

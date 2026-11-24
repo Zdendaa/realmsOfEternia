@@ -33,7 +33,7 @@ Resource storage, paid construction with physical material delivery, gathering b
 | 5.3 | Carrying visual                                             | ✅     |
 | 5.4 | Material delivery to construction sites                     | ✅     |
 | 5.6 | Workers: lumbermill and quarry                              | ✅     |
-| 5.5 | Storehouse (postponed; last or a later phase)               |        |
+| 5.5 | Storehouse (postponed; done in Phase 5b.6)                  | ✅     |
 
 ### 5.1 Stockpile and paid costs
 
@@ -67,6 +67,8 @@ Resource storage, paid construction with physical material delivery, gathering b
 ### 5.5 Storehouse (postponed)
 
 A storage building as an extra drop-off point. Needs a model (none in the Builder Pack); revisit at the end of Phase 5 or later.
+
+Done 2026-11-24 (in Phase 5b.6): assembled from Hexagon pack props (`BuildingDefinition.parts`), listed in `STORAGE_BUILDINGS`, so gatherers, workers and builders use the nearest storage.
 
 ## Not in scope
 

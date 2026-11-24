@@ -30,6 +30,7 @@ import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import { usePlacementStore } from '../../state/placementStore';
 import { lowerCrop } from '../scene/settlement/cropHeight';
 import { applyMaterialOverrides, publicUrl } from '../scene/settlement/modelAssets';
+import { modelFilesOf } from '../scene/settlement/modelFiles';
 import { singleTeamMaterial, type TintUniform } from '../scene/settlement/teamColorMaterial';
 import { ownerColor } from '../units/unitColors';
 import { pickGround } from './groundPick';
@@ -84,6 +85,16 @@ function createGhostMaterials() {
 
 type GhostMaterials = ReturnType<typeof createGhostMaterials>;
 
+/** Swaps an object's materials for their ghost versions. */
+function ghostify(root: Object3D, materials: GhostMaterials) {
+  root.traverse((object) => {
+    if (object instanceof Mesh) {
+      object.material = materials.model(object.material as Material);
+      object.castShadow = false;
+    }
+  });
+}
+
 /** The tiles of one model variant, drawn with the ghost versions of their materials. */
 function addGhostTiles(
   variant: Group,
@@ -97,12 +108,7 @@ function addGhostTiles(
     tile.rotation.y = definition.rotationOffset;
     tile.scale.setScalar(definition.scale);
     lowerCrop(tile, definition);
-    tile.traverse((object) => {
-      if (object instanceof Mesh) {
-        object.material = materials.model(object.material as Material);
-        object.castShadow = false;
-      }
-    });
+    ghostify(tile, materials);
     variant.add(tile);
   }
 }
@@ -138,8 +144,9 @@ interface GhostProps {
  */
 function Ghost({ building, quarterTurns }: GhostProps) {
   const definition: BuildingDefinition = BUILDINGS[building];
-  // Every model variant; the one the next building would get is shown (`modelPathOf`).
-  const paths = definition.modelVariants ?? [definition.modelPath];
+  // Every model variant (the one the next building would get is shown, `modelPathOf`), or
+  // every part model of an assembled building.
+  const paths = modelFilesOf(definition);
   const loaded = useGLTF(paths.map(publicUrl), false);
   const materials = useMemo(() => createGhostMaterials(), []);
   const groupRef = useRef<Group>(null);
@@ -149,15 +156,32 @@ function Ghost({ building, quarterTurns }: GhostProps) {
 
   const model = useMemo(() => {
     const group = new Group();
-    paths.forEach((path, i) => {
-      const scene = loaded[i]?.scene;
-      if (!scene) return;
-      const variant = new Group();
-      variant.userData.modelPath = path;
-      group.add(variant);
-      applyMaterialOverrides(scene);
-      addGhostTiles(variant, scene, definition, materials);
-    });
+    if (definition.parts) {
+      const assembled = new Group();
+      assembled.userData.modelPath = definition.modelPath;
+      group.add(assembled);
+      for (const part of definition.parts) {
+        const scene = loaded[paths.indexOf(part.modelPath)]?.scene;
+        if (!scene) continue;
+        applyMaterialOverrides(scene);
+        const object = scene.clone(true);
+        object.position.set(part.x, part.y ?? 0, part.z);
+        object.rotation.y = definition.rotationOffset + (part.rotation ?? 0);
+        object.scale.setScalar(part.scale);
+        ghostify(object, materials);
+        assembled.add(object);
+      }
+    }
+    if (!definition.parts)
+      paths.forEach((path, i) => {
+        const scene = loaded[i]?.scene;
+        if (!scene) return;
+        const variant = new Group();
+        variant.userData.modelPath = path;
+        group.add(variant);
+        applyMaterialOverrides(scene);
+        addGhostTiles(variant, scene, definition, materials);
+      });
     const plate = new Mesh(
       new PlaneGeometry(definition.footprint.w, definition.footprint.d),
       materials.plates.valid,
