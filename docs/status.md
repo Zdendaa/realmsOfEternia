@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-24._
 
-**Current state:** Phase 4 (serfs and construction sites) is in progress. 4.1 is done: the deterministic 10 Hz tick, serfs, pathfinding and construction sites run in `@roe/sim` (client and server), and the server ticks the simulation. The client doesn't run the tick or show serfs yet (4.2).
+**Current state:** Phase 4 (serfs and construction sites) is in progress. 4.1 and 4.2 are done: the deterministic 10 Hz tick, serfs, pathfinding and construction sites run in `@roe/sim` on client and server. The client runs the tick, shows interpolated placeholder serfs and recruits serfs at the Town Hall. Idle serfs walk to nearby sites and build them; sites still look like finished buildings until 4.4.
 
 ## Phases
 
@@ -20,8 +20,8 @@ _Last updated: 2026-11-24._
 | 3.2   | Placement rules, commands, game state, unit tests                                 | ✅ Done |
 | 3.3   | Construction menu, placement preview and placing                                  | ✅ Done |
 | 4.1   | Sim core: 10 Hz tick, serfs, nav grid + A*, separation, construction, commands    | ✅ Done |
-| 4.2   | Client tick loop, interpolation, placeholder serfs, recruiting                    | ⏳ Next |
-| 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | Planned |
+| 4.2   | Client tick loop, interpolation, placeholder serfs, recruiting                    | ✅ Done |
+| 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | ⏳ Next |
 | 4.4   | Construction sites: visuals, progress, right-click assignment                     | Planned |
 | 4.5   | Character models with baked-animation instancing                                  | Planned |
 | 5     | Economy (resources, costs paid, production)                                       | Planned |

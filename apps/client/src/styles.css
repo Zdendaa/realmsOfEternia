@@ -213,3 +213,47 @@ body,
     flex-wrap: wrap;
   }
 }
+
+/* Selection panel: right side, above the FPS stats corner. */
+.selection-panel {
+  right: 12px;
+  color: var(--hud-text);
+  font-size: 13px;
+  bottom: 70px;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.selection-panel h2 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--hud-accent);
+}
+
+.selection-meta {
+  margin: 0;
+  color: var(--hud-muted);
+  font-size: 12px;
+}
+
+.selection-action {
+  padding: 6px 10px;
+  border: 1px solid var(--hud-border);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 8%);
+  color: var(--hud-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.selection-action:hover {
+  background: rgb(255 255 255 / 16%);
+}
+
+.selection-issue {
+  margin: 0;
+  color: #ff8a7a;
+  font-size: 12px;
+}

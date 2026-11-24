@@ -10,6 +10,9 @@ import { RtsCameraControls } from './camera/RtsCameraControls';
 import { PlacementPreview } from './placement/PlacementPreview';
 import { ATMOSPHERE } from './scene/atmosphere';
 import { World } from './scene/World';
+import { SelectionMarkers } from './selection/SelectionMarkers';
+import { SimulationDriver } from './simulation/SimulationDriver';
+import { Units } from './units/Units';
 
 /** Default view: about 50° pitch, 55 units from the map center. */
 const CAMERA_START: [number, number, number] = [25, 42, 25];
@@ -34,7 +37,11 @@ export function GameCanvas() {
       }}
       onContextMenu={(event) => event.preventDefault()}
     >
+      {/* The driver must come first: its frame callback advances the tick before others read it. */}
+      <SimulationDriver />
       <World world={world} heights={heights} buildings={buildings} />
+      <Units />
+      <SelectionMarkers />
       <PlacementPreview />
       <RtsCameraControls bounds={world.map.size / 2} heights={heights} />
       {showStats && <Stats className="fps-stats" />}
