@@ -31,6 +31,12 @@ export const HEXAGON_PACK = {
    * `stageSize` / `scaffoldingSize` are the largest model extents (pack units, w × d) the
    * site scales to its footprint.
    */
+  /**
+   * Felled trees leave one of these stumps (picked by tree id), scaled to the trunk: about
+   * `stumpScale` × the tree's own scale. Cosmetic (client).
+   */
+  stumps: ['assets/models/hexagon/stump_A.glb', 'assets/models/hexagon/stump_B.glb'],
+  stumpScale: 3.5,
   construction: {
     stages: [
       'assets/models/hexagon/construction_stage_A.glb',

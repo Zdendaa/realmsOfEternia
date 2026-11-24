@@ -16,6 +16,7 @@ import { ChimneySmoke } from './settlement/ChimneySmoke';
 import { Settlement, type OwnedBuilding } from './settlement/Settlement';
 import { SpinningParts, type AnimatedBuilding } from './settlement/SpinningParts';
 import { Sky } from './Sky';
+import { Stumps } from './Stumps';
 import { Terrain } from './Terrain';
 import { Trees } from './Trees';
 import { Water } from './Water';
@@ -133,6 +134,12 @@ export function World({ world, heights, buildings, resourceNodes }: WorldProps) 
         <Settlement buildings={placedBuildings} props={props} />
         <FieldCrops fields={cropFields} />
         <SpinningParts buildings={animated} />
+        <Stumps
+          trees={trees}
+          resourceNodes={resourceNodes}
+          groundLevel={groundLevel}
+          blockers={playerFootprints}
+        />
       </Suspense>
       <ChimneySmoke buildings={animated} />
       <ConstructionSites sites={sites} />
