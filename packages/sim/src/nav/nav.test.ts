@@ -6,7 +6,7 @@ import { createSimContext } from '../context/simContext.js';
 import { createInitialState } from '../state/gameState.js';
 import { FLAT_MAP, FOREST_MAP, TOWN } from '../test/fixtures.js';
 import { createWorld } from '../world/createWorld.js';
-import { isWalkable } from './navGrid.js';
+import { isWalkable, nearestWalkablePoint } from './navGrid.js';
 import { hasLineOfSight } from './smoothPath.js';
 
 const world = createWorld(FLAT_MAP, TOWN);
@@ -38,6 +38,16 @@ describe('nav grid', () => {
     const trees = forest.decorations.filter((d) => d.kind === 'tree');
     expect(trees.length).toBeGreaterThan(20);
     for (const tree of trees) expect(isWalkable(forestCtx.nav, tree.x, tree.z)).toBe(false);
+  });
+
+  it('resolves move targets to the nearest walkable point, or null', () => {
+    expect(nearestWalkablePoint(ctx.nav, -20, -20)).toEqual({ x: -20, z: -20 });
+    // Inside the lake (radius 8 at 35, 35): the nearest shore cell.
+    const shore = nearestWalkablePoint(ctx.nav, 30, 35) ?? { x: NaN, z: NaN };
+    expect(isWalkable(ctx.nav, shore.x, shore.z)).toBe(true);
+    expect(Math.hypot(shore.x - 30, shore.z - 35)).toBeLessThan(6);
+    // Far outside the map: nothing within reach.
+    expect(nearestWalkablePoint(ctx.nav, 500, 500)).toBeNull();
   });
 });
 

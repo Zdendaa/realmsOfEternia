@@ -72,7 +72,9 @@ function commandSelected(element: HTMLElement, camera: Camera, x: number, y: num
     }
   } else if (intent.kind === 'move') {
     const result = dispatch({ type: 'moveUnits', unitIds: [...unitIds], x: intent.x, z: intent.z });
-    if (result.ok) commandFeedback.push({ kind: 'move', x: intent.x, y: intent.y, z: intent.z });
+    // The marker shows where the units end up: on the shore for a click into water.
+    const { x, z } = intent.destination;
+    if (result.ok) commandFeedback.push({ kind: 'move', x, y: heights.getHeightAt(x, z), z });
   }
 }
 

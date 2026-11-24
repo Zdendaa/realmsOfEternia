@@ -1,4 +1,4 @@
-import type { DecorationKind, EntityId } from '@roe/shared';
+import type { DecorationKind, EntityId, Vec2 } from '@roe/shared';
 import { LOCAL_PLAYER } from '../state/gameStore';
 import type { PointerTarget } from './pointerTarget';
 
@@ -18,14 +18,17 @@ const RESOURCE_CURSOR: Record<DecorationKind, CursorKind> = {
 /** What right click would do with the current selection. */
 export type CommandIntent =
   | { kind: 'build'; siteId: EntityId }
-  | { kind: 'move'; x: number; y: number; z: number }
+  /** (x, z): the clicked point, sent to the sim; `destination`: where the units end up. */
+  | { kind: 'move'; x: number; z: number; destination: Vec2 }
   | { kind: 'blocked' }
   | { kind: 'none' };
 
 /**
- * The right-click command for selected serfs: build an own construction site, walk to
- * walkable ground; buildings, water, slopes, trees and rocks are blocked. Own units
- * under the pointer are ignored, so right-clicking a serf walks to the ground there.
+ * The right-click command for selected serfs: build an own construction site, or walk.
+ * Water and steep slopes are fine: the units go to the nearest walkable spot, as the
+ * sim resolves it. Blocked: other buildings, trees and rocks (until Phase 5 gives them
+ * gathering commands), and points with nothing reachable nearby. Own units under the
+ * pointer are ignored, so right-clicking a serf walks to the ground there.
  */
 export function commandIntent(target: PointerTarget): CommandIntent {
   const { building, ground } = target;
@@ -35,9 +38,8 @@ export function commandIntent(target: PointerTarget): CommandIntent {
       : { kind: 'blocked' };
   }
   if (!ground) return { kind: 'none' };
-  return ground.walkable
-    ? { kind: 'move', x: ground.x, y: ground.y, z: ground.z }
-    : { kind: 'blocked' };
+  if (ground.resource || !ground.reachable) return { kind: 'blocked' };
+  return { kind: 'move', x: ground.x, z: ground.z, destination: ground.reachable };
 }
 
 /**

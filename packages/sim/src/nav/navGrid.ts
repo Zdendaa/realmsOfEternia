@@ -181,3 +181,14 @@ function forEachCellNear(
     }
   }
 }
+
+/**
+ * Where a unit sent to (x, z) actually ends up: the point itself when walkable,
+ * otherwise the center of the nearest walkable cell (the same rule as `findPath`'s
+ * goal), or null when nothing walkable is near.
+ */
+export function nearestWalkablePoint(grid: NavGrid, x: number, z: number): Vec2 | null {
+  if (isWalkable(grid, x, z)) return { x, z };
+  const cell = nearestWalkableCell(grid, x, z);
+  return cell < 0 ? null : cellCenter(grid, cell);
+}

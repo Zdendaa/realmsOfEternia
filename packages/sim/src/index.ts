@@ -18,7 +18,14 @@ export {
 export { workSlots } from './construction/workSlots.js';
 export { createSimContext, syncContext, type SimContext } from './context/simContext.js';
 export { createPathFinder, type PathFinder, type PathResult } from './nav/astar.js';
-export { cellIndexAt, createNavGrid, isWalkable, NAV_RULES, type NavGrid } from './nav/navGrid.js';
+export {
+  cellIndexAt,
+  createNavGrid,
+  isWalkable,
+  NAV_RULES,
+  nearestWalkablePoint,
+  type NavGrid,
+} from './nav/navGrid.js';
 export {
   checkPlacement,
   PLACEMENT_RULES,

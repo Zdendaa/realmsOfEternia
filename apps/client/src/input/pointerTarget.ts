@@ -1,5 +1,5 @@
-import type { Decoration, EntityId } from '@roe/shared';
-import { isWalkable, PLACEMENT_RULES, type BuildingInstance } from '@roe/sim';
+import { isInPlayableArea, type Decoration, type EntityId, type Vec2 } from '@roe/shared';
+import { isWalkable, nearestWalkablePoint, PLACEMENT_RULES, type BuildingInstance } from '@roe/sim';
 import { Raycaster, Vector2, Vector3, type Camera } from 'three';
 import { pickBuilding } from '../render/picking/pickBuilding';
 import { unitAt } from '../render/picking/screenPick';
@@ -13,6 +13,12 @@ export interface GroundTarget {
   z: number;
   /** Units can walk here (nav grid: no water, steep slope, building, tree or rock). */
   walkable: boolean;
+  /**
+   * Where units sent here end up: this point when walkable, else the nearest walkable
+   * spot (the same rule as the sim's pathfinding goal); null outside the playable area
+   * or when nothing walkable is near.
+   */
+  reachable: Vec2 | null;
   /** The tree or rock occupying this spot, if any. */
   resource: Decoration | null;
 }
@@ -74,7 +80,7 @@ export function pickPointerTarget(
   x: number,
   y: number,
 ): PointerTarget {
-  const { state, heights, ctx } = useGameStore.getState();
+  const { state, heights, ctx, world } = useGameStore.getState();
   const rect = element.getBoundingClientRect();
   ndc.set(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1);
   raycaster.setFromCamera(ndc, camera);
@@ -90,6 +96,9 @@ export function pickPointerTarget(
       y: hit.y,
       z: hit.z,
       walkable,
+      reachable: isInPlayableArea(world.map, hit.x, hit.z)
+        ? nearestWalkablePoint(ctx.nav, hit.x, hit.z)
+        : null,
       resource: walkable ? null : resourceAt(hit.x, hit.z),
     };
   }
