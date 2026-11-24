@@ -48,6 +48,7 @@ export const SETTLEMENT: SettlementLayout = {
   pathWidth: 2,
   squares: [],
   props: { around: [], models: [], perBuilding: { min: 0, max: 0 } },
+  startingSerfs: 0,
 };
 
 export function place(
@@ -58,3 +59,13 @@ export function place(
 ): PlaceBuildingCommand {
   return { type: 'placeBuilding', building, x, z, quarterTurns };
 }
+
+/** A Town Hall at the origin (entrance facing +Z) with five starting serfs. */
+export const TOWN: SettlementLayout = {
+  buildings: [{ building: 'townHall', x: 0, z: 0, rotation: 0 }],
+  paths: [],
+  pathWidth: 2,
+  squares: [],
+  props: { around: [], models: [], perBuilding: { min: 0, max: 0 } },
+  startingSerfs: 5,
+};

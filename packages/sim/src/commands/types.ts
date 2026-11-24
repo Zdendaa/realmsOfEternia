@@ -1,5 +1,5 @@
 import { isBuildingId, type BuildingId } from '@roe/game-data';
-import type { PlayerId } from '@roe/shared';
+import type { EntityId, PlayerId } from '@roe/shared';
 
 /**
  * Commands are what a client sends. They never contain the issuing player: the server
@@ -16,7 +16,29 @@ export interface PlaceBuildingCommand {
   quarterTurns: number;
 }
 
-export type Command = PlaceBuildingCommand;
+/** Recruit one serf at a Town Hall. */
+export interface RecruitSerfCommand {
+  type: 'recruitSerf';
+  buildingId: EntityId;
+}
+
+/** Walk the given units to a point (they spread out around it). */
+export interface MoveUnitsCommand {
+  type: 'moveUnits';
+  unitIds: EntityId[];
+  x: number;
+  z: number;
+}
+
+/** Send the given serfs to build a construction site. */
+export interface AssignBuildersCommand {
+  type: 'assignBuilders';
+  unitIds: EntityId[];
+  siteId: EntityId;
+}
+
+export type Command =
+  PlaceBuildingCommand | RecruitSerfCommand | MoveUnitsCommand | AssignBuildersCommand;
 
 /** A command together with the player who issued it, attached by the receiver. */
 export interface IssuedCommand {
@@ -24,7 +46,19 @@ export interface IssuedCommand {
   command: Command;
 }
 
+/** Most units one command may address. */
+export const MAX_COMMAND_UNITS = 256;
+
 const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const isEntityId = (v: unknown): v is EntityId =>
+  typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
+
+/** A non-empty list of distinct entity ids, or null. */
+function parseUnitIds(value: unknown): EntityId[] | null {
+  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_COMMAND_UNITS) return null;
+  if (!value.every(isEntityId)) return null;
+  return [...new Set(value)];
+}
 
 /**
  * Turns untrusted input (a network message) into a well-formed command, or null.
@@ -34,11 +68,29 @@ const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Num
 export function parseCommand(input: unknown): Command | null {
   if (typeof input !== 'object' || input === null) return null;
   const data = input as Record<string, unknown>;
-  if (data.type === 'placeBuilding') {
-    const { building, x, z, quarterTurns } = data;
-    if (!isBuildingId(building) || !isFiniteNumber(x) || !isFiniteNumber(z)) return null;
-    if (!isFiniteNumber(quarterTurns)) return null;
-    return { type: 'placeBuilding', building, x, z, quarterTurns };
+  switch (data.type) {
+    case 'placeBuilding': {
+      const { building, x, z, quarterTurns } = data;
+      if (!isBuildingId(building) || !isFiniteNumber(x) || !isFiniteNumber(z)) return null;
+      if (!isFiniteNumber(quarterTurns)) return null;
+      return { type: 'placeBuilding', building, x, z, quarterTurns };
+    }
+    case 'recruitSerf':
+      return isEntityId(data.buildingId)
+        ? { type: 'recruitSerf', buildingId: data.buildingId }
+        : null;
+    case 'moveUnits': {
+      const unitIds = parseUnitIds(data.unitIds);
+      const { x, z } = data;
+      if (!unitIds || !isFiniteNumber(x) || !isFiniteNumber(z)) return null;
+      return { type: 'moveUnits', unitIds, x, z };
+    }
+    case 'assignBuilders': {
+      const unitIds = parseUnitIds(data.unitIds);
+      if (!unitIds || !isEntityId(data.siteId)) return null;
+      return { type: 'assignBuilders', unitIds, siteId: data.siteId };
+    }
+    default:
+      return null;
   }
-  return null;
 }

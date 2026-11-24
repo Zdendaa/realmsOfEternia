@@ -1,8 +1,8 @@
 # Project status
 
-_Last updated: 2026-11-23._
+_Last updated: 2026-11-24._
 
-**Current state:** Phase 3 (building placement) is complete. Players can place buildings on the prototype map with validated rules; there is no economy, units or multiplayer match yet.
+**Current state:** Phase 4 (serfs and construction sites) is in progress. 4.1 is done: the deterministic 10 Hz tick, serfs, pathfinding and construction sites run in `@roe/sim` (client and server), and the server ticks the simulation. The client doesn't run the tick or show serfs yet (4.2).
 
 ## Phases
 
@@ -19,7 +19,12 @@ _Last updated: 2026-11-23._
 | 3.1   | `@roe/sim` package; world creation moved out of the client                        | ✅ Done |
 | 3.2   | Placement rules, commands, game state, unit tests                                 | ✅ Done |
 | 3.3   | Construction menu, placement preview and placing                                  | ✅ Done |
-| 4     | Economy (resources, costs paid, production)                                       | ⏳ Next |
+| 4.1   | Sim core: 10 Hz tick, serfs, nav grid + A*, separation, construction, commands    | ✅ Done |
+| 4.2   | Client tick loop, interpolation, placeholder serfs, recruiting                    | ⏳ Next |
+| 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | Planned |
+| 4.4   | Construction sites: visuals, progress, right-click assignment                     | Planned |
+| 4.5   | Character models with baked-animation instancing                                  | Planned |
+| 5     | Economy (resources, costs paid, production)                                       | Planned |
 
 ## What works today
 

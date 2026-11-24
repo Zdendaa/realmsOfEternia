@@ -1,6 +1,10 @@
 import { BUILDINGS, isBuildingId, type BuildingId } from '@roe/game-data';
 import type { EntityId, PlacedFootprint, PlayerId } from '@roe/shared';
 import type { SimWorld } from '../world/createWorld.js';
+import { IDLE, type UnitInstance } from './units.js';
+import { spawnPoint } from './spawn.js';
+
+export type BuildingStatus = 'construction' | 'complete';
 
 export interface BuildingInstance {
   id: EntityId;
@@ -9,20 +13,47 @@ export interface BuildingInstance {
   z: number;
   /** Y rotation in radians. */
   rotation: number;
-  /** Owner; null for neutral buildings (the starting settlement, for now). */
+  /** Owner; null for neutral buildings. */
   ownerId: PlayerId | null;
-  /** Placement is instant for now; construction sites come with the economy. */
-  status: 'complete';
+  /** Player buildings start as construction sites; the starting settlement is complete. */
+  status: BuildingStatus;
+}
+
+/**
+ * Progress of one construction site, in serf-ticks: each tick every working serf adds 1.
+ * Integers keep progress exact on every machine.
+ */
+export interface ConstructionProgress {
+  workDone: number;
+  workRequired: number;
 }
 
 /** Authoritative simulation state. Plain data: serializable, never mutated in place. */
 export interface GameState {
+  /** Number of simulation ticks run so far. */
+  readonly tick: number;
+  /** Changes only when buildings are placed or finished, never for progress. */
   readonly buildings: readonly BuildingInstance[];
+  /** Construction progress by site (building) id. Changes every tick while serfs build. */
+  readonly construction: Readonly<Record<EntityId, ConstructionProgress>>;
+  readonly units: readonly UnitInstance[];
   readonly nextEntityId: EntityId;
 }
 
-/** The starting settlement becomes the first building instances (ids 1..n). */
-export function createInitialState(world: SimWorld): GameState {
+export interface InitialStateOptions {
+  /**
+   * Owner of the starting settlement and its serfs. The client gives it to the local
+   * player; the server keeps it neutral until matches have start positions.
+   */
+  owner?: PlayerId | null;
+}
+
+/**
+ * The starting settlement becomes the first building instances (ids 1..n), followed by
+ * the starting serfs next to the first Town Hall.
+ */
+export function createInitialState(world: SimWorld, options: InitialStateOptions = {}): GameState {
+  const owner = options.owner ?? null;
   const buildings = world.buildings.map((b, i): BuildingInstance => {
     const type = b.definition.id;
     if (!isBuildingId(type)) throw new Error(`Unknown building type "${type}"`);
@@ -32,12 +63,35 @@ export function createInitialState(world: SimWorld): GameState {
       x: b.x,
       z: b.z,
       rotation: b.rotation,
-      ownerId: null,
+      ownerId: owner,
       status: 'complete',
     };
   });
-  return { buildings, nextEntityId: buildings.length + 1 };
+
+  let nextEntityId = buildings.length + 1;
+  const townHall = buildings.find((b) => b.type === 'townHall');
+  const units: UnitInstance[] = [];
+  if (townHall) {
+    for (let i = 0; i < world.startingSerfs; i++) {
+      const at = spawnPoint(townHall, i);
+      units.push({
+        id: nextEntityId++,
+        type: 'serf',
+        ownerId: owner,
+        x: at.x,
+        z: at.z,
+        task: IDLE,
+        movement: null,
+        activity: 'idle',
+      });
+    }
+  }
+  return { tick: 0, buildings, construction: {}, units, nextEntityId };
 }
+
+/** True for buildings of the hand-authored starting settlement (not placed by a player). */
+export const isStartingBuilding = (world: SimWorld, building: Pick<BuildingInstance, 'id'>) =>
+  building.id <= world.buildings.length;
 
 export function toPlacedFootprint(
   building: Pick<BuildingInstance, 'type' | 'x' | 'z' | 'rotation'>,

@@ -14,3 +14,5 @@ export {
   type BuildingPlacement,
   type SettlementLayout,
 } from './maps/prototypeSettlement.js';
+export { isUnitKind, UNITS, type UnitKind } from './units/definitions.js';
+export type { UnitDefinition } from './units/types.js';

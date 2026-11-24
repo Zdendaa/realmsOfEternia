@@ -3,11 +3,13 @@ import type { HeightField, PlayerId } from '@roe/shared';
 import {
   applyCommand,
   createInitialState,
-  createStateHeights,
+  createSimContext,
   createWorld,
+  syncContext,
   type Command,
   type CommandResult,
   type GameState,
+  type SimContext,
   type SimWorld,
 } from '@roe/sim';
 import { create } from 'zustand';
@@ -24,6 +26,8 @@ export const LOCAL_PLAYER: PlayerId = 'local';
  */
 interface GameStore {
   world: SimWorld;
+  /** Derived caches (flattened terrain, nav grid), kept in sync with `state`. */
+  ctx: SimContext;
   state: GameState;
   /** Terrain flattened under every building in `state`. Replaced when buildings change. */
   heights: HeightField;
@@ -31,15 +35,21 @@ interface GameStore {
 }
 
 const world = createWorld(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT);
+// Single player for now: the starting settlement belongs to the local player.
+const initialState = createInitialState(world, { owner: LOCAL_PLAYER });
+const ctx = createSimContext(world, initialState);
 
 export const useGameStore = create<GameStore>()((set, get) => ({
   world,
-  state: createInitialState(world),
-  heights: world.heights,
+  ctx,
+  state: initialState,
+  heights: ctx.heights,
   dispatch: (command) => {
-    const { state, heights } = get();
-    const result = applyCommand(world, state, LOCAL_PLAYER, command, heights);
-    if (result.ok) set({ state: result.state, heights: createStateHeights(world, result.state) });
+    const result = applyCommand(ctx, get().state, LOCAL_PLAYER, command);
+    if (result.ok) {
+      syncContext(ctx, result.state);
+      set({ state: result.state, heights: ctx.heights });
+    }
     return result;
   },
 }));

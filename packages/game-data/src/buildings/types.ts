@@ -35,4 +35,8 @@ export interface BuildingDefinition {
   buildable: boolean;
   /** Construction cost. Displayed only until the economy exists. */
   cost: ResourceCost;
+  /** Seconds one serf needs to build it. More builders work linearly faster. */
+  buildTime: number;
+  /** How many serfs can work on its construction site at once. */
+  maxBuilders: number;
 }

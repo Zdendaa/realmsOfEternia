@@ -1,6 +1,11 @@
 import { BUILDINGS } from '@roe/game-data';
 import { distanceToFootprint, footprintBounds, type HeightField } from '@roe/shared';
-import { toPlacedFootprint, type BuildingInstance, type PlacedBuilding } from '@roe/sim';
+import {
+  isStartingBuilding,
+  toPlacedFootprint,
+  type BuildingInstance,
+  type PlacedBuilding,
+} from '@roe/sim';
 import { Suspense, useMemo } from 'react';
 import type { ClientWorld } from '../../world/decorateWorld';
 import { ATMOSPHERE } from './atmosphere';
@@ -45,8 +50,8 @@ export function World({ world, heights, buildings }: WorldProps) {
 
   // Buildings placed by players: cosmetic layers (grass, props) are cleared under them.
   const playerFootprints = useMemo(
-    () => buildings.filter((b) => b.ownerId !== null).map(toPlacedFootprint),
-    [buildings],
+    () => buildings.filter((b) => !isStartingBuilding(world, b)).map(toPlacedFootprint),
+    [world, buildings],
   );
   // Terrain only changes near player buildings (footprint + flatten reach).
   const groundLevel = useMemo(

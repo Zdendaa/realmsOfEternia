@@ -23,6 +23,8 @@ export interface SettlementLayout {
     models: readonly PropId[];
     perBuilding: { min: number; max: number };
   };
+  /** Serfs that start next to the first Town Hall. */
+  startingSerfs: number;
 }
 
 /** Paths meet a building this far in front of its front edge (just clear of the facade). */
@@ -101,4 +103,5 @@ export const PROTOTYPE_SETTLEMENT: SettlementLayout = {
     models: ['rocksSmall', 'rocksSmall', 'rocks', 'gardenTreeA', 'gardenTreeB', 'gardenTreeC'],
     perBuilding: { min: 2, max: 4 },
   },
+  startingSerfs: 5,
 };

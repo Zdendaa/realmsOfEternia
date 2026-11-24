@@ -24,6 +24,8 @@ export const BUILDINGS = {
     rotationOffset: 0,
     buildable: false,
     cost: {},
+    buildTime: 120,
+    maxBuilders: 6,
   },
   house: {
     id: 'house',
@@ -35,6 +37,8 @@ export const BUILDINGS = {
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 4, stone: 2 },
+    buildTime: 30,
+    maxBuilders: 3,
   },
   well: {
     id: 'well',
@@ -46,6 +50,8 @@ export const BUILDINGS = {
     rotationOffset: 0,
     buildable: true,
     cost: { stone: 3 },
+    buildTime: 15,
+    maxBuilders: 2,
   },
   field: {
     id: 'field',
@@ -59,6 +65,8 @@ export const BUILDINGS = {
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 3 },
+    buildTime: 20,
+    maxBuilders: 3,
   },
   mill: {
     id: 'mill',
@@ -70,6 +78,8 @@ export const BUILDINGS = {
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 6, stone: 4 },
+    buildTime: 45,
+    maxBuilders: 4,
   },
   lumbermill: {
     id: 'lumbermill',
@@ -81,6 +91,8 @@ export const BUILDINGS = {
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 5, stone: 2 },
+    buildTime: 40,
+    maxBuilders: 4,
   },
   market: {
     id: 'market',
@@ -92,6 +104,8 @@ export const BUILDINGS = {
     rotationOffset: 0,
     buildable: true,
     cost: { wood: 6, stone: 6, gold: 2 },
+    buildTime: 50,
+    maxBuilders: 4,
   },
 } as const satisfies Record<string, BuildingDefinition>;
 

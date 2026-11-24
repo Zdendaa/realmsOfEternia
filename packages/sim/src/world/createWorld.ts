@@ -60,6 +60,8 @@ export interface SimWorld {
   obstacleIndex: PointGrid<Decoration>;
   /** Spatial index of all sampled path points. */
   pathIndex: PointGrid<Vec2>;
+  /** Serfs that start next to the first Town Hall. */
+  startingSerfs: number;
 }
 
 export function boundsOf(points: readonly Vec2[], margin: number): Bounds {
@@ -122,5 +124,6 @@ export function createWorld(map: MapDefinition, settlement: SettlementLayout): S
     decorations,
     obstacleIndex: createPointGrid(decorations, OBSTACLE_CELL),
     pathIndex: createPointGrid(paths.flat(), OBSTACLE_CELL),
+    startingSerfs: settlement.startingSerfs,
   };
 }
