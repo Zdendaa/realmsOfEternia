@@ -12,7 +12,7 @@ export interface RenderedUnit {
   /** Facing (Y rotation, radians; 0 = +Z), smoothed toward the walking direction. */
   heading: number;
   activity: UnitActivity;
-  /** What kind of work a working unit does (picks the animation): build, chop or mine. */
+  /** What kind of work a working unit does (picks the animation and the tool). */
   work: UnitWork;
   /** A worker's profession (its hat and tunic), from its building; null for serfs. */
   profession: ProfessionId | null;
@@ -21,7 +21,7 @@ export interface RenderedUnit {
   ownerId: PlayerId | null;
 }
 
-export type UnitWork = 'build' | 'chop' | 'mine';
+export type UnitWork = 'build' | 'chop' | 'mine' | 'sow' | 'reap';
 
 /**
  * Units as drawn in the current frame: interpolated between ticks, with smoothed facing.

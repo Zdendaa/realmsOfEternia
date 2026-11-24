@@ -9,6 +9,8 @@ export const STARTING_RESOURCES = {
   gold: 5,
   food: 20,
   mana: 0,
+  grain: 0,
+  flour: 0,
 } as const satisfies ResourceAmounts;
 
 /**

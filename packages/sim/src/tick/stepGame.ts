@@ -19,7 +19,8 @@ export interface StepResult {
  * Advances the game by one fixed tick (`SIMULATION_TICK_MS`). Client and server call
  * exactly this with the same commands in the same order and get the same state.
  *
- * Order: commands → behavior (serfs: tasks, gathering, deliveries; workers) → route
+ * Order: commands → behavior (serfs: tasks, gathering, deliveries; workers: harvesting,
+ * farming) → route
  * invalidation → path planning → walking → separation → construction work → workers for
  * production buildings that have none (housing permitting). `ctx` is synced along the
  * way and left matching the returned state. The given state is never mutated.
@@ -67,6 +68,7 @@ export function stepGame(
     construction,
     resourceNodes: economic.resourceNodes,
     stocks: economic.stocks,
+    fields: economic.fields,
     nextEntityId,
   };
   syncContext(ctx, next);

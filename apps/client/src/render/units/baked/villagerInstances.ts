@@ -218,7 +218,8 @@ export function createVillagerInstances(
 
         bundle?.write(matrix, animValues);
         if (profession) hats.get(profession.hat)?.write(matrix, animValues);
-        if (working) tools.get(TOOL_FOR_WORK[unit.work])?.write(matrix, animValues);
+        const tool = working ? TOOL_FOR_WORK[unit.work] : null;
+        if (tool) tools.get(tool)?.write(matrix, animValues);
       }
       mesh.count = count;
       mesh.instanceMatrix.needsUpdate = true;

@@ -17,6 +17,8 @@ interface ModelInstancesProps {
   /** Model file, relative to the public root. */
   modelPath: string;
   instances: readonly ModelInstance[];
+  /** Meshes of the model drawn elsewhere (a field's crop). Must be a stable array. */
+  skipMeshes?: readonly string[];
 }
 
 const placementMatrix = new Matrix4();
@@ -30,13 +32,13 @@ const scale = new Vector3();
  * Draws every instance of one GLB model. Each mesh part of the model becomes one
  * instanced mesh, so N copies cost as many draw calls as a single copy.
  */
-export function ModelInstances({ modelPath, instances }: ModelInstancesProps) {
+export function ModelInstances({ modelPath, instances, skipMeshes }: ModelInstancesProps) {
   const { scene } = useGLTF(publicUrl(modelPath), false);
 
   const parts = useMemo(() => {
     applyMaterialOverrides(scene);
-    return extractModelParts(scene);
-  }, [scene]);
+    return extractModelParts(scene, skipMeshes);
+  }, [scene, skipMeshes]);
 
   const matricesPerPart = useMemo(
     () =>

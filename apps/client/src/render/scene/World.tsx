@@ -1,4 +1,4 @@
-import { BUILDINGS } from '@roe/game-data';
+import { BUILDINGS, type BuildingDefinition } from '@roe/game-data';
 import { distanceToFootprint, footprintBounds, type HeightField } from '@roe/shared';
 import {
   isStartingBuilding,
@@ -15,6 +15,7 @@ import { createGroundLevel, FLATTEN_REACH } from './groundLevel';
 import { Lighting } from './Lighting';
 import { Paths } from './Paths';
 import { Rocks } from './Rocks';
+import { FieldCrops, type CropField } from './settlement/FieldCrops';
 import { Settlement } from './settlement/Settlement';
 import { Sky } from './Sky';
 import { Terrain } from './Terrain';
@@ -51,6 +52,16 @@ export function World({ world, heights, buildings, resourceNodes }: WorldProps) 
           definition: BUILDINGS[b.type],
           y: heights.getHeightAt(b.x, b.z),
         })),
+    [buildings, heights],
+  );
+  // Complete buildings with a crop (fields) draw it per plot, by the state of the field.
+  const cropFields = useMemo(
+    () =>
+      buildings
+        .filter(
+          (b) => b.status === 'complete' && (BUILDINGS[b.type] as BuildingDefinition).cropMesh,
+        )
+        .map((b): CropField => ({ building: b, y: heights.getHeightAt(b.x, b.z) })),
     [buildings, heights],
   );
   const sites = useMemo(
@@ -106,6 +117,7 @@ export function World({ world, heights, buildings, resourceNodes }: WorldProps) 
       <Rocks items={rocks} groundLevel={groundLevel} resourceNodes={resourceNodes} />
       <Suspense fallback={null}>
         <Settlement buildings={placedBuildings} props={props} />
+        <FieldCrops fields={cropFields} />
       </Suspense>
       <ConstructionSites sites={sites} />
     </>

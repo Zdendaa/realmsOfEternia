@@ -4,11 +4,16 @@ import {
   RESOURCE_NODES,
   RESOURCES,
   UNITS,
+  type ProductionDefinition,
   type ResourceId,
 } from '@roe/game-data';
+import { SIMULATION_TICK_RATE } from '@roe/shared';
 import {
   awaitsWorker,
   EMPTY_STOCK,
+  fieldOf,
+  isRipe,
+  plotCount,
   missingResources,
   populationOf,
   type CommandIssue,
@@ -146,15 +151,60 @@ function SiteProgress({
   );
 }
 
-/** What a worker is doing, by phase; `{node}` and `{goods}` depend on the building. */
-const WORK_PHASES: Record<WorkPhase, string> = {
-  waiting: 'Waiting: no {node}s within reach',
-  toNode: 'Walking to a {node}',
-  working: 'Harvesting a {node}',
-  toBuilding: 'Bringing {goods} back',
-  processing: 'Preparing {goods}',
-  toStorage: 'Carrying {goods} to the Town Hall',
+/**
+ * What a worker is doing, by production kind and phase; `{node}` and `{goods}` depend
+ * on the building. Phases a kind never uses are left out.
+ */
+const WORK_PHASES: Record<ProductionDefinition['kind'], Partial<Record<WorkPhase, string>>> = {
+  harvest: {
+    waiting: 'Waiting: no {node}s within reach',
+    toNode: 'Walking to a {node}',
+    working: 'Harvesting a {node}',
+    toBuilding: 'Bringing {goods} back',
+    processing: 'Preparing {goods}',
+    toStorage: 'Carrying {goods} to the Town Hall',
+  },
+  farm: {
+    waiting: 'Waiting for the {goods} to ripen',
+    toPlot: 'Walking to the next plot',
+    sowing: 'Sowing',
+    harvesting: 'Reaping {goods}',
+    toStorage: 'Carrying {goods} to the Town Hall',
+  },
 };
+
+/** What a production building makes, for the worker texts. */
+function workWords(production: ProductionDefinition) {
+  const resource =
+    production.kind === 'harvest' ? RESOURCE_NODES[production.node].resource : production.crop;
+  return {
+    node: production.kind === 'harvest' ? production.node : 'plot',
+    goods: RESOURCES[resource].name.toLowerCase(),
+  };
+}
+
+/**
+ * A field's cycle: plots sown or harvested, or the seconds until the crop is ripe
+ * (re-renders when that text changes, at most once per second).
+ */
+function FieldProgress({ buildingId, type }: { buildingId: number; type: keyof typeof BUILDINGS }) {
+  const plots = plotCount(type);
+  const text = useGameStore((s) => {
+    const field = fieldOf(s.state.fields, buildingId);
+    switch (field.phase) {
+      case 'sowing':
+        return `Sowing: ${field.plotsDone} / ${plots} plots`;
+      case 'harvesting':
+        return `Harvest: ${field.plotsDone} / ${plots} plots`;
+      case 'growing': {
+        if (isRipe(field, s.state.tick)) return `Ripe: ready for harvest`;
+        const seconds = Math.ceil((field.ripeAt - s.state.tick) / SIMULATION_TICK_RATE);
+        return `Growing: ripe in ${seconds} s`;
+      }
+    }
+  });
+  return <p className="selection-meta">{text}</p>;
+}
 
 /**
  * The worker of a production building and what it does, or that it waits for housing
@@ -177,8 +227,10 @@ function WorkerStatus({ buildingId, type }: { buildingId: number; type: keyof ty
       <p className="selection-issue">Worker: waiting for housing. Build a house to make room.</p>
     );
   }
-  const goods = RESOURCES[RESOURCE_NODES[production.node].resource].name.toLowerCase();
-  const text = WORK_PHASES[phase].replace('{node}', production.node).replace('{goods}', goods);
+  const words = workWords(production);
+  const text = (WORK_PHASES[production.kind][phase] ?? phase)
+    .replace('{node}', words.node)
+    .replace('{goods}', words.goods);
   return <p className="selection-meta">Worker: {text}</p>;
 }
 
@@ -234,6 +286,9 @@ function BuildingSelection() {
       ) : (
         <>
           <p className="selection-meta">{definition.description}</p>
+          {productionOf(building.type)?.kind === 'farm' && (
+            <FieldProgress buildingId={building.id} type={building.type} />
+          )}
           {own && <WorkerStatus buildingId={building.id} type={building.type} />}
         </>
       )}

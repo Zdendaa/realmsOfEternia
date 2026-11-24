@@ -56,6 +56,16 @@ export {
   remainingAmount,
 } from './state/resourceNodes.js';
 export { createStateHeights } from './state/stateHeights.js';
+export {
+  FIELD_RULES,
+  fieldOf,
+  isRipe,
+  plotCenter,
+  plotCount,
+  plotWorkPoint,
+  type FieldPhase,
+  type FieldState,
+} from './state/fields.js';
 export type {
   Cargo,
   GatherPhase,

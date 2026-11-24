@@ -238,9 +238,29 @@ body,
 }
 
 /* Population sits after the resources, set off by a thin divider; red when housing is full. */
-.resource-bar li.population {
+.resource-bar li.population,
+.resource-bar li.goods-first {
   padding-left: 14px;
   border-left: 1px solid var(--hud-border);
+}
+
+/* Goods of the production chains (grain, flour): a smaller, quieter group. */
+.resource-bar li.goods {
+  margin-left: -6px;
+  opacity: 0.9;
+}
+
+.resource-bar li.goods img {
+  width: 18px;
+  height: 18px;
+}
+
+.resource-bar li.goods .resource-amount {
+  font-size: 12.5px;
+}
+
+.resource-bar li.goods-first {
+  margin-left: 0;
 }
 
 .resource-bar li.population.is-full .resource-amount {

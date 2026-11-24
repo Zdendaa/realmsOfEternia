@@ -19,6 +19,9 @@ export type CharacterAnimation =
   | 'build'
   | 'chop'
   | 'mine'
+  /** Farming: sowing a plot (scattering seed) and reaping it (with a sickle). */
+  | 'sow'
+  | 'reap'
   /** Walking with a load held in both arms. */
   | 'carry'
   /** Standing with a load held in both arms. */
@@ -90,6 +93,9 @@ const VILLAGER_ANIMATIONS = {
   // Gathering: chopping trees and quarrying rocks.
   chop: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Chopping' },
   mine: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Pickaxing' },
+  // Farming: a low working motion for sowing, a sweeping one for reaping.
+  sow: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Working_A' },
+  reap: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Working_B' },
   // No carry walk in the pack: the walk's legs with Holding_A's arms (both forearms
   // forward at waist height, like holding a box). Stride, and so playback rate,
   // stay the walk's.

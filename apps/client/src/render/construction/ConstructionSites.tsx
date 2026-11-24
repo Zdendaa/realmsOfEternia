@@ -1,6 +1,6 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { BUILDINGS, type BuildingDefinition } from '@roe/game-data';
+import { BUILDINGS, tileOffsets, type BuildingDefinition } from '@roe/game-data';
 import type { BuildingInstance, GameState } from '@roe/sim';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import type { Material } from 'three';
@@ -17,7 +17,6 @@ import {
 } from 'three';
 import { useGameStore } from '../../state/gameStore';
 import { applyMaterialOverrides, publicUrl } from '../scene/settlement/modelAssets';
-import { tileOffsets } from '../scene/settlement/tiling';
 import { simClock } from '../simulation/simClock';
 import { createScaffoldGeometry } from './scaffold';
 

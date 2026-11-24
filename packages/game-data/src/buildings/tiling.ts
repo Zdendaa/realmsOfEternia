@@ -1,8 +1,9 @@
-import type { BuildingDefinition } from '@roe/game-data';
+import type { BuildingDefinition } from './types.js';
 
 /**
- * Local (x, z) offsets of each model tile in a building, before rotation. A building
- * without tiling has a single tile at its center.
+ * Local (x, z) offsets of each model tile of a building, before rotation, in tile order
+ * (column by column). A building without tiling has a single tile at its center. The
+ * tiles of a field are its plots, so the simulation and the renderer share this order.
  */
 export function tileOffsets(definition: BuildingDefinition): { x: number; z: number }[] {
   const tiling = definition.modelTiling;

@@ -6,6 +6,7 @@ import {
   Matrix4,
   MeshStandardMaterial,
   SphereGeometry,
+  TorusGeometry,
   Vector3,
   type BufferGeometry,
 } from 'three';
@@ -16,12 +17,15 @@ import type { BakedCharacter } from './bakeCharacter';
 import { paint, prepare } from './propGeometry';
 
 /** Tools held while working; which one follows the kind of work. */
-export type ToolKind = 'hammer' | 'axe' | 'pickaxe';
+export type ToolKind = 'hammer' | 'axe' | 'pickaxe' | 'sickle';
 
-export const TOOL_FOR_WORK: Record<UnitWork, ToolKind> = {
+/** The tool for each kind of work; sowing is done by hand. */
+export const TOOL_FOR_WORK: Record<UnitWork, ToolKind | null> = {
   build: 'hammer',
   chop: 'axe',
   mine: 'pickaxe',
+  sow: null,
+  reap: 'sickle',
 };
 
 /** Geometry (in the character's bind space, rigidly skinned) and material of one prop. */
@@ -197,6 +201,15 @@ function hatShape(style: HatStyle, r: number): BufferGeometry {
  * the origin, the handle along +Y, the head across X), in model units.
  */
 function toolShape(tool: Exclude<ToolKind, 'axe'>): BufferGeometry {
+  if (tool === 'sickle') {
+    // A short wooden grip and a half-moon blade arching from its top (the arc ends at the
+    // grip, angle π of the torus).
+    const grip = paint(new CylinderGeometry(0.035, 0.04, 0.36, 6), '#8a5a33');
+    grip.translate(0, 0.1, 0);
+    const blade = paint(new TorusGeometry(0.2, 0.026, 4, 12, Math.PI), '#9aa1a8', '#c4cad0');
+    blade.scale(1, 1, 0.5).translate(0.2, 0.28, 0);
+    return mergeGeometries([prepare(grip), prepare(blade)]);
+  }
   const handle = paint(new CylinderGeometry(0.035, 0.04, 0.95, 6), '#8a5a33');
   handle.translate(0, 0.27, 0);
   if (tool === 'hammer') {
@@ -241,7 +254,7 @@ export function createHatSources(
   );
 }
 
-/** Tools in the character's tool hand: code-built hammer and pickaxe, the loaded axe. */
+/** Tools in the character's tool hand: code-built hammer, pickaxe and sickle, the loaded axe. */
 export function createToolSources(
   baked: BakedCharacter<string>,
   character: CharacterModel,
@@ -254,6 +267,7 @@ export function createToolSources(
   return new Map<ToolKind, PropSource>([
     ['hammer', { geometry: place(toolShape('hammer')), material: propMaterial() }],
     ['pickaxe', { geometry: place(toolShape('pickaxe')), material: propMaterial() }],
+    ['sickle', { geometry: place(toolShape('sickle')), material: propMaterial() }],
     ['axe', { geometry: place(axe.geometry.clone()), material: axe.material.clone() }],
   ]);
 }

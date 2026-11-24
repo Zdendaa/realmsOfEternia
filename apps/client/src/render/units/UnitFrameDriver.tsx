@@ -1,7 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { productionOf, type ProfessionId } from '@roe/game-data';
 import type { Decoration, EntityId } from '@roe/shared';
-import type { BuildingInstance, GameState, UnitInstance } from '@roe/sim';
+import { plotCenter, type BuildingInstance, type GameState, type UnitInstance } from '@roe/sim';
 import { useRef } from 'react';
 import { useGameStore } from '../../state/gameStore';
 import { simClock } from '../simulation/simClock';
@@ -18,13 +18,22 @@ const angleDelta = (a: number, b: number) => {
 
 /**
  * Builders hammer (as do workers processing at their building); gatherers and workers
- * at a node chop trees and pick at rocks.
+ * at a node chop trees and pick at rocks; farmers sow and reap.
  */
 function workOf(unit: UnitInstance, decorations: readonly Decoration[]): UnitWork {
   const task = unit.task;
-  const atNode = task.kind === 'gather' || (task.kind === 'work' && task.phase === 'working');
-  if (!atNode) return 'build';
-  return decorations[task.nodeId]?.kind === 'rock' ? 'mine' : 'chop';
+  if (task.kind === 'gather') return decorations[task.nodeId]?.kind === 'rock' ? 'mine' : 'chop';
+  if (task.kind !== 'work') return 'build';
+  switch (task.phase) {
+    case 'working':
+      return decorations[task.target]?.kind === 'rock' ? 'mine' : 'chop';
+    case 'sowing':
+      return 'sow';
+    case 'harvesting':
+      return 'reap';
+    default:
+      return 'build';
+  }
 }
 
 /** A worker's profession, from the production building it works for. */
@@ -101,11 +110,16 @@ export function UnitFrameDriver() {
         const node = world.decorations[unit.task.nodeId];
         if (node) target = Math.atan2(node.x - x, node.z - z);
       } else if (unit.activity === 'working' && unit.task.kind === 'work') {
-        // Workers face the node they harvest, or their building while processing.
+        // Workers face the node they harvest, the plot they sow or reap, or their building
+        // while processing.
+        const task = unit.task;
+        const building = look.buildings.get(task.buildingId);
         const faced =
-          unit.task.phase === 'working'
-            ? world.decorations[unit.task.nodeId]
-            : look.buildings.get(unit.task.buildingId);
+          task.phase === 'working'
+            ? world.decorations[task.target]
+            : (task.phase === 'sowing' || task.phase === 'harvesting') && building
+              ? plotCenter(building, task.target)
+              : building;
         if (faced) target = Math.atan2(faced.x - x, faced.z - z);
       }
       if (target !== null) r.heading += angleDelta(r.heading, target) * turn;

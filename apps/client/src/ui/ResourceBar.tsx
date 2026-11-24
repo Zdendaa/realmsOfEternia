@@ -1,8 +1,17 @@
-import { RESOURCE_IDS, RESOURCES, type ResourceAmounts, type ResourceId } from '@roe/game-data';
+import {
+  RESOURCE_IDS,
+  RESOURCES,
+  resourcesIn,
+  type ResourceAmounts,
+  type ResourceId,
+} from '@roe/game-data';
 import { EMPTY_STOCK, populationOf } from '@roe/sim';
 import { useState } from 'react';
 import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
 import { POPULATION_ICON, RESOURCE_ICONS } from './icons/resourceIcons';
+
+const MAIN = resourcesIn('main');
+const GOODS = resourcesIn('goods');
 
 /** The last change per resource; `serial` restarts the flash animation. */
 type Flashes = Partial<Record<ResourceId, { delta: number; serial: number }>>;
@@ -48,8 +57,38 @@ function PopulationIndicator() {
   );
 }
 
+/** One resource: icon, amount and the flash of its last change. */
+function ResourceItem({
+  id,
+  amount,
+  flash,
+  className,
+}: {
+  id: ResourceId;
+  amount: number;
+  flash: Flashes[ResourceId];
+  className?: string;
+}) {
+  return (
+    <li title={RESOURCES[id].name} className={className}>
+      <img src={RESOURCE_ICONS[id]} alt={RESOURCES[id].name} width={22} height={22} />
+      <span className="resource-amount">{amount}</span>
+      {flash && (
+        <span
+          key={flash.serial}
+          className={`resource-delta ${flash.delta > 0 ? 'is-gain' : 'is-loss'}`}
+          aria-hidden="true"
+        >
+          {flash.delta > 0 ? `+${flash.delta}` : flash.delta}
+        </span>
+      )}
+    </li>
+  );
+}
+
 /**
- * Top resource bar: the local player's stock and population. The stock part re-renders
+ * Top resource bar: the local player's stock (the six main resources, then the goods of
+ * the production chains as a smaller group) and population. The stock part re-renders
  * only when the stock object changes (payments, deliveries), never per tick; each change
  * flashes its +/- delta.
  */
@@ -67,24 +106,18 @@ export function ResourceBar() {
   return (
     <section className="hud-panel resource-bar" aria-label="Resources">
       <ul>
-        {RESOURCE_IDS.map((id) => {
-          const flash = flashes[id];
-          return (
-            <li key={id} title={RESOURCES[id].name}>
-              <img src={RESOURCE_ICONS[id]} alt={RESOURCES[id].name} width={22} height={22} />
-              <span className="resource-amount">{stock[id]}</span>
-              {flash && (
-                <span
-                  key={flash.serial}
-                  className={`resource-delta ${flash.delta > 0 ? 'is-gain' : 'is-loss'}`}
-                  aria-hidden="true"
-                >
-                  {flash.delta > 0 ? `+${flash.delta}` : flash.delta}
-                </span>
-              )}
-            </li>
-          );
-        })}
+        {MAIN.map((id) => (
+          <ResourceItem key={id} id={id} amount={stock[id]} flash={flashes[id]} />
+        ))}
+        {GOODS.map((id, i) => (
+          <ResourceItem
+            key={id}
+            id={id}
+            amount={stock[id]}
+            flash={flashes[id]}
+            className={`goods ${i === 0 ? 'goods-first' : ''}`}
+          />
+        ))}
         <PopulationIndicator />
       </ul>
     </section>

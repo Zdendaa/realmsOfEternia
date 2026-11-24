@@ -1,6 +1,6 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { BUILDINGS, type BuildingId } from '@roe/game-data';
+import { BUILDINGS, tileOffsets, type BuildingId } from '@roe/game-data';
 import {
   PLACEMENT_RULES,
   quarterTurnsToRadians,
@@ -21,7 +21,6 @@ import { usePlacementInput } from '../../input/usePlacementInput';
 import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import { usePlacementStore } from '../../state/placementStore';
 import { publicUrl } from '../scene/settlement/modelAssets';
-import { tileOffsets } from '../scene/settlement/tiling';
 import { pickGround } from './groundPick';
 
 const VALID = '#7fe07a';

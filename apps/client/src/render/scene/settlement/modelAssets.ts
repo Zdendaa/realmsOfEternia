@@ -41,13 +41,14 @@ export interface ModelPart {
 
 /**
  * Flattens a loaded model into (geometry, material, transform) parts, one per mesh,
- * ready to be drawn with one instanced mesh each.
+ * ready to be drawn with one instanced mesh each. Meshes named in `skip` are left out
+ * (drawn separately, like a field's crop).
  */
-export function extractModelParts(root: Object3D): ModelPart[] {
+export function extractModelParts(root: Object3D, skip: readonly string[] = []): ModelPart[] {
   root.updateMatrixWorld(true);
   const parts: ModelPart[] = [];
   root.traverse((object) => {
-    if (!(object instanceof Mesh)) return;
+    if (!(object instanceof Mesh) || skip.includes(object.name)) return;
     const materials: Material[] = Array.isArray(object.material)
       ? object.material
       : [object.material];

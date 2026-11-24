@@ -1,5 +1,6 @@
 import type { ResourceAmounts, ResourceId } from '@roe/game-data';
 import type { EntityId, PlayerId } from '@roe/shared';
+import type { FieldState } from '../state/fields.js';
 import type { ConstructionProgress, GameState } from '../state/gameState.js';
 import { remainingAmount } from '../state/resourceNodes.js';
 import type { Cargo } from '../state/units.js';
@@ -7,9 +8,10 @@ import type { SimWorld } from '../world/createWorld.js';
 import { EMPTY_STOCK } from './stock.js';
 
 /**
- * Copy-on-write working copies of the economy for one tick. Harvesting, deposits and
- * material deliveries to construction sites write here; `commit` returns the new records, or the old ones (same references)
- * when nothing changed, so per-tick state changes stay cheap and stable.
+ * Copy-on-write working copies of the economy for one tick. Harvesting, deposits, material
+ * deliveries to construction sites and field work write here; `commit` returns the new
+ * records, or the old ones (same references) when nothing changed, so per-tick state
+ * changes stay cheap and stable.
  */
 export interface EconomyDraft {
   readonly world: SimWorld;
@@ -17,23 +19,27 @@ export interface EconomyDraft {
   nodes: Readonly<Record<number, number>>;
   stocks: Readonly<Record<PlayerId, Readonly<ResourceAmounts>>>;
   construction: Readonly<Record<EntityId, ConstructionProgress>>;
+  fields: Readonly<Record<EntityId, FieldState>>;
   nodesCopied: boolean;
   stocksCopied: boolean;
   constructionCopied: boolean;
+  fieldsCopied: boolean;
 }
 
 export function createEconomyDraft(
   world: SimWorld,
-  state: Pick<GameState, 'resourceNodes' | 'stocks' | 'construction'>,
+  state: Pick<GameState, 'resourceNodes' | 'stocks' | 'construction' | 'fields'>,
 ): EconomyDraft {
   return {
     world,
     nodes: state.resourceNodes,
     stocks: state.stocks,
     construction: state.construction,
+    fields: state.fields,
     nodesCopied: false,
     stocksCopied: false,
     constructionCopied: false,
+    fieldsCopied: false,
   };
 }
 
@@ -85,9 +91,19 @@ export function deliverToSite(draft: EconomyDraft, siteId: EntityId, resource: R
   };
 }
 
+/** Replaces the state of field `id`. */
+export function setField(draft: EconomyDraft, id: EntityId, field: FieldState): void {
+  if (!draft.fieldsCopied) {
+    draft.fields = { ...draft.fields };
+    draft.fieldsCopied = true;
+  }
+  (draft.fields as Record<EntityId, FieldState>)[id] = field;
+}
+
 /** The tick's resulting records (unchanged references when nothing happened). */
 export const commitEconomy = (draft: EconomyDraft) => ({
   resourceNodes: draft.nodes,
   stocks: draft.stocks,
   construction: draft.construction,
+  fields: draft.fields,
 });

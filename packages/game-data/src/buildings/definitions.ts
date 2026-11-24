@@ -58,9 +58,11 @@ export const BUILDINGS = {
   field: {
     id: 'field',
     name: 'Field',
-    description: 'A 2×3 grain field. Best placed near a mill.',
+    description:
+      'A 2×3 grain field. Its farmer sows, waits for the harvest and brings the grain in.',
     modelPath: model('farm_plot'),
     modelTiling: { cols: 2, rows: 3, stepX: PLOT_STEP.x, stepZ: PLOT_STEP.z },
+    cropMesh: 'farm_wheat',
     scale: S,
     // 2 × 3 plots of 4.42 × 3.85, spaced 4.6 × 4.1.
     footprint: { w: 9.5, d: 12.5 },
@@ -69,6 +71,15 @@ export const BUILDINGS = {
     cost: { wood: 3 },
     buildTime: 20,
     maxBuilders: 3,
+    walkable: true,
+    production: {
+      kind: 'farm',
+      profession: 'farmer',
+      crop: 'grain',
+      sowSeconds: 2,
+      growSeconds: 60,
+      harvestSeconds: 2,
+    },
   },
   mill: {
     id: 'mill',
@@ -95,7 +106,13 @@ export const BUILDINGS = {
     cost: { wood: 5, stone: 2 },
     buildTime: 40,
     maxBuilders: 4,
-    production: { profession: 'woodcutter', node: 'tree', workRadius: 25, processSeconds: 2 },
+    production: {
+      kind: 'harvest',
+      profession: 'woodcutter',
+      node: 'tree',
+      workRadius: 25,
+      processSeconds: 2,
+    },
   },
   quarry: {
     id: 'quarry',
@@ -109,7 +126,13 @@ export const BUILDINGS = {
     cost: { wood: 6, stone: 1 },
     buildTime: 40,
     maxBuilders: 4,
-    production: { profession: 'stonecutter', node: 'rock', workRadius: 30, processSeconds: 2 },
+    production: {
+      kind: 'harvest',
+      profession: 'stonecutter',
+      node: 'rock',
+      workRadius: 30,
+      processSeconds: 2,
+    },
   },
   market: {
     id: 'market',
@@ -131,6 +154,10 @@ export type BuildingId = keyof typeof BUILDINGS;
 /** The production settings of a building type, if it is a production building. */
 export const productionOf = (type: BuildingId): BuildingDefinition['production'] =>
   (BUILDINGS[type] as BuildingDefinition).production;
+
+/** True for buildings units can walk across (fields). */
+export const isWalkableBuilding = (type: BuildingId): boolean =>
+  (BUILDINGS[type] as BuildingDefinition).walkable === true;
 
 /** Population capacity a complete building of this type adds (0 for most buildings). */
 export const housingOf = (type: BuildingId): number =>

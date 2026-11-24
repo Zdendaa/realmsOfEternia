@@ -1,6 +1,7 @@
 import {
   BUILDINGS,
   isBuildingId,
+  productionOf,
   STARTING_RESOURCES,
   type BuildingId,
   type ResourceAmounts,
@@ -8,6 +9,7 @@ import {
 } from '@roe/game-data';
 import type { EntityId, PlacedFootprint, PlayerId } from '@roe/shared';
 import type { SimWorld } from '../world/createWorld.js';
+import { RIPE_FIELD, type FieldState } from './fields.js';
 import { IDLE, type UnitInstance } from './units.js';
 import { hireWorkers } from '../units/workers.js';
 import { spawnPoint } from './spawn.js';
@@ -61,6 +63,11 @@ export interface GameState {
    * Changes only when a unit of a resource is taken.
    */
   readonly resourceNodes: Readonly<Record<number, number>>;
+  /**
+   * Fields by building id (sowing, growing, harvesting). A field without a record is
+   * fresh (bare, to be sown). Changes when a plot is sown or harvested.
+   */
+  readonly fields: Readonly<Record<EntityId, FieldState>>;
   readonly nextEntityId: EntityId;
 }
 
@@ -81,7 +88,7 @@ export interface InitialStateOptions {
 
 /**
  * The starting settlement becomes the first building instances (ids 1..n), followed by
- * the starting serfs next to the first Town Hall.
+ * the starting serfs next to the first Town Hall. Its fields start ripe.
  */
 export function createInitialState(world: SimWorld, options: InitialStateOptions = {}): GameState {
   const owner = options.owner ?? null;
@@ -125,7 +132,19 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
   const resources = options.resources ?? STARTING_RESOURCES;
   const stockHolders = [...(owner !== null ? [owner] : []), ...(options.players ?? [])];
   const stocks = Object.fromEntries(stockHolders.map((player) => [player, { ...resources }]));
-  return { tick: 0, buildings, construction: {}, units, stocks, resourceNodes: {}, nextEntityId };
+  const fields = Object.fromEntries(
+    buildings.filter((b) => productionOf(b.type)?.kind === 'farm').map((b) => [b.id, RIPE_FIELD]),
+  );
+  return {
+    tick: 0,
+    buildings,
+    construction: {},
+    units,
+    stocks,
+    resourceNodes: {},
+    fields,
+    nextEntityId,
+  };
 }
 
 /** True for buildings of the hand-authored starting settlement (not placed by a player). */

@@ -35,23 +35,37 @@ export type UnitTask =
 export type DeliverPhase = 'toStorage' | 'toSite';
 
 /**
- * A worker's loop at its production building: harvest a node nearby, bring the unit to
- * the building, process it there, carry it to storage, repeat. `waiting`: nothing to
- * harvest within reach right now.
+ * Where a worker is in its loop at its production building.
+ * Harvesting (lumbermill, quarry): `toNode` → `working` (at the node) → `toBuilding` →
+ * `processing` → `toStorage`; `waiting`: nothing to harvest within reach right now.
+ * Farming (field): `toPlot` → `sowing` plot by plot; `waiting` while the crop grows;
+ * `toPlot` → `harvesting` → `toStorage` for every plot.
  */
 export type WorkPhase =
-  'waiting' | 'toNode' | 'working' | 'toBuilding' | 'processing' | 'toStorage';
+  | 'waiting'
+  | 'toNode'
+  | 'working'
+  | 'toBuilding'
+  | 'processing'
+  | 'toStorage'
+  | 'toPlot'
+  | 'sowing'
+  | 'harvesting';
 
 /** Where a gatherer is in its loop. */
 export type GatherPhase = 'toNode' | 'working' | 'toStorage';
 
-/** A worker's job at its production building (`nodeId` is -1 when none is chosen). */
+/** A worker's job at its production building. */
 export interface WorkTask {
   kind: 'work';
   buildingId: EntityId;
   phase: WorkPhase;
-  nodeId: number;
-  /** Ticks of work toward the current step (harvesting or processing). */
+  /**
+   * What the worker works on: the tree or rock (decoration id) when harvesting, the plot
+   * index on a field; -1 when none is chosen.
+   */
+  target: number;
+  /** Ticks of work toward the current step (harvesting, processing, sowing a plot...). */
   progress: number;
 }
 

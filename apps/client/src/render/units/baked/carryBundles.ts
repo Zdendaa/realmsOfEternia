@@ -12,7 +12,7 @@ import type { CarryAttachment } from './bakeCharacter';
 import { paint, prepare } from './propGeometry';
 
 /** Bundle shapes; every resource maps to one. */
-export type BundleKind = 'logs' | 'stones' | 'sack' | 'bread' | 'goldOre' | 'ironOre';
+export type BundleKind = 'logs' | 'stones' | 'sack' | 'bread' | 'goldOre' | 'ironOre' | 'sheaf';
 
 export const BUNDLE_KINDS: readonly BundleKind[] = [
   'logs',
@@ -21,6 +21,7 @@ export const BUNDLE_KINDS: readonly BundleKind[] = [
   'bread',
   'goldOre',
   'ironOre',
+  'sheaf',
 ];
 
 export const BUNDLE_FOR: Record<ResourceId, BundleKind> = {
@@ -30,6 +31,8 @@ export const BUNDLE_FOR: Record<ResourceId, BundleKind> = {
   gold: 'goldOre',
   food: 'bread',
   mana: 'sack',
+  grain: 'sheaf',
+  flour: 'sack',
 };
 
 /** A log lying across the arms (along X), bark sides and light cut ends. */
@@ -85,6 +88,16 @@ function bundleShape(kind: BundleKind): BufferGeometry {
         return prepare(g);
       };
       return mergeGeometries([prepare(basket), loaf(-0.08, 0.3), loaf(0.09, -0.2)]);
+    }
+    case 'sheaf': {
+      // A bundle of wheat stalks lying across the arms, tied in the middle, ears on one end.
+      const stalks = paint(new CylinderGeometry(0.11, 0.13, 0.62, 8), '#c9a54e', '#a8873a');
+      stalks.rotateZ(Math.PI / 2).translate(-0.04, 0.08, 0.03);
+      const ears = paint(new SphereGeometry(0.15, 8, 6), '#e2c25e');
+      ears.scale(1.3, 0.95, 0.95).translate(0.3, 0.09, 0.03);
+      const band = paint(new CylinderGeometry(0.125, 0.125, 0.05, 8), '#7a5530');
+      band.rotateZ(Math.PI / 2).translate(0.02, 0.08, 0.03);
+      return mergeGeometries([prepare(stalks), prepare(ears), prepare(band)]);
     }
     case 'goldOre':
     case 'ironOre': {

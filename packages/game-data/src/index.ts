@@ -11,16 +11,26 @@ export {
   BUILDINGS,
   housingOf,
   isBuildingId,
+  isWalkableBuilding,
   productionOf,
   type BuildingId,
 } from './buildings/definitions.js';
-export type { BuildingDefinition, ModelTiling, ProductionDefinition } from './buildings/types.js';
+export { tileOffsets } from './buildings/tiling.js';
+export type {
+  BuildingDefinition,
+  FarmProduction,
+  HarvestProduction,
+  ModelTiling,
+  ProductionDefinition,
+} from './buildings/types.js';
 export { PROPS, type PropDefinition, type PropId } from './props/definitions.js';
 export { STARTING_RESOURCES, STORAGE_BUILDINGS } from './economy/startingResources.js';
 export {
   RESOURCE_IDS,
   RESOURCES,
+  resourcesIn,
   type ResourceAmounts,
+  type ResourceCategory,
   type ResourceCost,
   type ResourceDefinition,
   type ResourceId,

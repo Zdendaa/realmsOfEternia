@@ -1,4 +1,5 @@
-import type { HeightField } from '@roe/shared';
+import { isWalkableBuilding } from '@roe/game-data';
+import type { HeightField, PlacedFootprint } from '@roe/shared';
 import { createPathFinder, type PathFinder } from '../nav/astar.js';
 import {
   addBuilding,
@@ -34,6 +35,10 @@ export interface SimContext {
   readonly depleted: Set<number>;
 }
 
+/** Footprints that block walking: every building except walkable ones (fields). */
+const blockingFootprints = (buildings: readonly BuildingInstance[]): PlacedFootprint[] =>
+  buildings.filter((b) => !isWalkableBuilding(b.type)).map(toPlacedFootprint);
+
 const depletedIds = (nodes: NodeAmounts) =>
   Object.entries(nodes)
     .filter(([, amount]) => amount === 0)
@@ -42,7 +47,7 @@ const depletedIds = (nodes: NodeAmounts) =>
 export function createSimContext(world: SimWorld, state: GameState): SimContext {
   const depleted = new Set(depletedIds(state.resourceNodes));
   const nav = createNavGrid(world, (id) => depleted.has(id));
-  stampBuildings(nav, state.buildings.map(toPlacedFootprint));
+  stampBuildings(nav, blockingFootprints(state.buildings));
   return {
     world,
     heights: createStateHeights(world, state),
@@ -67,7 +72,7 @@ function syncResourceNodes(ctx: SimContext, state: GameState): void {
   if ([...ctx.depleted].some((id) => !nowSet.has(id))) {
     const fresh = createNavGrid(ctx.world, isGone);
     ctx.nav.flags.set(fresh.flags);
-    stampBuildings(ctx.nav, state.buildings.map(toPlacedFootprint));
+    stampBuildings(ctx.nav, blockingFootprints(state.buildings));
     ctx.depleted.clear();
   }
   for (const id of now) {
@@ -81,7 +86,8 @@ function syncResourceNodes(ctx: SimContext, state: GameState): void {
 
 /**
  * Brings the context in line with `state`. Cheap when nothing changed (reference checks).
- * New buildings are stamped incrementally; anything else rebuilds the building layer.
+ * New buildings are stamped incrementally (walkable ones, i.e. fields, never block);
+ * anything else rebuilds the building layer.
  * Newly depleted trees and rocks are cleared from the nav grid.
  * Returns true if the buildings changed.
  */
@@ -97,10 +103,11 @@ export function syncContext(ctx: SimContext, state: GameState): boolean {
       state.buildings.length > previous.length &&
       previous.every((b, i) => state.buildings[i]?.id === b.id);
     if (appended) {
-      for (const b of state.buildings.slice(previous.length))
-        addBuilding(ctx.nav, toPlacedFootprint(b));
+      for (const f of blockingFootprints(state.buildings.slice(previous.length))) {
+        addBuilding(ctx.nav, f);
+      }
     } else {
-      stampBuildings(ctx.nav, state.buildings.map(toPlacedFootprint));
+      stampBuildings(ctx.nav, blockingFootprints(state.buildings));
     }
     ctx.heights = createStateHeights(ctx.world, state);
   }
