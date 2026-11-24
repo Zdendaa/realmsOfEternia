@@ -7,6 +7,7 @@ import { useGameStore } from '../state/gameStore';
 import { useSettingsStore } from '../state/settingsStore';
 import { decorateWorld } from '../world/decorateWorld';
 import { RtsCameraControls } from './camera/RtsCameraControls';
+import { CommandMarkers } from './commands/CommandMarkers';
 import { PlacementPreview } from './placement/PlacementPreview';
 import { ATMOSPHERE } from './scene/atmosphere';
 import { World } from './scene/World';
@@ -49,6 +50,7 @@ export function GameCanvas() {
       <Units />
       <SelectionRings />
       <SelectionMarkers />
+      <CommandMarkers />
       <PlacementPreview />
       <RtsCameraControls bounds={world.map.size / 2} heights={heights} />
       {showStats && <Stats className="fps-stats" />}

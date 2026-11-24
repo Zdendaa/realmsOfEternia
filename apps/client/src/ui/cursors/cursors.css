@@ -1,0 +1,91 @@
+/*
+ * Canvas cursors, chosen by useHoverCursor via the canvas data-cursor attribute.
+ * The SVGs are drawn on a 32-unit grid and exported at 64 px: image-set(... 2x) shows
+ * them at 32 CSS px, crisp on retina screens. Hotspots are in CSS px. The plain url()
+ * line is a fallback for browsers without image-set in cursor (shown at 64 px).
+ */
+
+.game-canvas canvas,
+.game-canvas canvas[data-cursor='default'] {
+  cursor:
+    url('./pointer.svg') 8 6,
+    default;
+  cursor:
+    -webkit-image-set(url('./pointer.svg') 2x) 4 3,
+    default;
+  cursor:
+    image-set(url('./pointer.svg') 2x) 4 3,
+    default;
+}
+
+.game-canvas canvas[data-cursor='select'] {
+  cursor:
+    url('./select.svg') 8 6,
+    pointer;
+  cursor:
+    -webkit-image-set(url('./select.svg') 2x) 4 3,
+    pointer;
+  cursor:
+    image-set(url('./select.svg') 2x) 4 3,
+    pointer;
+}
+
+.game-canvas canvas[data-cursor='move'] {
+  cursor:
+    url('./move.svg') 32 32,
+    crosshair;
+  cursor:
+    -webkit-image-set(url('./move.svg') 2x) 16 16,
+    crosshair;
+  cursor:
+    image-set(url('./move.svg') 2x) 16 16,
+    crosshair;
+}
+
+.game-canvas canvas[data-cursor='build'] {
+  cursor:
+    url('./build.svg') 20 20,
+    pointer;
+  cursor:
+    -webkit-image-set(url('./build.svg') 2x) 10 10,
+    pointer;
+  cursor:
+    image-set(url('./build.svg') 2x) 10 10,
+    pointer;
+}
+
+.game-canvas canvas[data-cursor='blocked'] {
+  cursor:
+    url('./blocked.svg') 32 32,
+    not-allowed;
+  cursor:
+    -webkit-image-set(url('./blocked.svg') 2x) 16 16,
+    not-allowed;
+  cursor:
+    image-set(url('./blocked.svg') 2x) 16 16,
+    not-allowed;
+}
+
+.game-canvas canvas[data-cursor='chop'] {
+  cursor:
+    url('./chop.svg') 34 20,
+    pointer;
+  cursor:
+    -webkit-image-set(url('./chop.svg') 2x) 17 10,
+    pointer;
+  cursor:
+    image-set(url('./chop.svg') 2x) 17 10,
+    pointer;
+}
+
+.game-canvas canvas[data-cursor='mine'] {
+  cursor:
+    url('./mine.svg') 24 24,
+    pointer;
+  cursor:
+    -webkit-image-set(url('./mine.svg') 2x) 12 12,
+    pointer;
+  cursor:
+    image-set(url('./mine.svg') 2x) 12 12,
+    pointer;
+}

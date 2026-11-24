@@ -1,6 +1,7 @@
 import { BUILDINGS } from '@roe/game-data';
 import { useEffect, useMemo } from 'react';
 import { DoubleSide, MeshBasicMaterial, Path, Shape, ShapeGeometry } from 'three';
+import { useHoverCursor } from '../../input/useHoverCursor';
 import { useSelectionInput } from '../../input/useSelectionInput';
 import { useGameStore } from '../../state/gameStore';
 import { useSelectionStore } from '../../state/selectionStore';
@@ -66,9 +67,10 @@ function BuildingMarker({ buildingId }: { buildingId: number }) {
   );
 }
 
-/** Selection input plus markers for whatever is selected. */
+/** Selection input, the hover cursor, and markers for whatever is selected. */
 export function SelectionMarkers() {
   useSelectionInput();
+  useHoverCursor();
   const buildingId = useSelectionStore((s) => s.building);
   return buildingId === null ? null : <BuildingMarker buildingId={buildingId} />;
 }

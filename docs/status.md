@@ -24,6 +24,7 @@ _Last updated: 2026-11-24._
 | 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | ✅ Done |
 | 4.4   | Construction sites: visuals, progress, right-click assignment                     | ✅ Done |
 | 4.5   | Character models with baked-animation instancing                                  | ✅ Done |
+| 4.6   | Context cursors and command markers                                               | ✅ Done |
 | 5     | Economy (resources, costs paid, production)                                       | ⏳ Next |
 
 ## What works today
@@ -38,6 +39,7 @@ _Last updated: 2026-11-24._
 - **Camera:** WASD and arrow keys, middle drag or the screen edges (toggle in the settings) to pan, right drag to rotate, mouse wheel to zoom. The focus point stays inside the playable area and on the ground.
 - **Building placement:** a construction menu lists the six buildable types with their costs (display only). A ghost follows the mouse, snapped to a 1-unit grid, rotating in 90° steps, green or red by the shared placement rules (area, water, slope, buildings, paths, trees, rocks). A placed building becomes a construction site and flattens the terrain and clears grass under it.
 - **Serfs:** five start in front of the Town Hall; more are recruited there (select the Town Hall → "Recruit serf", up to 200, no cost yet). They are KayKit characters (the Ranger without cape and quiver) with baked skeletal animation: idle, walking (2.0 units/s), hammering while building, each unit out of phase with the others, and the scarf in the player color. Primitive placeholder serfs show while the models load, or if they fail to load. Left click or a box selects them (Shift adds), and a right click sends them to the ground point (spread out) or to a construction site.
+- **Cursors and command feedback:** the cursor shows what a click would do: select over own units and buildings, move over walkable ground and build over own construction sites while serfs are selected, and "not allowed" over water, slopes, buildings, trees and rocks (a right click there does nothing). A move shows chevrons converging on the clicked point in the player color (0.6 s); assigning to a site pulses an outline around it with a hammer icon above.
 - **Construction sites:** dirt, a wooden scaffold and the real model rising from the ground as work progresses, with a progress bar. Idle serfs take sites within 30 units on their own; each working serf adds the same amount of work (linear), up to the building's `maxBuilders` (house 3, mill 4...). A house takes 30 s for one serf, 10 s for three. Selecting a site shows its progress and builders. Finished sites become normal buildings.
 - **Pathfinding:** A* on a 1-unit grid (water, slopes, trees, rocks and buildings block) with smoothed routes; units push each other apart instead of stacking. On the prototype map a path takes about 1–1.5 ms on average and a tick with 300 moving serfs about 0.5 ms (p99 about 7 ms when many paths are planned at once).
 - **Shared rules ready for Phase 3:** `createHeightField`, `flattenHeightField`, `entrancePoint`, `createBuildRules().isBuildable` and `createWaterMap().isWater`.
@@ -62,6 +64,11 @@ _Last updated: 2026-11-24._
 - **Pack style:** the KayKit pack has no standalone village clutter; barrels, crates and fences are baked into the buildings. Its farm plots are blocky crop boxes.
 - **Mixed tree styles:** garden trees from the pack are round, while forest trees are our own conifers.
 - **Production build size:** the build includes the whole medieval pack (about 4.6 MB, including 196 unused tile models) and all character assets (9.4 MB: six characters and all eight Rig_Medium animation libraries, of which three are loaded). Unused files can be pruned before release.
+
+### Input
+
+- **Cursor crispness on retina is unverified:** the cursors use `image-set(... 2x)` with 64 px SVGs. Headless Chrome screenshots don't include the OS cursor, so the cursor images, hotspots and sharpness were not seen live; the `data-cursor` states and the computed CSS were checked.
+- **Axe and pickaxe cursors are prepared but unused** until Phase 5 (gathering).
 
 ### Units and pathfinding
 

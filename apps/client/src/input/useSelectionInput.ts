@@ -1,22 +1,17 @@
 import { useThree } from '@react-three/fiber';
-import type { EntityId } from '@roe/shared';
-import type { Command } from '@roe/sim';
 import { useEffect } from 'react';
-import { Raycaster, Vector2, Vector3, type Camera } from 'three';
-import { pickBuilding } from '../render/picking/pickBuilding';
-import { unitAt, unitsInBox } from '../render/picking/screenPick';
-import { pickGround } from '../render/placement/groundPick';
-import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
+import type { Camera } from 'three';
+import { commandFeedback } from '../render/commands/commandFeedback';
+import { unitsInBox } from '../render/picking/screenPick';
+import { useGameStore } from '../state/gameStore';
 import { usePlacementStore } from '../state/placementStore';
 import { useSelectionStore } from '../state/selectionStore';
 import { dragBox } from '../ui/dragBox';
+import { commandIntent } from './cursorKind';
+import { ownUnitIds, pickPointerTarget } from './pointerTarget';
 
 /** A press that moves less than this (px) is a click; more starts a box or a camera drag. */
 const CLICK_TOLERANCE = 5;
-
-const raycaster = new Raycaster();
-const ndc = new Vector2();
-const ground = new Vector3();
 
 interface Press {
   x: number;
@@ -27,23 +22,11 @@ interface Press {
   boxing: boolean;
 }
 
-const ownUnitIds = (): EntityId[] =>
-  useGameStore
-    .getState()
-    .state.units.filter((u) => u.ownerId === LOCAL_PLAYER)
-    .map((u) => u.id);
-
-function rayFrom(element: HTMLElement, camera: Camera, x: number, y: number) {
-  const rect = element.getBoundingClientRect();
-  ndc.set(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1);
-  raycaster.setFromCamera(ndc, camera);
-  return raycaster.ray;
-}
-
 /** Left click: a unit, else a building, else nothing. Shift adds/removes units. */
 function clickSelect(element: HTMLElement, camera: Camera, x: number, y: number, add: boolean) {
   const selection = useSelectionStore.getState();
-  const unit = unitAt(ownUnitIds(), camera, element.getBoundingClientRect(), x, y);
+  const target = pickPointerTarget(element, camera, x, y);
+  const unit = target.unitId;
   if (unit !== null) {
     if (!add) selection.selectUnits([unit]);
     else if (selection.units.includes(unit)) {
@@ -52,9 +35,7 @@ function clickSelect(element: HTMLElement, camera: Camera, x: number, y: number,
     return;
   }
   if (add) return;
-  const { state, heights } = useGameStore.getState();
-  const building = pickBuilding(rayFrom(element, camera, x, y), state.buildings, heights);
-  selection.selectBuilding(building?.id ?? null);
+  selection.selectBuilding(target.building?.id ?? null);
 }
 
 /** Left drag: every own unit inside the box. Shift adds to the current selection. */
@@ -73,22 +54,26 @@ function boxSelect(
 }
 
 /**
- * Right click with units selected: on an own construction site the serfs build it,
- * anywhere else they walk to the clicked ground point.
+ * Right click with units selected: on an own construction site the serfs build it, on
+ * walkable ground they walk there. Blocked spots (buildings, water, slopes, trees,
+ * rocks) do nothing, matching the "not allowed" cursor. Accepted commands get a marker.
  */
 function commandSelected(element: HTMLElement, camera: Camera, x: number, y: number) {
   const unitIds = useSelectionStore.getState().units;
   if (unitIds.length === 0) return;
-  const { state, heights, dispatch } = useGameStore.getState();
-  const ray = rayFrom(element, camera, x, y);
-  const building = pickBuilding(ray, state.buildings, heights);
-  let command: Command | null = null;
-  if (building?.status === 'construction' && building.ownerId === LOCAL_PLAYER) {
-    command = { type: 'assignBuilders', unitIds: [...unitIds], siteId: building.id };
-  } else if (pickGround(ray, heights, ground)) {
-    command = { type: 'moveUnits', unitIds: [...unitIds], x: ground.x, z: ground.z };
+  const target = pickPointerTarget(element, camera, x, y);
+  const intent = commandIntent(target);
+  const { dispatch, heights } = useGameStore.getState();
+  if (intent.kind === 'build' && target.building) {
+    const site = target.building;
+    const result = dispatch({ type: 'assignBuilders', unitIds: [...unitIds], siteId: site.id });
+    if (result.ok) {
+      commandFeedback.push({ kind: 'build', site, groundY: heights.getHeightAt(site.x, site.z) });
+    }
+  } else if (intent.kind === 'move') {
+    const result = dispatch({ type: 'moveUnits', unitIds: [...unitIds], x: intent.x, z: intent.z });
+    if (result.ok) commandFeedback.push({ kind: 'move', x: intent.x, y: intent.y, z: intent.z });
   }
-  if (command) dispatch(command);
 }
 
 /**
