@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-24._
 
-**Current state:** Phase 4 (serfs and construction sites) is complete, including 4.5: serfs are KayKit characters with baked skeletal animation (idle, walking, hammering), instanced in one draw call. Next: Phase 5, the economy.
+**Current state:** Phase 4 (serfs and construction sites) is complete, including 4.5: serfs are KayKit characters with baked skeletal animation (idle, walking, hammering), instanced in one draw call. Next: Phase 5, the economy; the approved plan and milestone status are in [phase-5-plan.md](phase-5-plan.md).
 
 ## Phases
 
