@@ -6,7 +6,9 @@ export const UNITS = {
     id: 'serf',
     name: 'Serf',
     description: 'Builds construction sites. Recruited at the Town Hall.',
-    speed: 3,
+    // A calm Settlers-like walk; the short-legged character models still need their walk
+    // cycle at ~2.6× to keep up (see CHARACTER_PACK.serf).
+    speed: 1.6,
     radius: 0.4,
     maxPerPlayer: 200,
   },

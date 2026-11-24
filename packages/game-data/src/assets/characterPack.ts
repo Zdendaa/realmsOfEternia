@@ -40,10 +40,10 @@ export const CHARACTER_PACK = {
     scale: 0.62,
     animations: {
       idle: { file: `${MEDIUM}Rig_Medium_General.glb`, clip: 'Idle_A' },
-      // Serfs move at 3 units/s, about two body heights per second for these short-legged
-      // characters: a jog. Walking_A matches only ~0.5 units/s at this scale (it would need
-      // 6× playback), Running_A ~1.1 units/s, so it plays at ~2.7× with planted feet.
-      walk: { file: `${MEDIUM}Rig_Medium_MovementBasic.glb`, clip: 'Running_A' },
+      // The walk with the longest stride: ~1.07 model units per 1.07 s cycle, i.e. ~0.62
+      // world units/s at this scale. The renderer speeds it up to the serf's walking speed
+      // from the measured stride, so the feet stay planted.
+      walk: { file: `${MEDIUM}Rig_Medium_MovementBasic.glb`, clip: 'Walking_B' },
       build: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Hammering' },
       // Ready for the economy (Phase 5): lumberjacks and diggers.
       chop: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Chopping' },

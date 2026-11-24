@@ -25,10 +25,11 @@ export interface BakedClip {
   frames: number;
   duration: number;
   /**
-   * Ground speed (model units per second) at which the feet don't slide, measured from
-   * the foot movement during the clip. Only meaningful for walk cycles.
+   * Ground distance (model units) one cycle of the clip covers with planted feet; see
+   * `measureStride`. Playback rate for a ground speed v: v · duration / stride.
+   * 0 for clips where no foot is planted and moving (idle, work).
    */
-  footSpeed: number;
+  stride: number;
 }
 
 export interface BakedCharacter<K extends string> {
@@ -43,10 +44,53 @@ export interface BakedCharacter<K extends string> {
 }
 
 /**
- * Foot bone used to measure the stride of walk cycles. GLTFLoader sanitizes node names
- * ('.' is reserved in property paths), so 'foot.l' is loaded as 'footl'.
+ * Foot bones used to measure strides. GLTFLoader sanitizes node names ('.' is reserved
+ * in property paths), so 'foot.l' is loaded as 'footl'.
  */
-const FOOT_BONE = PropertyBinding.sanitizeNodeName('foot.l');
+const FOOT_BONES = ['foot.l', 'foot.r'].map((name) => PropertyBinding.sanitizeNodeName(name));
+/** Stride measurement samples the clip at this rate (finer than the bake). */
+const MEASURE_FPS = 120;
+/** A foot counts as planted within this fraction of its height range above its lowest point. */
+const CONTACT_BAND = 0.08;
+
+/**
+ * Ground distance one cycle of `clip` covers. A walk cycle is played in place: while a
+ * foot is planted, it moves backwards relative to the body exactly as fast as the body
+ * would move over the ground. So the ground speed is the foot's horizontal speed during
+ * its contact frames (the lowest part of its height range), averaged over both feet;
+ * times the clip duration that is the stride per cycle.
+ */
+function measureStride(root: Object3D, feet: Object3D[], clip: AnimationClip): number {
+  if (feet.length === 0) return 0;
+  const mixer = new AnimationMixer(root);
+  mixer.clipAction(clip).play();
+  const samples = Math.max(2, Math.round(clip.duration * MEASURE_FPS));
+  const tracks = feet.map(() => [] as Vector3[]);
+  for (let f = 0; f <= samples; f++) {
+    mixer.setTime((f / samples) * clip.duration);
+    root.updateMatrixWorld(true);
+    feet.forEach((foot, i) => tracks[i]?.push(foot.getWorldPosition(new Vector3())));
+  }
+  mixer.stopAllAction();
+  mixer.uncacheRoot(root);
+
+  let distance = 0;
+  let time = 0;
+  const dt = clip.duration / samples;
+  for (const track of tracks) {
+    const ys = track.map((p) => p.y);
+    const low = Math.min(...ys);
+    const contact = low + (Math.max(...ys) - low) * CONTACT_BAND;
+    for (let f = 1; f < track.length; f++) {
+      const a = track[f - 1] as Vector3;
+      const b = track[f] as Vector3;
+      if (a.y > contact || b.y > contact) continue;
+      distance += Math.hypot(b.x - a.x, b.z - a.z);
+      time += dt;
+    }
+  }
+  return time > 0 ? (distance / time) * clip.duration : 0;
+}
 
 /**
  * Prepares a skinned character for instanced drawing ("baked" animation): samples each
@@ -94,8 +138,7 @@ export function bakeCharacter<K extends string>(
   const data = new Float32Array(width * rows * 4);
   const boneInverses = first.skeleton.boneInverses;
   const skinMatrix = new Matrix4();
-  const footBone = bones.find((b) => b.name === FOOT_BONE);
-  const footPosition = new Vector3();
+  const feet = bones.filter((b) => FOOT_BONES.includes(b.name));
 
   const baked = {} as Record<K, BakedClip>;
   let row = 0;
@@ -104,10 +147,6 @@ export function bakeCharacter<K extends string>(
     const mixer = new AnimationMixer(root);
     const action = mixer.clipAction(clip);
     action.play();
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minZ = Infinity;
-    let maxZ = -Infinity;
     for (let f = 0; f < frames; f++) {
       mixer.setTime(f / fps);
       root.updateMatrixWorld(true);
@@ -115,20 +154,11 @@ export function bakeCharacter<K extends string>(
         skinMatrix.multiplyMatrices(bone.matrixWorld, boneInverses[b] as Matrix4);
         skinMatrix.toArray(data, ((row + f) * width + b * 4) * 4);
       });
-      if (footBone) {
-        footBone.getWorldPosition(footPosition);
-        minX = Math.min(minX, footPosition.x);
-        maxX = Math.max(maxX, footPosition.x);
-        minZ = Math.min(minZ, footPosition.z);
-        maxZ = Math.max(maxZ, footPosition.z);
-      }
     }
     action.stop();
     mixer.uncacheRoot(root);
-    // During a cycle each foot sweeps its stride range backwards in about half the time.
-    const stride = Math.max(maxX - minX, maxZ - minZ);
-    const footSpeed = Number.isFinite(stride) ? (2 * stride) / clip.duration : 0;
-    baked[key] = { start: row, frames, duration: clip.duration, footSpeed };
+    const stride = measureStride(root, feet, clip);
+    baked[key] = { start: row, frames, duration: clip.duration, stride };
     row += frames;
   });
 

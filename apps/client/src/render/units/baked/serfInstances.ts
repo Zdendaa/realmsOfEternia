@@ -58,9 +58,14 @@ export function createSerfInstances(baked: BakedCharacter<CharacterAnimation>, c
   baked.geometry.setAttribute('aAnim', anim);
   baked.geometry.setAttribute('aTeam', team);
 
-  // Feet don't slide: play the walk cycle at the rate that matches the walking speed.
-  const footSpeed = baked.clips.walk.footSpeed * SERF.scale;
-  const walkRate = footSpeed > 0 ? Math.min(3, Math.max(0.5, UNITS.serf.speed / footSpeed)) : 1;
+  // Feet don't slide: cycles per second = speed / stride per cycle (in world units), so
+  // the playback rate is speed · duration / stride. Clamped only as a safety net.
+  const walk = baked.clips.walk;
+  const worldStride = walk.stride * SERF.scale;
+  const walkRate =
+    worldStride > 0
+      ? Math.min(4, Math.max(0.25, (UNITS.serf.speed * walk.duration) / worldStride))
+      : 1;
 
   const material = makeBakedSkinMaterial(baked.material, uniforms);
   const depthMaterial = makeBakedSkinDepthMaterial(uniforms);

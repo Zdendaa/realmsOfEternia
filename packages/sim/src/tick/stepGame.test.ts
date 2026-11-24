@@ -14,6 +14,9 @@ import { createWorld } from '../world/createWorld.js';
 import { stepGame } from './stepGame.js';
 
 const world = createWorld(FLAT_MAP, TOWN);
+/** Ticks a serf needs to walk `distance` units (plus a little for routing and turning). */
+const walkTicks = (distance: number) =>
+  Math.ceil((distance / UNITS.serf.speed + 2) * SIMULATION_TICK_RATE);
 const TOWN_HALL = 1;
 
 /** A fresh game owned by alice, with a synced context and a tiny driver. */
@@ -147,7 +150,7 @@ describe('moveUnits', () => {
     const target = { x: -20, z: 15 };
     g.step({ type: 'moveUnits', unitIds: ids(serfs(g.state)), ...target });
     const ticks = g.run(40 * SIMULATION_TICK_RATE, (s) => s.units.every((u) => !u.movement));
-    expect(ticks).toBeLessThan(15 * SIMULATION_TICK_RATE);
+    expect(ticks).toBeLessThan(walkTicks(30));
     g.step(); // finished moves turn idle on the next tick
     for (const serf of serfs(g.state)) {
       expect(dist(serf, target)).toBeLessThan(3);
@@ -160,7 +163,7 @@ describe('moveUnits', () => {
     const g = game();
     const serf = serfs(g.state)[0] as UnitInstance;
     g.step({ type: 'moveUnits', unitIds: [serf.id], x: 0, z: -12 });
-    for (let i = 0; i < 20 * SIMULATION_TICK_RATE; i++) {
+    for (let i = 0; i < walkTicks(35); i++) {
       g.step();
       const now = g.state.units.find((u) => u.id === serf.id) as UnitInstance;
       expect(isWalkable(g.ctx.nav, now.x, now.z)).toBe(true);
@@ -198,9 +201,9 @@ describe('construction', () => {
     const three = ticksToBuild(3);
     const work = 30 * SIMULATION_TICK_RATE; // house: 30 s for one serf
     expect(one).toBeGreaterThanOrEqual(work);
-    expect(one).toBeLessThan(work + 10 * SIMULATION_TICK_RATE);
+    expect(one).toBeLessThan(work + walkTicks(20));
     expect(three).toBeGreaterThanOrEqual(work / 3);
-    expect(three).toBeLessThan(work / 3 + 10 * SIMULATION_TICK_RATE);
+    expect(three).toBeLessThan(work / 3 + walkTicks(20));
   });
 
   it('caps builders at maxBuilders; the others stay idle', () => {
@@ -234,10 +237,7 @@ describe('construction', () => {
     const [result] = g.step({ type: 'assignBuilders', unitIds: ids(serfs(g.state)), siteId });
     expect(result?.ok).toBe(true);
     expect(g.state.units.filter((u) => u.task.kind === 'build')).toHaveLength(3);
-    g.run(
-      30 * SIMULATION_TICK_RATE,
-      (st) => st.units.filter((u) => u.activity === 'working').length === 3,
-    );
+    g.run(walkTicks(60), (st) => st.units.filter((u) => u.activity === 'working').length === 3);
     g.step();
     const working = g.state.units.filter((u) => u.activity === 'working');
     expect(working).toHaveLength(3);
@@ -259,7 +259,7 @@ describe('construction', () => {
     const g = game();
     const serf = serfs(g.state)[0] as UnitInstance;
     g.step({ type: 'moveUnits', unitIds: [serf.id], x: -20, z: 20 });
-    g.run(20 * SIMULATION_TICK_RATE, (s) => s.units.every((u) => !u.movement));
+    g.run(walkTicks(35), (s) => s.units.every((u) => !u.movement));
     g.step(place('house', -20, 20));
     g.run(5 * SIMULATION_TICK_RATE);
     const now = g.state.units.find((u) => u.id === serf.id) as UnitInstance;
