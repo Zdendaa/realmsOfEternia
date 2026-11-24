@@ -27,10 +27,12 @@ interface WorldProps {
   heights: HeightField;
   /** All buildings in the game state (starting settlement + placed ones). */
   buildings: readonly BuildingInstance[];
+  /** Harvested trees and rocks (`GameState.resourceNodes`): depleted ones disappear. */
+  resourceNodes: Readonly<Record<number, number>>;
 }
 
 /** Renders the world for the current game state. Rendering only reads state. */
-export function World({ world, heights, buildings }: WorldProps) {
+export function World({ world, heights, buildings, resourceNodes }: WorldProps) {
   const { trees, rocks } = useMemo(
     () => ({
       trees: world.decorations.filter((d) => d.kind === 'tree'),
@@ -100,8 +102,8 @@ export function World({ world, heights, buildings }: WorldProps) {
         groundLevel={groundLevel}
         blockers={playerFootprints}
       />
-      <Trees items={trees} groundLevel={groundLevel} />
-      <Rocks items={rocks} groundLevel={groundLevel} />
+      <Trees items={trees} groundLevel={groundLevel} resourceNodes={resourceNodes} />
+      <Rocks items={rocks} groundLevel={groundLevel} resourceNodes={resourceNodes} />
       <Suspense fallback={null}>
         <Settlement buildings={placedBuildings} props={props} />
       </Suspense>

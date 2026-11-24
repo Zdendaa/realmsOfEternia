@@ -37,8 +37,22 @@ export interface AssignBuildersCommand {
   siteId: EntityId;
 }
 
+/**
+ * Send the given serfs to harvest a tree or rock (decoration id `nodeId`); a group
+ * spreads over nearby nodes of the same kind.
+ */
+export interface GatherCommand {
+  type: 'gather';
+  unitIds: EntityId[];
+  nodeId: number;
+}
+
 export type Command =
-  PlaceBuildingCommand | RecruitSerfCommand | MoveUnitsCommand | AssignBuildersCommand;
+  | PlaceBuildingCommand
+  | RecruitSerfCommand
+  | MoveUnitsCommand
+  | AssignBuildersCommand
+  | GatherCommand;
 
 /** A command together with the player who issued it, attached by the receiver. */
 export interface IssuedCommand {
@@ -52,6 +66,9 @@ export const MAX_COMMAND_UNITS = 256;
 const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const isEntityId = (v: unknown): v is EntityId =>
   typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
+/** Decoration ids are indices: 0 is valid. */
+const isNodeId = (v: unknown): v is number =>
+  typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 
 /** A non-empty list of distinct entity ids, or null. */
 function parseUnitIds(value: unknown): EntityId[] | null {
@@ -89,6 +106,11 @@ export function parseCommand(input: unknown): Command | null {
       const unitIds = parseUnitIds(data.unitIds);
       if (!unitIds || !isEntityId(data.siteId)) return null;
       return { type: 'assignBuilders', unitIds, siteId: data.siteId };
+    }
+    case 'gather': {
+      const unitIds = parseUnitIds(data.unitIds);
+      if (!unitIds || !isNodeId(data.nodeId)) return null;
+      return { type: 'gather', unitIds, nodeId: data.nodeId };
     }
     default:
       return null;

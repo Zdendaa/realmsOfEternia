@@ -48,6 +48,12 @@ export interface GameState {
    * construction costs are paid from here when a site is placed.
    */
   readonly stocks: Readonly<Record<PlayerId, Readonly<ResourceAmounts>>>;
+  /**
+   * Remaining amounts of trees and rocks that have been harvested, by decoration id.
+   * Untouched nodes are absent (full); 0 means depleted (gone from the world).
+   * Changes only when a unit of a resource is taken.
+   */
+  readonly resourceNodes: Readonly<Record<number, number>>;
   readonly nextEntityId: EntityId;
 }
 
@@ -101,13 +107,14 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
         task: IDLE,
         movement: null,
         activity: 'idle',
+        carrying: null,
       });
     }
   }
   const resources = options.resources ?? STARTING_RESOURCES;
   const stockHolders = [...(owner !== null ? [owner] : []), ...(options.players ?? [])];
   const stocks = Object.fromEntries(stockHolders.map((player) => [player, { ...resources }]));
-  return { tick: 0, buildings, construction: {}, units, stocks, nextEntityId };
+  return { tick: 0, buildings, construction: {}, units, stocks, resourceNodes: {}, nextEntityId };
 }
 
 /** True for buildings of the hand-authored starting settlement (not placed by a player). */

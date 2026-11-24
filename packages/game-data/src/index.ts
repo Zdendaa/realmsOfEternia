@@ -8,7 +8,7 @@ export { MEDIEVAL_PACK, type MaterialOverride } from './assets/medievalPack.js';
 export { BUILDINGS, isBuildingId, type BuildingId } from './buildings/definitions.js';
 export type { BuildingDefinition, ModelTiling } from './buildings/types.js';
 export { PROPS, type PropDefinition, type PropId } from './props/definitions.js';
-export { STARTING_RESOURCES } from './economy/startingResources.js';
+export { STARTING_RESOURCES, STORAGE_BUILDINGS } from './economy/startingResources.js';
 export {
   RESOURCE_IDS,
   RESOURCES,
@@ -17,6 +17,7 @@ export {
   type ResourceDefinition,
   type ResourceId,
 } from './resources/definitions.js';
+export { GATHER_RULES, RESOURCE_NODES, type ResourceNodeDefinition } from './resources/nodes.js';
 export { PROTOTYPE_MAP } from './maps/prototype.js';
 export {
   PROTOTYPE_SETTLEMENT,

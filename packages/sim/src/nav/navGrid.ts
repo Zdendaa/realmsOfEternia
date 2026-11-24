@@ -1,16 +1,19 @@
 import {
   distanceToFootprint,
   isInPlayableArea,
+  type Decoration,
   type PlacedFootprint,
   type Vec2,
 } from '@roe/shared';
 import { PLACEMENT_RULES } from '../rules/placement.js';
 import type { SimWorld } from '../world/createWorld.js';
 
-/** Blocked by terrain, water or trees/rocks (never changes during a match). */
+/** Blocked by terrain or water (never changes during a match). */
 const STATIC = 1;
 /** Blocked by a building or construction site. */
 const BUILDING = 2;
+/** Blocked by a tree or rock; cleared when the node is depleted. */
+const DECORATION = 4;
 
 export const NAV_RULES = {
   /** Side length of one navigation cell, in world units. */
@@ -33,11 +36,18 @@ export interface NavGrid {
   readonly originZ: number;
   /** Bit flags per cell (0 = walkable). */
   readonly flags: Uint8Array;
-  /** Bumped whenever building cells change, so routes can be re-checked. */
+  /** Bumped whenever building or decoration cells change, so routes can be re-checked. */
   version: number;
 }
 
-export function createNavGrid(world: SimWorld): NavGrid {
+/**
+ * Builds the grid for `world`. Trees and rocks for which `isGone` returns true
+ * (depleted resource nodes) don't block.
+ */
+export function createNavGrid(
+  world: SimWorld,
+  isGone: (id: number) => boolean = () => false,
+): NavGrid {
   const size = world.map.size;
   const cols = Math.ceil(size / NAV_RULES.cellSize);
   const rows = cols;
@@ -72,19 +82,54 @@ export function createNavGrid(world: SimWorld): NavGrid {
     }
   }
 
-  for (const d of world.decorations) {
-    const radius =
-      (d.kind === 'tree' ? PLACEMENT_RULES.treeRadius : PLACEMENT_RULES.rockRadius) * d.scale +
-      NAV_RULES.clearance;
-    forEachCellNear(grid, d.x, d.z, radius, (i, c) => {
-      if ((c.x - d.x) ** 2 + (c.z - d.z) ** 2 < radius * radius)
-        flags[i] = (flags[i] ?? 0) | STATIC;
-    });
-    // The trunk's own cell is always blocked, even for small trees near a cell corner.
-    const own = cellIndexAt(grid, d.x, d.z);
-    if (own >= 0) flags[own] = (flags[own] ?? 0) | STATIC;
-  }
+  for (const d of world.decorations) if (!isGone(d.id)) stampDecoration(grid, d);
   return grid;
+}
+
+/** Upper bound of `decorationReach` for any tree or rock on the maps (scale ≤ ~2.5). */
+const MAX_DECORATION_REACH = 2.6;
+
+const decorationReach = (d: Decoration) =>
+  (d.kind === 'tree' ? PLACEMENT_RULES.treeRadius : PLACEMENT_RULES.rockRadius) * d.scale +
+  NAV_RULES.clearance;
+
+function stampDecoration(grid: NavGrid, d: Decoration): void {
+  const radius = decorationReach(d);
+  forEachCellNear(grid, d.x, d.z, radius, (i, c) => {
+    if ((c.x - d.x) ** 2 + (c.z - d.z) ** 2 < radius * radius) {
+      grid.flags[i] = (grid.flags[i] as number) | DECORATION;
+    }
+  });
+  // The trunk's own cell is always blocked, even for small trees near a cell corner.
+  const own = cellIndexAt(grid, d.x, d.z);
+  if (own >= 0) grid.flags[own] = (grid.flags[own] as number) | DECORATION;
+}
+
+/**
+ * Unblocks the cells of a depleted tree or rock. Neighbouring nodes that overlap those
+ * cells and are still there (`isGone` false) are stamped again.
+ */
+export function removeDecoration(
+  grid: NavGrid,
+  world: SimWorld,
+  d: Decoration,
+  isGone: (id: number) => boolean,
+): void {
+  const reach = decorationReach(d) + NAV_RULES.cellSize;
+  forEachCellNear(grid, d.x, d.z, reach, (i) => {
+    grid.flags[i] = (grid.flags[i] as number) & ~DECORATION;
+  });
+  // Any node whose blocked circle could reach the cleared cells (big rocks: ~2 units).
+  const near = reach + MAX_DECORATION_REACH;
+  for (const other of world.obstacleIndex.query({
+    minX: d.x - near,
+    maxX: d.x + near,
+    minZ: d.z - near,
+    maxZ: d.z + near,
+  })) {
+    if (other.id !== d.id && !isGone(other.id)) stampDecoration(grid, other);
+  }
+  grid.version++;
 }
 
 /** Marks every building footprint as blocked, replacing the previous building layer. */

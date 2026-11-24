@@ -1,18 +1,14 @@
-import type { DecorationKind, EntityId, Vec2 } from '@roe/shared';
+import type { Decoration, DecorationKind, EntityId, Vec2 } from '@roe/shared';
 import { LOCAL_PLAYER } from '../state/gameStore';
 import type { PointerTarget } from './pointerTarget';
 
 /** Cursor shapes over the 3D view; styled in `ui/cursors/cursors.css`. */
 export type CursorKind = 'default' | 'select' | 'move' | 'build' | 'blocked' | 'chop' | 'mine';
 
-/**
- * Cursor over a tree or rock while serfs are selected. Phase 5 switches these to
- * 'chop' and 'mine' when serfs can gather; until then they block movement like any
- * obstacle.
- */
+/** Cursor over a harvestable tree or rock while serfs are selected. */
 const RESOURCE_CURSOR: Record<DecorationKind, CursorKind> = {
-  tree: 'blocked',
-  rock: 'blocked',
+  tree: 'chop',
+  rock: 'mine',
 };
 
 /** What right click would do with the current selection. */
@@ -20,15 +16,16 @@ export type CommandIntent =
   | { kind: 'build'; siteId: EntityId }
   /** (x, z): the clicked point, sent to the sim; `destination`: where the units end up. */
   | { kind: 'move'; x: number; z: number; destination: Vec2 }
+  | { kind: 'gather'; node: Decoration }
   | { kind: 'blocked' }
   | { kind: 'none' };
 
 /**
- * The right-click command for selected serfs: build an own construction site, or walk.
- * Water and steep slopes are fine: the units go to the nearest walkable spot, as the
- * sim resolves it. Blocked: other buildings, trees and rocks (until Phase 5 gives them
- * gathering commands), and points with nothing reachable nearby. Own units under the
- * pointer are ignored, so right-clicking a serf walks to the ground there.
+ * The right-click command for selected serfs: build an own construction site, harvest
+ * a tree or rock, or walk. Water and steep slopes are fine: the units go to the nearest
+ * walkable spot, as the sim resolves it. Blocked: other buildings, trees and rocks that
+ * can't be harvested (the border forest), and points with nothing reachable nearby. Own
+ * units under the pointer are ignored, so right-clicking a serf walks to the ground there.
  */
 export function commandIntent(target: PointerTarget): CommandIntent {
   const { building, ground } = target;
@@ -38,7 +35,10 @@ export function commandIntent(target: PointerTarget): CommandIntent {
       : { kind: 'blocked' };
   }
   if (!ground) return { kind: 'none' };
-  if (ground.resource || !ground.reachable) return { kind: 'blocked' };
+  if (ground.resource) {
+    return ground.harvestable ? { kind: 'gather', node: ground.resource } : { kind: 'blocked' };
+  }
+  if (!ground.reachable) return { kind: 'blocked' };
   return { kind: 'move', x: ground.x, z: ground.z, destination: ground.reachable };
 }
 
@@ -51,9 +51,7 @@ export function cursorFor(target: PointerTarget, serfsSelected: boolean): Cursor
   if (target.unitId !== null) return 'select';
   if (serfsSelected) {
     const intent = commandIntent(target);
-    if (intent.kind === 'blocked' && target.ground?.resource && !target.building) {
-      return RESOURCE_CURSOR[target.ground.resource.kind];
-    }
+    if (intent.kind === 'gather') return RESOURCE_CURSOR[intent.node.kind];
     return intent.kind === 'none' ? 'default' : intent.kind;
   }
   return target.building?.ownerId === LOCAL_PLAYER ? 'select' : 'default';

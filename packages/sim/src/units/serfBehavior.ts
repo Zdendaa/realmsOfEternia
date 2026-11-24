@@ -1,8 +1,10 @@
 import { distanceToFootprint, type EntityId } from '@roe/shared';
 import type { SimContext } from '../context/simContext.js';
+import type { EconomyDraft } from '../economy/draft.js';
 import { cellCenter, isWalkable, nearestWalkableCell } from '../nav/navGrid.js';
 import { toPlacedFootprint, type BuildingInstance } from '../state/gameState.js';
 import { IDLE, type UnitInstance } from '../state/units.js';
+import { updateGatherer } from './gathering.js';
 import { assignToSlot, freeSlots, moveTo } from './orders.js';
 
 export const SERF_RULES = {
@@ -16,14 +18,15 @@ export const SERF_RULES = {
 
 /**
  * Decides tasks and activities for every serf (state order): builders keep building
- * while their site exists, finished moves become idle, and idle serfs pick up nearby
- * construction sites. Mutates the given working copies.
+ * while their site exists, gatherers run their loop, finished moves become idle, and
+ * idle serfs pick up nearby construction sites. Mutates the given working copies.
  */
 export function updateSerfs(
   ctx: SimContext,
   tick: number,
   buildings: readonly BuildingInstance[],
   units: UnitInstance[],
+  economy: EconomyDraft,
 ): void {
   const byId = new Map<EntityId, BuildingInstance>(buildings.map((b) => [b.id, b]));
   for (const unit of units) {
@@ -39,6 +42,8 @@ export function updateSerfs(
         // Arrived, or the route ended as close as the ground allows.
         if (reach > SERF_RULES.workReach) unit.task = IDLE;
       }
+    } else if (task.kind === 'gather') {
+      updateGatherer(unit, buildings, economy);
     } else if (task.kind === 'move' && !unit.movement) {
       unit.task = IDLE;
     }
@@ -58,7 +63,11 @@ export function updateSerfs(
 
 function activityOf(unit: UnitInstance): UnitInstance['activity'] {
   if (unit.movement) return 'walking';
-  return unit.task.kind === 'build' ? 'working' : 'idle';
+  const { task } = unit;
+  if (task.kind === 'build' || (task.kind === 'gather' && task.phase === 'working')) {
+    return 'working';
+  }
+  return 'idle';
 }
 
 /** Assigns `serf` to the nearest own site with a free slot within the auto-assign radius. */

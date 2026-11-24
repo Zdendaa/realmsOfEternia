@@ -54,9 +54,9 @@ function boxSelect(
 }
 
 /**
- * Right click with units selected: on an own construction site the serfs build it, on
- * walkable ground they walk there. Blocked spots (buildings, water, slopes, trees,
- * rocks) do nothing, matching the "not allowed" cursor. Accepted commands get a marker.
+ * Right click with units selected (see `commandIntent`): build an own construction site,
+ * harvest a tree or rock, or walk. Blocked spots do nothing, matching the "not allowed"
+ * cursor. Accepted commands get a marker.
  */
 function commandSelected(element: HTMLElement, camera: Camera, x: number, y: number) {
   const unitIds = useSelectionStore.getState().units;
@@ -69,6 +69,17 @@ function commandSelected(element: HTMLElement, camera: Camera, x: number, y: num
     const result = dispatch({ type: 'assignBuilders', unitIds: [...unitIds], siteId: site.id });
     if (result.ok) {
       commandFeedback.push({ kind: 'build', site, groundY: heights.getHeightAt(site.x, site.z) });
+    }
+  } else if (intent.kind === 'gather') {
+    const { node } = intent;
+    const result = dispatch({ type: 'gather', unitIds: [...unitIds], nodeId: node.id });
+    if (result.ok) {
+      commandFeedback.push({
+        kind: 'move',
+        x: node.x,
+        y: heights.getHeightAt(node.x, node.z),
+        z: node.z,
+      });
     }
   } else if (intent.kind === 'move') {
     const result = dispatch({ type: 'moveUnits', unitIds: [...unitIds], x: intent.x, z: intent.z });

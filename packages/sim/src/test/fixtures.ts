@@ -69,3 +69,13 @@ export const TOWN: SettlementLayout = {
   props: { around: [], models: [], perBuilding: { min: 0, max: 0 } },
   startingSerfs: 5,
 };
+
+/** The flat map with scattered trees and rocks (outside the flat 10-unit settlement square). */
+export const RESOURCE_MAP: MapDefinition = {
+  ...FLAT_MAP,
+  id: 'test-resources',
+  decorations: [
+    { kind: 'tree', placement: 'scatter', count: 120, minSpacing: 3, minScale: 0.8, maxScale: 1.2 },
+    { kind: 'rock', placement: 'scatter', count: 30, minSpacing: 4, minScale: 0.8, maxScale: 1.4 },
+  ],
+};

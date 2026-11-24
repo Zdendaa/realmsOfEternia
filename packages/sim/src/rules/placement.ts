@@ -117,7 +117,10 @@ export function checkPlacement(
   for (const kind of ['tree', 'rock'] as const) {
     const radius = kind === 'tree' ? PLACEMENT_RULES.treeRadius : PLACEMENT_RULES.rockRadius;
     const blocked = nearObstacles.some(
-      (d) => d.kind === kind && distanceToFootprint(area, d.x, d.z) < radius * d.scale,
+      (d) =>
+        d.kind === kind &&
+        state.resourceNodes[d.id] !== 0 && // depleted trees and rocks are gone
+        distanceToFootprint(area, d.x, d.z) < radius * d.scale,
     );
     if (blocked) issues.push(kind);
   }

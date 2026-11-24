@@ -10,6 +10,7 @@ export {
   parseCommand,
   type AssignBuildersCommand,
   type Command,
+  type GatherCommand,
   type IssuedCommand,
   type MoveUnitsCommand,
   type PlaceBuildingCommand,
@@ -45,11 +46,27 @@ export {
   type GameState,
   type InitialStateOptions,
 } from './state/gameState.js';
+export {
+  gatherReach,
+  initialAmount,
+  isDepleted,
+  isHarvestable,
+  nodeById,
+  remainingAmount,
+} from './state/resourceNodes.js';
 export { createStateHeights } from './state/stateHeights.js';
-export type { UnitActivity, UnitInstance, UnitMovement, UnitTask } from './state/units.js';
+export type {
+  Cargo,
+  GatherPhase,
+  UnitActivity,
+  UnitInstance,
+  UnitMovement,
+  UnitTask,
+} from './state/units.js';
 export { stepGame, type StepResult } from './tick/stepGame.js';
 export { MOVEMENT_RULES } from './units/movement.js';
 export { SERF_RULES } from './units/serfBehavior.js';
+export { STORAGE_RULES } from './units/gathering.js';
 export {
   boundsOf,
   createWorld,

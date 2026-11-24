@@ -29,7 +29,7 @@ Resource storage, paid construction with physical material delivery, gathering b
 | #   | Scope                                                       | Status |
 | --- | ----------------------------------------------------------- | ------ |
 | 5.1 | Stockpile and paid costs                                    | ✅     |
-| 5.2 | Finite trees and rocks, serf gathering, axe/pickaxe cursors |        |
+| 5.2 | Finite trees and rocks, serf gathering, axe/pickaxe cursors | ✅     |
 | 5.3 | Carrying visual                                             |        |
 | 5.4 | Material delivery to construction sites                     |        |
 | 5.6 | Workers: lumbermill and quarry                              |        |

@@ -84,7 +84,7 @@ export function createSerfInstances(baked: BakedCharacter<CharacterAnimation>, c
         position.set(unit.x, unit.y, unit.z);
         quaternion.setFromAxisAngle(up, unit.heading);
         mesh.setMatrixAt(i, matrix.compose(position, quaternion, scale));
-        const clip = baked.clips[CLIP_FOR[unit.activity]];
+        const clip = baked.clips[unit.activity === 'working' ? unit.work : CLIP_FOR[unit.activity]];
         animArray[i * 4] = clip.start;
         animArray[i * 4 + 1] = clip.frames;
         animArray[i * 4 + 2] = (unit.id * 0.37) % clip.duration;

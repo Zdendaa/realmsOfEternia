@@ -61,7 +61,7 @@ interface GhostProps {
  * Translucent preview of the building under the mouse, snapped to the grid and colored
  * by the same `validateCommand` the server runs (placement rules and the cost).
  * Validation re-runs only when the snapped cell, rotation, buildings or the player's
- * stock change, not every frame.
+ * stock or the felled trees change, not every frame.
  */
 function Ghost({ building, quarterTurns }: GhostProps) {
   const definition = BUILDINGS[building];
@@ -70,6 +70,7 @@ function Ghost({ building, quarterTurns }: GhostProps) {
   const groupRef = useRef<Group>(null);
   const lastKey = useRef('');
   const lastStock = useRef<unknown>(null);
+  const lastNodes = useRef<unknown>(null);
 
   const model = useMemo(() => {
     const group = new Group();
@@ -127,9 +128,13 @@ function Ghost({ building, quarterTurns }: GhostProps) {
 
     const key = `${building}:${x}:${z}:${quarterTurns}:${state.buildings.length}`;
     const stock = state.stocks[LOCAL_PLAYER];
-    if (key === lastKey.current && stock === lastStock.current) return;
+    const nodes = state.resourceNodes;
+    if (key === lastKey.current && stock === lastStock.current && nodes === lastNodes.current) {
+      return;
+    }
     lastKey.current = key;
     lastStock.current = stock;
+    lastNodes.current = nodes;
 
     const command: PlaceBuildingCommand = { type: 'placeBuilding', building, x, z, quarterTurns };
     const check = validateCommand(ctx, state, LOCAL_PLAYER, command);

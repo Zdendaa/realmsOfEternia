@@ -18,7 +18,41 @@ interface TreesProps {
   items: readonly Decoration[];
   /** Ground height lookup; trees are re-seated when it changes (flattening near new buildings). */
   groundLevel: GroundLevel;
+  /** Harvested amounts by tree id; trees at 0 are felled and not drawn. */
+  resourceNodes: Readonly<Record<number, number>>;
 }
+
+type TreeChunk = ReturnType<typeof packChunk>;
+
+function packChunk(key: string, items: readonly Decoration[], ground: GroundLevel) {
+  const xs = items.map((t) => t.x);
+  const zs = items.map((t) => t.z);
+  return {
+    key,
+    items,
+    bounds: {
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minZ: Math.min(...zs),
+      maxZ: Math.max(...zs),
+    },
+    ...packTrees(items, ground),
+    crownColors: packColors(items, (t, c) =>
+      c.copy(CROWN_DARK).lerp(CROWN_LIGHT, t.rotation / (Math.PI * 2)),
+    ),
+  };
+}
+
+/**
+ * Last packed result per base chunk. Felling only ever removes trees, so a chunk whose
+ * standing-tree count and ground are unchanged can reuse its buffers; only the chunk
+ * that lost a tree is repacked. (Module-level cache keyed by the chunk object, which
+ * lives as long as the world.)
+ */
+const packedChunks = new WeakMap<
+  TreeChunk,
+  { ground: GroundLevel; standing: number; chunk: TreeChunk }
+>();
 
 function useTreeAssets() {
   const assets = useMemo(
@@ -54,40 +88,33 @@ function packTrees(items: readonly Decoration[], ground: GroundLevel) {
  * instanced meshes (trunks + crowns) sharing one geometry and material per part.
  * After a placement only chunks touching the changed terrain are re-seated.
  */
-export function Trees({ items, groundLevel }: TreesProps) {
+export function Trees({ items, groundLevel, resourceNodes }: TreesProps) {
   const assets = useTreeAssets();
 
   const base = useMemo(
     () =>
-      groupIntoChunks(items, CHUNK_SIZE).map((chunk) => {
-        const xs = chunk.items.map((t) => t.x);
-        const zs = chunk.items.map((t) => t.z);
-        return {
-          key: chunk.key,
-          items: chunk.items,
-          bounds: {
-            minX: Math.min(...xs),
-            maxX: Math.max(...xs),
-            minZ: Math.min(...zs),
-            maxZ: Math.max(...zs),
-          },
-          ...packTrees(chunk.items, GENERATED_GROUND),
-          crownColors: packColors(chunk.items, (t, c) =>
-            c.copy(CROWN_DARK).lerp(CROWN_LIGHT, t.rotation / (Math.PI * 2)),
-          ),
-        };
-      }),
+      groupIntoChunks(items, CHUNK_SIZE).map((chunk) =>
+        packChunk(chunk.key, chunk.items, GENERATED_GROUND),
+      ),
     [items],
   );
 
+  // Chunks re-seated on flattened ground or missing felled trees get new buffers; the
+  // rest keep the base ones.
   const chunks = useMemo(
     () =>
-      base.map((chunk) =>
-        groundLevel.changed.some((area) => boundsOverlap(area, chunk.bounds))
-          ? { ...chunk, ...packTrees(chunk.items, groundLevel) }
-          : chunk,
-      ),
-    [base, groundLevel],
+      base.map((chunk) => {
+        const standing = chunk.items.filter((t) => resourceNodes[t.id] !== 0);
+        const reseat = groundLevel.changed.some((area) => boundsOverlap(area, chunk.bounds));
+        if (standing.length === chunk.items.length && !reseat) return chunk;
+        const ground = reseat ? groundLevel : GENERATED_GROUND;
+        const cached = packedChunks.get(chunk);
+        if (cached?.ground === ground && cached.standing === standing.length) return cached.chunk;
+        const packed = { ...packChunk(chunk.key, standing, ground), bounds: chunk.bounds };
+        packedChunks.set(chunk, { ground, standing: standing.length, chunk: packed });
+        return packed;
+      }),
+    [base, groundLevel, resourceNodes],
   );
 
   return (

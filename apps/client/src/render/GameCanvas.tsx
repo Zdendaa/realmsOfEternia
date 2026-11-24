@@ -26,6 +26,8 @@ export function GameCanvas() {
   const simWorld = useGameStore((s) => s.world);
   const heights = useGameStore((s) => s.heights);
   const buildings = useGameStore((s) => s.state.buildings);
+  // Changes only when a unit of wood or stone is taken.
+  const resourceNodes = useGameStore((s) => s.state.resourceNodes);
   const world = useMemo(() => decorateWorld(simWorld, PROTOTYPE_SETTLEMENT), [simWorld]);
 
   return (
@@ -46,7 +48,7 @@ export function GameCanvas() {
       <SimulationDriver />
       {/* Then the per-frame unit data that unit renderers, rings and picking read. */}
       <UnitFrameDriver />
-      <World world={world} heights={heights} buildings={buildings} />
+      <World world={world} heights={heights} buildings={buildings} resourceNodes={resourceNodes} />
       <Units />
       <SelectionRings />
       <SelectionMarkers />

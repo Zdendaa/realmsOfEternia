@@ -1,5 +1,11 @@
 import { isInPlayableArea, type Decoration, type EntityId, type Vec2 } from '@roe/shared';
-import { isWalkable, nearestWalkablePoint, PLACEMENT_RULES, type BuildingInstance } from '@roe/sim';
+import {
+  isWalkable,
+  nearestWalkablePoint,
+  PLACEMENT_RULES,
+  remainingAmount,
+  type BuildingInstance,
+} from '@roe/sim';
 import { Raycaster, Vector2, Vector3, type Camera } from 'three';
 import { pickBuilding } from '../render/picking/pickBuilding';
 import { unitAt } from '../render/picking/screenPick';
@@ -19,8 +25,10 @@ export interface GroundTarget {
    * or when nothing walkable is near.
    */
   reachable: Vec2 | null;
-  /** The tree or rock occupying this spot, if any. */
+  /** The tree or rock occupying this spot, if any (depleted ones are gone). */
   resource: Decoration | null;
+  /** The resource can be harvested: inside the playable area, with something left. */
+  harvestable: boolean;
 }
 
 /**
@@ -51,7 +59,7 @@ export const ownUnitIds = (): EntityId[] =>
 
 /** Tree or rock whose blocking circle (plus a margin) contains (x, z), nearest first. */
 function resourceAt(x: number, z: number): Decoration | null {
-  const { world } = useGameStore.getState();
+  const { world, state } = useGameStore.getState();
   const reach = 2.5;
   let best: Decoration | null = null;
   let bestDistance = Infinity;
@@ -65,6 +73,7 @@ function resourceAt(x: number, z: number): Decoration | null {
       (d.kind === 'tree' ? PLACEMENT_RULES.treeRadius : PLACEMENT_RULES.rockRadius) * d.scale +
       RESOURCE_PICK_MARGIN;
     const distance = Math.hypot(d.x - x, d.z - z);
+    if (state.resourceNodes[d.id] === 0) continue; // depleted: gone from the world
     if (distance < radius && distance < bestDistance) {
       bestDistance = distance;
       best = d;
@@ -91,6 +100,7 @@ export function pickPointerTarget(
   let ground: GroundTarget | null = null;
   if (pickGround(ray, heights, hit)) {
     const walkable = isWalkable(ctx.nav, hit.x, hit.z);
+    const resource = walkable ? null : resourceAt(hit.x, hit.z);
     ground = {
       x: hit.x,
       y: hit.y,
@@ -99,7 +109,9 @@ export function pickPointerTarget(
       reachable: isInPlayableArea(world.map, hit.x, hit.z)
         ? nearestWalkablePoint(ctx.nav, hit.x, hit.z)
         : null,
-      resource: walkable ? null : resourceAt(hit.x, hit.z),
+      resource,
+      harvestable:
+        resource !== null && remainingAmount(world, state.resourceNodes, resource.id) > 0,
     };
   }
   return { unitId, building, ground };

@@ -1,4 +1,4 @@
-import { BUILDINGS, isBuildingId, UNITS } from '@roe/game-data';
+import { BUILDINGS, GATHER_RULES, isBuildingId, UNITS } from '@roe/game-data';
 import {
   entrancePoint,
   isInPlayableArea,
@@ -10,8 +10,10 @@ import type { SimContext } from '../context/simContext.js';
 import { canAfford, pay, stockOf, withStock } from '../economy/stock.js';
 import { checkPlacement, quarterTurnsToRadians, type PlacementIssue } from '../rules/placement.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
+import { nodeById, nodesNear, remainingAmount } from '../state/resourceNodes.js';
 import { spawnPoint } from '../state/spawn.js';
 import { IDLE, type UnitInstance } from '../state/units.js';
+import { startGathering } from '../units/gathering.js';
 import {
   assignToSlot,
   byDistanceTo,
@@ -23,6 +25,7 @@ import {
 import type {
   AssignBuildersCommand,
   Command,
+  GatherCommand,
   MoveUnitsCommand,
   PlaceBuildingCommand,
   RecruitSerfCommand,
@@ -45,7 +48,9 @@ export type CommandIssue =
   /** None of the addressed units exists and belongs to the issuer. */
   | 'noUnits'
   /** The issuer's stock can't pay the cost. */
-  | 'notEnoughResources';
+  | 'notEnoughResources'
+  /** No harvestable tree or rock with anything left at that id. */
+  | 'noResource';
 
 export interface CommandCheck {
   ok: boolean;
@@ -94,6 +99,14 @@ function checkAssign(state: GameState, issuer: PlayerId, command: AssignBuilders
   return serfs.length === 0 ? fail('noUnits') : OK;
 }
 
+function checkGather(ctx: SimContext, state: GameState, issuer: PlayerId, command: GatherCommand) {
+  if (remainingAmount(ctx.world, state.resourceNodes, command.nodeId) <= 0) {
+    return fail('noResource');
+  }
+  const serfs = ownUnits(state, issuer, command.unitIds).filter((u) => u.type === 'serf');
+  return serfs.length === 0 ? fail('noUnits') : OK;
+}
+
 /** Placement rules for the spot, then the cost (an unknown building has no cost to check). */
 function checkPlace(
   ctx: SimContext,
@@ -125,6 +138,8 @@ export function validateCommand(
       return checkMove(ctx, state, issuer, command);
     case 'assignBuilders':
       return checkAssign(state, issuer, command);
+    case 'gather':
+      return checkGather(ctx, state, issuer, command);
   }
 }
 
@@ -163,6 +178,7 @@ function recruitSerf(state: GameState, issuer: PlayerId, command: RecruitSerfCom
     task: IDLE,
     movement: null,
     activity: 'idle',
+    carrying: null,
   };
   return { ...state, units: [...state.units, serf], nextEntityId: state.nextEntityId + 1 };
 }
@@ -215,6 +231,33 @@ function assignBuilders(
 }
 
 /**
+ * The serf nearest to the node takes it; the others spread over the nearest nodes of
+ * the same kind around it (round robin when there are more serfs than nodes).
+ */
+function gather(ctx: SimContext, state: GameState, issuer: PlayerId, command: GatherCommand) {
+  const node = nodeById(ctx.world, command.nodeId);
+  if (!node) return state;
+  const serfs = byDistanceTo(
+    ownUnits(state, issuer, command.unitIds).filter((u) => u.type === 'serf'),
+    node,
+  );
+  const nearby = nodesNear(
+    ctx.world,
+    state.resourceNodes,
+    node.kind,
+    node,
+    GATHER_RULES.nextNodeRadius / 2,
+  ).filter((n) => n.id !== node.id);
+  const targets = [node, ...nearby].slice(0, serfs.length);
+  const changed = new Map<EntityId, UnitInstance>();
+  serfs.forEach((serf, i) => {
+    const target = targets[i % targets.length] ?? node;
+    changed.set(serf.id, { ...serf, ...startGathering(serf, target) });
+  });
+  return { ...state, units: replaceUnits(state.units, changed) };
+}
+
+/**
  * Validates and executes a command. Pure apart from reading the synced context: returns
  * a new state and never mutates the given one. A rejected command returns the unchanged
  * state (same reference).
@@ -237,5 +280,7 @@ export function applyCommand(
       return { ok: true, state: moveUnits(state, issuer, command) };
     case 'assignBuilders':
       return { ok: true, state: assignBuilders(state, issuer, command) };
+    case 'gather':
+      return { ok: true, state: gather(ctx, state, issuer, command) };
   }
 }

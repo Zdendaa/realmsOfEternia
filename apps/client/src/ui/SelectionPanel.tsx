@@ -73,7 +73,9 @@ function UnitSelection({ ids }: { ids: readonly number[] }) {
       <p className="selection-meta">
         {working} working · {walking} walking · {idle} idle
       </p>
-      <p className="selection-meta">Right-click: move · Right-click a construction site: build</p>
+      <p className="selection-meta">
+        Right-click: move · a construction site: build · a tree or rock: gather
+      </p>
     </section>
   );
 }

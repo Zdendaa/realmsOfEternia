@@ -7,7 +7,7 @@ export interface AnimationClipRef {
 }
 
 /** What a unit's visible activity looks like. Keys are referenced by the renderer. */
-export type CharacterAnimation = 'idle' | 'walk' | 'build' | 'chop' | 'dig';
+export type CharacterAnimation = 'idle' | 'walk' | 'build' | 'chop' | 'mine';
 
 export interface CharacterModel {
   /** Model file relative to `CHARACTER_PACK.dir`. */
@@ -48,9 +48,9 @@ export const CHARACTER_PACK = {
       // from the measured stride, so the feet stay planted.
       walk: { file: `${MEDIUM}Rig_Medium_MovementBasic.glb`, clip: 'Walking_B' },
       build: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Hammering' },
-      // Ready for the economy (Phase 5): lumberjacks and diggers.
+      // Gathering: chopping trees and quarrying rocks.
       chop: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Chopping' },
-      dig: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Digging' },
+      mine: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Pickaxing' },
     },
   } satisfies CharacterModel,
 } as const;

@@ -3,7 +3,7 @@ import { useSettingsStore } from '../state/settingsStore';
 const CONTROLS: readonly [key: string, action: string][] = [
   ['Left click', 'Select unit / building'],
   ['Left drag', 'Box select (Shift adds)'],
-  ['Right click', 'Move / build'],
+  ['Right click', 'Move / build / gather'],
   ['Right drag', 'Rotate camera'],
   ['W A S D / Middle drag / Edge', 'Pan camera'],
   ['Mouse wheel', 'Zoom'],

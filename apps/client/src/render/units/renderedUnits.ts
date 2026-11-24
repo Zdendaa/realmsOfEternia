@@ -10,8 +10,12 @@ export interface RenderedUnit {
   /** Facing (Y rotation, radians; 0 = +Z), smoothed toward the walking direction. */
   heading: number;
   activity: UnitActivity;
+  /** What kind of work a working unit does (picks the animation): build, chop or mine. */
+  work: UnitWork;
   ownerId: PlayerId | null;
 }
+
+export type UnitWork = 'build' | 'chop' | 'mine';
 
 /**
  * Units as drawn in the current frame: interpolated between ticks, with smoothed facing.

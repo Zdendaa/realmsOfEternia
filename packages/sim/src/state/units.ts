@@ -1,4 +1,4 @@
-import type { UnitKind } from '@roe/game-data';
+import type { ResourceId, UnitKind } from '@roe/game-data';
 import type { EntityId, PlayerId, Vec2 } from '@roe/shared';
 
 /** What a unit has been told (or decided) to do. */
@@ -7,7 +7,23 @@ export type UnitTask =
   /** Walk to a point, then become idle. */
   | { kind: 'move'; x: number; z: number }
   /** Build a construction site from work slot `slot`. `manual`: assigned by the player. */
-  | { kind: 'build'; siteId: EntityId; slot: number; manual: boolean };
+  | { kind: 'build'; siteId: EntityId; slot: number; manual: boolean }
+  /**
+   * Harvest a tree or rock (decoration id `nodeId`) and carry the goods to storage, again
+   * and again, moving on to nearby nodes of the same kind when one runs out.
+   * `progress`: ticks of work toward the next unit (while working), or walks to the
+   * storage door so far (while carrying goods there).
+   */
+  | { kind: 'gather'; nodeId: number; phase: GatherPhase; progress: number };
+
+/** Where a gatherer is in its loop. */
+export type GatherPhase = 'toNode' | 'working' | 'toStorage';
+
+/** Goods a unit is carrying. */
+export interface Cargo {
+  resource: ResourceId;
+  amount: number;
+}
 
 /** How the unit is moving toward its current goal. Null when standing still. */
 export interface UnitMovement {
@@ -36,6 +52,8 @@ export interface UnitInstance {
   task: UnitTask;
   movement: UnitMovement | null;
   activity: UnitActivity;
+  /** What the unit carries, or null. Kept through other orders until delivered. */
+  carrying: Cargo | null;
 }
 
 export const IDLE: UnitTask = { kind: 'idle' };

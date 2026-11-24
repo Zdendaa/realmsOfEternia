@@ -1,10 +1,10 @@
 import { useFrame } from '@react-three/fiber';
-import type { EntityId } from '@roe/shared';
+import type { Decoration, EntityId } from '@roe/shared';
 import type { BuildingInstance, GameState, UnitInstance } from '@roe/sim';
 import { useRef } from 'react';
 import { useGameStore } from '../../state/gameStore';
 import { simClock } from '../simulation/simClock';
-import { renderedUnitList, renderedUnits, type RenderedUnit } from './renderedUnits';
+import { renderedUnitList, renderedUnits, type RenderedUnit, type UnitWork } from './renderedUnits';
 
 /** How quickly units turn toward their walking direction (per second). */
 const TURN_RATE = 12;
@@ -15,9 +15,16 @@ const angleDelta = (a: number, b: number) => {
   return d > Math.PI ? d - Math.PI * 2 : d < -Math.PI ? d + Math.PI * 2 : d;
 };
 
+/** Builders hammer; gatherers chop trees and pick at rocks. */
+function workOf(unit: UnitInstance, decorations: readonly Decoration[]): UnitWork {
+  if (unit.task.kind !== 'gather') return 'build';
+  return decorations[unit.task.nodeId]?.kind === 'rock' ? 'mine' : 'chop';
+}
+
 /**
  * Computes every unit's frame once: interpolated position between the previous and the
- * current tick, ground height, and facing (walking direction, or the site while building).
+ * current tick, ground height, facing (walking direction, or the site or tree/rock while
+ * working) and the kind of work.
  * Mount it after `SimulationDriver` and before anything that reads `renderedUnits`.
  */
 export function UnitFrameDriver() {
@@ -30,7 +37,7 @@ export function UnitFrameDriver() {
   });
 
   useFrame((_, delta) => {
-    const { state, previous, ctx } = useGameStore.getState();
+    const { state, previous, ctx, world } = useGameStore.getState();
     const look = lookups.current;
     if (look.previous !== previous) {
       look.previous = previous;
@@ -51,7 +58,16 @@ export function UnitFrameDriver() {
 
       let r: RenderedUnit | undefined = renderedUnits.get(unit.id);
       if (!r) {
-        r = { id: unit.id, x, y: 0, z, heading: 0, activity: unit.activity, ownerId: null };
+        r = {
+          id: unit.id,
+          x,
+          y: 0,
+          z,
+          heading: 0,
+          activity: unit.activity,
+          work: 'build',
+          ownerId: null,
+        };
         renderedUnits.set(unit.id, r);
       }
       const dx = unit.x - before.x;
@@ -62,12 +78,16 @@ export function UnitFrameDriver() {
       } else if (unit.activity === 'working' && unit.task.kind === 'build') {
         const site = look.buildings.get(unit.task.siteId);
         if (site) target = Math.atan2(site.x - x, site.z - z);
+      } else if (unit.activity === 'working' && unit.task.kind === 'gather') {
+        const node = world.decorations[unit.task.nodeId];
+        if (node) target = Math.atan2(node.x - x, node.z - z);
       }
       if (target !== null) r.heading += angleDelta(r.heading, target) * turn;
       r.x = x;
       r.z = z;
       r.y = ctx.heights.getHeightAt(x, z);
       r.activity = unit.activity;
+      r.work = workOf(unit, world.decorations);
       r.ownerId = unit.ownerId;
       renderedUnitList.push(r);
     }
