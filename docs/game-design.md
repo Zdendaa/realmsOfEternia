@@ -196,8 +196,8 @@ Work proceeds one milestone at a time.
 | 4     | Villagers                          | ✅ Completed |
 | 5     | Economy                            | ✅ Completed |
 | 6     | Military and combat                | ✅ Completed |
-| 6c    | Fog of war                         | Next         |
-| 7     | Fortifications                     | Planned      |
+| 6c    | Fog of war                         | ✅ Completed |
+| 7     | Fortifications                     | Now          |
 | 8     | Building upgrades and technologies | Planned      |
 | 9     | AI                                 | Planned      |
 | 10    | Multiplayer                        | Planned      |
