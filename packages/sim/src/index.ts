@@ -135,6 +135,7 @@ export { viewOf, type PlayerView } from './vision/view.js';
 export { decideOutcomes, EMPTY_STATS, type Outcome, type PlayerStats } from './rules/outcome.js';
 export {
   planWall,
+  budgetWall,
   snapWallLine,
   wallCost,
   wallSegments,

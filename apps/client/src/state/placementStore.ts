@@ -6,6 +6,8 @@ import { create } from 'zustand';
 export interface WallPreview {
   /** Segments a release would build. */
   count: number;
+  /** Buildable segments the stock runs out before. */
+  unaffordable: number;
   /** Segments of the line that can't be built, and the first rule one of them fails. */
   blocked: number;
   blockedIssue: PlacementIssue | null;

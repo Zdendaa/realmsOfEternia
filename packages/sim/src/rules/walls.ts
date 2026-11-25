@@ -1,4 +1,12 @@
-import { BUILDINGS, isBuildingId, isWall, WALL_RULES, type BuildingId } from '@roe/game-data';
+import {
+  BUILDINGS,
+  isBuildingId,
+  isWall,
+  WALL_RULES,
+  type BuildingId,
+  type ResourceAmounts,
+  type ResourceId,
+} from '@roe/game-data';
 import type { HeightField, Vec2 } from '@roe/shared';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import { createStateHeights } from '../state/stateHeights.js';
@@ -35,8 +43,11 @@ export interface WallSegment {
 }
 
 export interface PlannedSegment extends WallSegment {
-  /** `exists`: this piece of wall already stands; it is skipped and not charged. */
-  status: 'ok' | 'exists' | 'blocked';
+  /**
+   * `exists`: this piece of wall already stands; it is skipped and not charged.
+   * `unaffordable`: it could be built, but the stock runs out before it (`budgetWall`).
+   */
+  status: 'ok' | 'exists' | 'blocked' | 'unaffordable';
   /** The placement rules a blocked segment fails. */
   issues: PlacementIssue[];
 }
@@ -130,6 +141,27 @@ export function planWall(
   });
   const issue = segments.every((s) => s.status === 'exists') ? 'wallExists' : null;
   return { issue, segments };
+}
+
+/**
+ * The plan as far as `stock` pays for it: buildable segments are paid for in line order
+ * from the start of the drag, and those after the money runs out become `unaffordable`.
+ */
+export function budgetWall(
+  building: BuildingId,
+  plan: WallPlan,
+  stock: Readonly<ResourceAmounts>,
+): WallPlan {
+  let left = Math.min(
+    ...Object.entries(BUILDINGS[building].cost).map(([id, amount]) =>
+      Math.floor(stock[id as ResourceId] / amount),
+    ),
+  );
+  const segments = plan.segments.map((segment): PlannedSegment => {
+    if (segment.status !== 'ok') return segment;
+    return left-- > 0 ? segment : { ...segment, status: 'unaffordable' };
+  });
+  return { ...plan, segments };
 }
 
 /** The cost of the segments a plan would build. */

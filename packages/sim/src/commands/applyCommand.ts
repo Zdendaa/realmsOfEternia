@@ -14,7 +14,7 @@ import { hasFreeHousing, populationOf } from '../economy/population.js';
 import { canAfford, pay, refund, stockOf, withStock } from '../economy/stock.js';
 import { dequeue, enqueue, TRAINING_QUEUE_LIMIT, withoutKey } from '../training/training.js';
 import { checkPlacement, quarterTurnsToRadians, type PlacementIssue } from '../rules/placement.js';
-import { planWall, wallCost, type WallIssue } from '../rules/walls.js';
+import { budgetWall, planWall, wallCost, type WallIssue } from '../rules/walls.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import { nodeById, nodesNear, remainingAmount } from '../state/resourceNodes.js';
 import { spawnPoint } from '../state/spawn.js';
@@ -235,7 +235,7 @@ function checkPlace(
   return issues.length === 0 ? OK : fail(...issues);
 }
 
-/** The line must give at least one segment to build, and the stock pay for all of them. */
+/** The line must give at least one segment that can be built and that the stock pays for. */
 function checkWall(
   ctx: SimContext,
   state: GameState,
@@ -248,9 +248,8 @@ function checkWall(
   if (!plan.segments.some((s) => s.status === 'ok')) {
     return fail(...new Set(plan.segments.flatMap((s) => s.issues)));
   }
-  return canAfford(stockOf(state, issuer), wallCost(building, plan))
-    ? OK
-    : fail('notEnoughResources');
+  const paid = budgetWall(building, plan, stockOf(state, issuer));
+  return paid.segments.some((s) => s.status === 'ok') ? OK : fail('notEnoughResources');
 }
 
 /** Checks whether `issuer` may execute `command` in `state`. `ctx` must be synced to `state`. */
@@ -331,7 +330,11 @@ function placeWall(
 ): GameState {
   const { building, from, to } = command;
   const definition = BUILDINGS[building];
-  const plan = planWall(ctx.world, state, building, from, to, ctx.heights);
+  const plan = budgetWall(
+    building,
+    planWall(ctx.world, state, building, from, to, ctx.heights),
+    stockOf(state, issuer),
+  );
   const sites = plan.segments
     .filter((s) => s.status === 'ok')
     .map((segment, i): BuildingInstance => ({

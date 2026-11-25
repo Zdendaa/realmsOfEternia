@@ -2,6 +2,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { BUILDINGS, isWall, WALL_RULES, type BuildingId, type WallModel } from '@roe/game-data';
 import type { Vec2 } from '@roe/shared';
 import {
+  budgetWall,
+  EMPTY_STOCK,
   findCutOff,
   footprintOf,
   planWall,
@@ -39,6 +41,7 @@ const SNAP_TO_END = 1.6;
 
 const COLORS = {
   ok: new Color('#7fe07a'),
+  unaffordable: new Color('#ffb02e'),
   blocked: new Color('#ff6b5a'),
   exists: new Color('#b9c0b4'),
 };
@@ -107,8 +110,8 @@ function createPreview() {
     segments,
     marker,
     /** Draws the previewed line. */
-    show(building: BuildingId, planned: readonly PlannedSegment[], affordable: boolean) {
-      showSegments(segments, building, planned, affordable);
+    show(building: BuildingId, planned: readonly PlannedSegment[]) {
+      showSegments(segments, building, planned);
     },
     hideSegments() {
       segments.count = 0;
@@ -138,7 +141,6 @@ function showSegments(
   mesh: InstancedMesh,
   building: BuildingId,
   segments: readonly PlannedSegment[],
-  affordable: boolean,
 ) {
   const model = (BUILDINGS[building] as { wallModel: WallModel }).wallModel;
   const { heights } = useGameStore.getState();
@@ -147,9 +149,7 @@ function showSegments(
     quaternion.setFromAxisAngle(up, segment.rotation);
     scale.set(footprintOf(building, segment.rotation).w * 0.94, model.height, model.depth);
     mesh.setMatrixAt(i, matrix.compose(position, quaternion, scale));
-    // An unaffordable line is red as a whole.
-    const status = segment.status === 'ok' && !affordable ? 'blocked' : segment.status;
-    mesh.setColorAt(i, COLORS[status]);
+    mesh.setColorAt(i, COLORS[segment.status]);
   });
   mesh.count = segments.length;
   mesh.instanceMatrix.needsUpdate = true;
@@ -163,7 +163,9 @@ function previewLine(building: BuildingId, anchor: Vec2, point: Vec2) {
   const { ctx, state, world, heights } = useGameStore.getState();
   const line = snapWallLine(anchor, point);
   const command: PlaceWallCommand = { type: 'placeWall', building, ...line };
-  const plan = planWall(world, state, building, line.from, line.to, heights);
+  const stock = state.stocks[LOCAL_PLAYER] ?? EMPTY_STOCK;
+  const planned = planWall(world, state, building, line.from, line.to, heights);
+  const plan = budgetWall(building, planned, stock);
   const fresh = plan.segments.filter((s) => s.status === 'ok');
   const blocked = plan.segments.filter((s) => s.status === 'blocked');
   const check = validateCommand(ctx, state, LOCAL_PLAYER, command);
@@ -172,6 +174,7 @@ function previewLine(building: BuildingId, anchor: Vec2, point: Vec2) {
     segments: plan.segments,
     preview: {
       count: fresh.length,
+      unaffordable: plan.segments.filter((s) => s.status === 'unaffordable').length,
       blocked: blocked.length,
       blockedIssue: blocked[0]?.issues[0] ?? null,
       check,
@@ -182,7 +185,8 @@ function previewLine(building: BuildingId, anchor: Vec2, point: Vec2) {
 
 /**
  * Drawing walls: press on the ground, drag, release. The preview follows the mouse
- * (green: will be built, red: blocked or unaffordable, grey: already stands) and is
+ * (green: will be built, amber: the stock runs out before it, red: blocked, grey:
+ * already stands) and is
  * computed by the same sim functions the command runs, only when the snapped line, the
  * buildings, the stock or the felled trees change. The tool stays active after a wall
  * is drawn; a drag that starts near the end of a wall continues from it.
@@ -279,8 +283,7 @@ export function WallTool({ building }: { building: BuildingId }) {
     if (key === last.key && stock === last.stock && state.resourceNodes === last.nodes) return;
     shown.current = { key, stock, nodes: state.resourceNodes };
     const line = previewLine(building, d.anchor, point);
-    const affordable = !line.preview.check.issues.includes('notEnoughResources');
-    preview.show(building, line.segments, affordable);
+    preview.show(building, line.segments);
     usePlacementStore.getState().setWall(line.preview);
   });
 

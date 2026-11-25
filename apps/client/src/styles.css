@@ -653,6 +653,11 @@ body,
   gap: 10px;
 }
 
+.wall-unaffordable {
+  color: #ffb02e;
+  font-weight: 600;
+}
+
 .wall-blocked {
   color: #f0b27a;
 }

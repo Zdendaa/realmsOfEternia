@@ -10,7 +10,7 @@ import { FLAT_MAP, place, TOWN } from '../test/fixtures.js';
 import { stepGame } from '../tick/stepGame.js';
 import { createWorld } from '../world/createWorld.js';
 import { findCutOff } from './enclosure.js';
-import { planWall, snapWallLine, wallSegments, type WallSegment } from './walls.js';
+import { budgetWall, planWall, snapWallLine, wallSegments, type WallSegment } from './walls.js';
 
 const RICH = Object.fromEntries(RESOURCE_IDS.map((id) => [id, 500])) as ResourceAmounts;
 
@@ -165,13 +165,34 @@ describe('placeWall', () => {
     expect(g.step(wall([0, 8], [0, 16]))[0]?.ok).toBe(true);
   });
 
-  it('is refused as a whole when the stock cannot pay for it', () => {
+  it('builds as many segments from the start of the line as the stock pays for', () => {
     const g = game({ ...RICH, wood: 3 });
-    expect(g.step(wall([-8, 14], [0, 14]))[0]).toMatchObject({
+    // Drawn from east to west: the eastern end is built.
+    expect(g.step(wall([4, 14], [-8, 14]))[0]?.ok).toBe(true);
+    expect(g.walls().map((b) => b.x)).toEqual([3, 1, -1]);
+    expect(g.state.stocks.alice?.wood).toBe(0);
+    expect(g.step(wall([-8, 20], [0, 20]))[0]).toMatchObject({
       ok: false,
       check: { issues: ['notEnoughResources'] },
     });
-    expect(g.walls()).toHaveLength(0);
+    expect(g.walls()).toHaveLength(3);
+  });
+
+  it('spends the budget only on segments it can build, by the scarcest resource', () => {
+    // Stone walls cost 2 stone: 7 stone pay for 3 segments.
+    const g = game({ ...RICH, stone: 7 });
+    const plan = budgetWall(
+      'stoneWall',
+      planWall(g.world, g.state, 'stoneWall', { x: -12, z: 0 }, { x: 12, z: 0 }),
+      g.state.stocks.alice as ResourceAmounts,
+    );
+    const statuses = plan.segments.map((s) => s.status);
+    expect(statuses.filter((s) => s === 'ok')).toHaveLength(3);
+    expect(statuses).toContain('blocked');
+    expect(statuses.lastIndexOf('ok')).toBeLessThan(statuses.indexOf('unaffordable'));
+    g.step(wall([-12, 0], [12, 0], 'stoneWall'));
+    expect(g.walls()).toHaveLength(3);
+    expect(g.state.stocks.alice?.stone).toBe(1);
   });
 
   it('only walls are drawn, and walls are only drawn', () => {

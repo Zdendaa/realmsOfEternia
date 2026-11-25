@@ -46,7 +46,7 @@ export function WallHint({ building }: { building: BuildingId }) {
   const issue = wall.check.ok ? null : wall.check.issues[0];
   const message =
     issue === 'notEnoughResources'
-      ? 'Not enough resources for the whole line'
+      ? 'Not enough resources'
       : issue && issue in PLACEMENT_MESSAGES
         ? PLACEMENT_MESSAGES[issue as keyof typeof PLACEMENT_MESSAGES]
         : null;
@@ -57,6 +57,9 @@ export function WallHint({ building }: { building: BuildingId }) {
         {plural(wall.count, 'segment')}
         {wall.count > 0 && <CostList cost={total} stock={stock} />}
         {message && <span>{message}</span>}
+        {!message && wall.unaffordable > 0 && (
+          <span className="wall-unaffordable">{wall.unaffordable} more unaffordable</span>
+        )}
         {!message && wall.blocked > 0 && wall.blockedIssue && (
           <span className="wall-blocked">
             {wall.blocked} left out: {PLACEMENT_MESSAGES[wall.blockedIssue]}
