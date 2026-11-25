@@ -1,9 +1,11 @@
+import { towerOf } from '@roe/game-data';
 import { footprintOf } from '@roe/sim';
+import { TowerRange } from '../combat/TowerRange';
 import { useEffect, useMemo } from 'react';
 import { DoubleSide, MeshBasicMaterial, Path, Shape, ShapeGeometry } from 'three';
 import { useHoverCursor } from '../../input/useHoverCursor';
 import { useSelectionInput } from '../../input/useSelectionInput';
-import { useGameStore } from '../../state/gameStore';
+import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import { useSelectionStore } from '../../state/selectionStore';
 
 const SELECTION_COLOR = '#ffe08a';
@@ -57,14 +59,21 @@ function BuildingMarker({ buildingId }: { buildingId: number }) {
   useEffect(() => () => geometry?.dispose(), [geometry]);
 
   if (!building || !geometry) return null;
+  // The player's own towers also show how far they shoot.
+  const tower = building.ownerId === LOCAL_PLAYER ? towerOf(building.type) : undefined;
   return (
-    <mesh
-      geometry={geometry}
-      material={material}
-      position={[building.x, heights.getHeightAt(building.x, building.z) + 0.06, building.z]}
-      rotation={[0, building.rotation, 0]}
-      renderOrder={2}
-    />
+    <>
+      <mesh
+        geometry={geometry}
+        material={material}
+        position={[building.x, heights.getHeightAt(building.x, building.z) + 0.06, building.z]}
+        rotation={[0, building.rotation, 0]}
+        renderOrder={2}
+      />
+      {tower && (
+        <TowerRange x={building.x} z={building.z} radius={tower.attack.range} heights={heights} />
+      )}
+    </>
   );
 }
 

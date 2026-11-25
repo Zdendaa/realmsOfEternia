@@ -15,6 +15,8 @@ export interface Projectile {
   targetId: EntityId;
   fromX: number;
   fromZ: number;
+  /** Height above the ground it leaves from; absent: a standing archer's bow (rendering). */
+  fromHeight?: number;
   firedAt: number;
   impactAt: number;
   /** Damage on impact, worked out at release (bonus and armor included). */
@@ -33,18 +35,20 @@ export function fireProjectile(
   speed: number,
   damage: number,
 ): Projectile {
-  const distance = Math.sqrt((target.x - attacker.x) ** 2 + (target.z - attacker.z) ** 2);
-  const flightTicks = Math.max(1, Math.ceil((distance / speed) * SIMULATION_TICK_RATE));
   return {
     attackerId: attacker.id,
     ownerId: attacker.ownerId,
     targetId,
-    fromX: attacker.x,
-    fromZ: attacker.z,
-    firedAt: tick,
-    impactAt: tick + flightTicks,
+    ...arrowFlight(attacker, target, tick, speed),
     damage,
   };
+}
+
+/** Where and when an arrow from `from` to `target` flies. */
+export function arrowFlight(from: Vec2, target: Vec2, tick: number, speed: number) {
+  const distance = Math.sqrt((target.x - from.x) ** 2 + (target.z - from.z) ** 2);
+  const flightTicks = Math.max(1, Math.ceil((distance / speed) * SIMULATION_TICK_RATE));
+  return { fromX: from.x, fromZ: from.z, firedAt: tick, impactAt: tick + flightTicks };
 }
 
 /**

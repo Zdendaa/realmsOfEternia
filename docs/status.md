@@ -62,6 +62,7 @@ _Last updated: 2026-11-25._
 - **Walls:** pick Palisade (1 wood per segment, weak, quick) or Stone Wall (2 stone, 3.6× the health, slow) in the construction menu and **drag** on the ground. The line snaps to 8 directions; the preview shows each segment green (will be built), amber (the stock runs out before it), red (blocked) or grey (already stands), with the segment count and total cost. Blocked segments are left out; when the stock can't pay for the whole line, as many segments as it can pay for are built, from where the drag started. The tool stays active (Esc or right click ends it; another button during a drag calls the line off), and a drag starting near the end of a wall continues from it, so corners connect with a post. Serfs carry the material over and build segment by segment. Walls block walking, can be attacked and fall one segment at a time into rubble. A warning appears when a line would shut your own units or building sites off from the rest of the map with no gate to leave by.
 - **Gates:** select one of your wall segments and press **Make gate** (palisade gate: 3 wood; stone gate: 3 stone, 2 wood; a segment still being built is refunded). Serfs build it; until it is finished it blocks like a wall. A finished gate lets your units through and nobody else, and its doors swing open when your units come close. Enemies have to break it (it is weaker than the wall around it).
 - **Breaching:** walls don't make you invincible. Soldiers and skeletons on an attack-move or attack order, or chasing someone they see, who have **no way at all** to where they want to go, pick an enemy segment in the way (a gate rather than a wall, if it isn't much farther), break it and carry on, ring after ring. If there is any way around, they walk it and leave the walls alone. An enemy standing outside the wall is still fought first.
+- **Wooden tower** (8 wood, 1 stone): serfs build it like any building. A finished tower shoots by itself at enemy units within 11 units: an arrow from its top every 1.6 s (damage 8 before armor), first at enemies in the middle of an attack, then at the nearest. A range ring shows while placing it and when your tower is selected, and the panel lists damage, rate and range. It is weak by design (600 health): 12–14 spearmen, the anti-building unit, bring it down.
 - **Skeleton wave:** eight minutes into the game, a horde of nine skeletons (two warriors, five minions, two crossbowmen) appears on the north road near the map edge and marches on the Town Hall, fighting every unit and building on the way; once there they keep attacking what they see. A countdown shows during the last minute ("Skeletons attack in 0:45"), then a red banner when they set out. Undefended, the village loses its northern buildings and the Town Hall slowly; a handful of soldiers stops them.
 - **Skeleton camps:** skeletons (KayKit Skeletons pack) guard both ore deposits from the start: on the gold deposit two warriors (axe and shield; 110 health, 2 armor), three minions (rusty blade; 50 health) and two crossbowmen (range 8); on the iron deposit one warrior and three minions. They stand at their camp, attack anything that comes within sight (8, crossbowmen 10), chase at most 12 units from their spot and walk back afterwards. Killing one pays a gold bounty to the player who struck the last blow (warrior 2, others 1; clearing the gold camp gives 9). The mines can only be built once the deposit is cleared (builders would be killed). Skeletons idle, shamble, taunt between blows and collapse with their own clips.
 - **Buildings in combat:** buildings and construction sites can be attacked and destroyed. Health comes from the footprint (30 per square unit, at least 300: a house about 470, a barracks about 1,260) except the Town Hall (3,000); buildings have 2 armor, spearmen deal ×3 to them and arrows only ×0.5 (2 damage per arrow). A construction site starts with 10% of its health and grows to all of it as it is built. Idle soldiers attack enemy buildings in sight when no enemy unit is near (walls and gates excepted: those are attacked on order or when in the way); with soldiers selected, the cursor turns into a sword over enemy buildings and a right click (or F + click) attacks them. A damaged building shows a wide health bar and its health in the selection panel. A destroyed building leaves rubble (the Hexagon pack's destroyed building, sized to the footprint) that smokes for about 45 s; the ground stays flat, the spot can be built on again, and the worker inside is lost. While enemy units are within 15 units, a production building doesn't send out a replacement worker.
@@ -141,12 +142,18 @@ _Last updated: 2026-11-25._
 
 - **Gates can't be closed by hand, undone, or made from a damaged segment.** There is one gate per 2-unit segment; no wider gates.
 - **The fog darkens the wall preview** over unexplored ground, so parts of a line can be hard to see there.
-
 - **Drag only:** a click without a drag draws nothing; lines snap to 8 directions.
-- **No repair,** and a palisade can\'t be upgraded to stone in place.
-- **The cut-off warning** compares against the largest connected area of the map; it can\'t tell which side of a wall you meant to be outside.
+- **No repair,** and a palisade can't be upgraded to stone in place.
+- **The cut-off warning** compares against the largest connected area of the map; it can't tell which side of a wall you meant to be outside.
 - **Temporary look:** the palisade posts are a primitive tapered log.
-- **Performance with hundreds of segments isn\'t measured yet** (7.7).
+- **Performance with hundreds of segments isn't measured yet** (7.7).
+
+### Towers
+
+- **Only the wooden tower yet;** upgrades come in 7.6, balancing in 7.7.
+- **Units shot from beyond their sight don't react:** the tower's range (11) is longer than most units' sight (8–9), so idle enemies and camp skeletons just stand and take it.
+- **No target choice by the player,** and the tower shows no archer or aiming animation.
+- **Look:** the wooden tower is the model also used as the stone walls' corner post, tinted brown. The placement ghost isn't tinted.
 
 ### Combat
 

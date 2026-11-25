@@ -18,6 +18,7 @@ export {
   isBuildingId,
   isWalkableBuilding,
   isWall,
+  towerOf,
   isGate,
   gateFor,
   wallTierOf,
@@ -41,6 +42,7 @@ export type {
   ProductionDefinition,
   ResourceAmount,
   SpinningPart,
+  TowerDefinition,
   WallModel,
 } from './buildings/types.js';
 export { PROPS, type PropDefinition, type PropId } from './props/definitions.js';

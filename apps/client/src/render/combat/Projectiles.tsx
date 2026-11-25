@@ -92,7 +92,7 @@ export function Projectiles() {
         }
       }
       if (!end) continue;
-      const startY = ctx.heights.getHeightAt(p.fromX, p.fromZ) + RELEASE_HEIGHT;
+      const startY = ctx.heights.getHeightAt(p.fromX, p.fromZ) + (p.fromHeight ?? RELEASE_HEIGHT);
       const dx = end.x - p.fromX;
       const dy = end.y - startY;
       const dz = end.z - p.fromZ;

@@ -45,7 +45,7 @@ interface SettlementProps {
  * One model instance per building, or one per tile for tiled buildings (fields).
  * Tile offsets are rotated with the building.
  */
-function buildingInstances(b: OwnedBuilding): { modelPath: string; instance: ModelInstance }[] {
+function buildingInstances(b: OwnedBuilding): DrawnModel[] {
   const { definition } = b;
   const rotation = b.rotation + definition.rotationOffset;
   const cos = Math.cos(b.rotation);
@@ -70,17 +70,28 @@ function buildingInstances(b: OwnedBuilding): { modelPath: string; instance: Mod
   const modelPath = modelPathOf(definition, b.id);
   return tileOffsets(definition).map((t) => ({
     modelPath,
+    tint: definition.tint,
     instance: { ...at(t.x, t.z), y: b.y, rotation, scale: definition.scale, owner: b.ownerId },
   }));
 }
 
-/** Groups instances by model file, so each model is drawn instanced once. */
-function groupByModel(items: readonly { modelPath: string; instance: ModelInstance }[]) {
-  const groups = new Map<string, ModelInstance[]>();
-  for (const { modelPath, instance } of items) {
-    const group = groups.get(modelPath);
-    if (group) group.push(instance);
-    else groups.set(modelPath, [instance]);
+interface DrawnModel {
+  modelPath: string;
+  instance: ModelInstance;
+  tint?: string | undefined;
+}
+
+/** Groups instances by model file and tint, so each such pair is drawn instanced once. */
+function groupByModel(items: readonly DrawnModel[]) {
+  const groups = new Map<
+    string,
+    { modelPath: string; tint: string | undefined; instances: ModelInstance[] }
+  >();
+  for (const { modelPath, instance, tint } of items) {
+    const key = `${modelPath}|${tint ?? ''}`;
+    const group = groups.get(key);
+    if (group) group.instances.push(instance);
+    else groups.set(key, { modelPath, tint, instances: [instance] });
   }
   return [...groups];
 }
@@ -98,12 +109,13 @@ export function Settlement({ buildings, props }: SettlementProps) {
 
   return (
     <>
-      {groups.map(([modelPath, instances]) => (
+      {groups.map(([key, group]) => (
         <ModelInstances
-          key={modelPath}
-          modelPath={modelPath}
-          instances={instances}
-          skipMeshes={SKIPPED_MESHES.get(modelPath)}
+          key={key}
+          modelPath={group.modelPath}
+          instances={group.instances}
+          tint={group.tint}
+          skipMeshes={SKIPPED_MESHES.get(group.modelPath)}
         />
       ))}
     </>

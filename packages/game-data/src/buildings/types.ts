@@ -1,5 +1,6 @@
 import type { DecorationKind, DepositKind, Footprint } from '@roe/shared';
 import type { ResourceCost, ResourceId } from '../resources/definitions.js';
+import type { AttackDefinition } from '../units/combat.js';
 import type { UnitKind } from '../units/definitions.js';
 import type { ProfessionId } from '../units/professions.js';
 
@@ -121,6 +122,14 @@ export interface WallModel {
     | { kind: 'log'; radius: number; height: number; color: string };
 }
 
+/** A tower shoots by itself at enemy units in range (no garrison). */
+export interface TowerDefinition {
+  /** Damage, seconds between shots, range from the tower's center, arrow speed. */
+  attack: AttackDefinition;
+  /** Height above the ground the shot leaves from (world units). */
+  launchHeight: number;
+}
+
 export interface BuildingDefinition {
   id: string;
   name: string;
@@ -211,6 +220,10 @@ export interface BuildingDefinition {
   gateOf?: string;
   /** Set on walls: how the model is fitted to a segment. */
   wallModel?: WallModel;
+  /** Set on towers. */
+  tower?: TowerDefinition;
+  /** Multiplied over the model's colors (client); the team color stays as it is. */
+  tint?: string;
   /** Set for production buildings (see `ProductionDefinition`). */
   production?: ProductionDefinition;
   /**

@@ -434,6 +434,34 @@ export const BUILDINGS = {
     health: 700,
     sight: 3,
   },
+  woodenTower: {
+    id: 'woodenTower',
+    name: 'Wooden Tower',
+    description: 'A lookout with archers: shoots at enemies in range by itself.',
+    modelPath: hexagonModel('building_tower_base'),
+    tint: '#ffd49a',
+    scale: 3.2,
+    footprint: { w: 3, d: 4 },
+    yard: true,
+    rotationOffset: 0,
+    buildable: true,
+    cost: { wood: 8, stone: 1 },
+    buildTime: 25,
+    maxBuilders: 3,
+    health: 600,
+    sight: 13,
+    tower: {
+      attack: {
+        kind: 'ranged',
+        damage: 8,
+        cooldown: 1.6,
+        windup: 0,
+        range: 11,
+        projectileSpeed: 22,
+      },
+      launchHeight: 4.6,
+    },
+  },
 } as const satisfies Record<string, BuildingDefinition>;
 
 export type BuildingId = keyof typeof BUILDINGS;
@@ -453,6 +481,10 @@ export const gateFor = (type: BuildingId): BuildingId | undefined =>
 /** The wall material a segment belongs to: a gate counts as its wall type. */
 export const wallTierOf = (type: BuildingId): BuildingId =>
   ((BUILDINGS[type] as BuildingDefinition).gateOf as BuildingId | undefined) ?? type;
+
+/** The tower settings of a building type, if it is a tower. */
+export const towerOf = (type: BuildingId): BuildingDefinition['tower'] =>
+  (BUILDINGS[type] as BuildingDefinition).tower;
 
 /** The production settings of a building type, if it is a production building. */
 export const productionOf = (type: BuildingId): BuildingDefinition['production'] =>

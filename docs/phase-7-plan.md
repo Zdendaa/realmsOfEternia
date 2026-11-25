@@ -10,7 +10,7 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 | 7.2 | Drawing walls: mouse drag, live preview (green / red, total cost, cut-off warning), posts, instancing, damage and ruins. **Browser review** | ✅     |
 | 7.3 | Gates: a wall segment becomes a gate; the owner's units pass, others don't                                                                  | ✅     |
 | 7.4 | Breaching: enemies with no route attack the wall in the way; a wave breaks into a walled village                                            | ✅     |
-| 7.5 | Wooden tower: shoots by itself, arrows from the top, range ring when selected. **Browser review**                                           |        |
+| 7.5 | Wooden tower: shoots by itself, arrows from the top, range ring when selected. **Browser review**                                           | ✅     |
 | 7.6 | Tower upgrades: wood → stone → crossbow, magic or fire; upgrade command, panel button, changed look                                         |        |
 | 7.7 | Balance and check: the wave against walls and towers, performance with 300+ segments, docs                                                  |        |
 
@@ -36,6 +36,10 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 - Idle soldiers who see an enemy behind a wall and have no way to them also breach. Archers shoot over walls when in range.
 - Performance: the first version took 288 ms in the worst tick with 90 shut-out attackers (120 × 120 test map); with the region check, the shared choice and the per-tick cap it is about 50 ms (2 ms on average). In the browser on the prototype map with 40 attackers: 2.3 ms on average, 25 ms worst.
 - 11 sim tests: waves breaking into square, diagonal and double rings, walking around an open side, preferring the gate, ordered targets, defenders, own walls and plain moves, determinism, the benchmark.
+
+### 7.5 notes (done 2026-11-25, awaiting browser review)
+
+- As planned: `building_tower_base` tinted wooden, self-firing, range ring. 7 sim tests. Browser, dev build: placing with the ring, building by serfs, the selection panel and ring, arrows at attackers; two towers behind an open palisade line killed 6 of 10 dev-spawned skeletons within the run, while 14 spearmen destroyed both towers (test shortcuts: stock set, the wall marked complete, attack-move orders written into the state). Production build: one click placed the tower and paid for it.
 
 ## Decisions
 

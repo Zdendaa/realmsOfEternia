@@ -1,6 +1,7 @@
 import {
   BUILDINGS,
   gateFor,
+  towerOf,
   productionOf,
   RESOURCE_NODES,
   RESOURCES,
@@ -328,6 +329,22 @@ function GateAction({ building }: { building: BuildingInstance }) {
   );
 }
 
+/** How a tower fights (from game-data). */
+function TowerStats({ type }: { type: BuildingInstance['type'] }) {
+  const attack = towerOf(type)?.attack;
+  if (!attack) return null;
+  return (
+    <dl className="unit-stats">
+      <dt>Damage</dt>
+      <dd>{attack.damage}</dd>
+      <dt>Shot every</dt>
+      <dd>{attack.cooldown} s</dd>
+      <dt>Range</dt>
+      <dd>{attack.range}</dd>
+    </dl>
+  );
+}
+
 function BuildingSelection() {
   const buildingId = useSelectionStore((s) => s.building);
   const building = useGameStore((s) =>
@@ -356,6 +373,7 @@ function BuildingSelection() {
           {own && <WorkerStatus buildingId={building.id} type={building.type} />}
         </>
       )}
+      {towerOf(building.type) && <TowerStats type={building.type} />}
       {own && gateFor(building.type) && <GateAction key={building.id} building={building} />}
       {own && building.type === 'townHall' && building.status === 'complete' && (
         <TownHallActions key={building.id} buildingId={building.id} />

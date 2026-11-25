@@ -34,6 +34,7 @@ import { applyMaterialOverrides, publicUrl } from '../scene/settlement/modelAsse
 import { modelFilesOf } from '../scene/settlement/modelFiles';
 import { singleTeamMaterial, type TintUniform } from '../scene/settlement/teamColorMaterial';
 import { ownerColor } from '../units/unitColors';
+import { createRangeRing } from '../combat/rangeRing';
 import { pickGround } from './groundPick';
 import { WallTool } from './WallTool';
 
@@ -155,6 +156,10 @@ function Ghost({ building, quarterTurns }: GhostProps) {
   const lastKey = useRef('');
   const lastStock = useRef<unknown>(null);
   const lastNodes = useRef<unknown>(null);
+  // A tower's ghost shows its range.
+  const range = definition.tower?.attack.range;
+  const ring = useMemo(() => createRangeRing(), []);
+  useEffect(() => () => ring.dispose(), [ring]);
 
   const model = useMemo(() => {
     const group = new Group();
@@ -206,6 +211,7 @@ function Ghost({ building, quarterTurns }: GhostProps) {
     raycaster.setFromCamera(pointer, camera);
     if (!pickGround(raycaster.ray, heights, hit)) {
       group.visible = false;
+      ring.show(undefined, 0, 0, heights);
       return;
     }
 
@@ -213,6 +219,7 @@ function Ghost({ building, quarterTurns }: GhostProps) {
     const x = Math.round(hit.x / grid) * grid;
     const z = Math.round(hit.z / grid) * grid;
     group.visible = true;
+    ring.show(range, x, z, heights);
     group.position.set(x, heights.getHeightAt(x, z), z);
     showVariant(group, modelPathOf(definition, state.nextEntityId));
     group.rotation.y = quarterTurnsToRadians(quarterTurns);
@@ -234,9 +241,12 @@ function Ghost({ building, quarterTurns }: GhostProps) {
   });
 
   return (
-    <group ref={groupRef} visible={false}>
-      <primitive object={model} />
-    </group>
+    <>
+      <group ref={groupRef} visible={false}>
+        <primitive object={model} />
+      </group>
+      <primitive object={ring.mesh} />
+    </>
   );
 }
 

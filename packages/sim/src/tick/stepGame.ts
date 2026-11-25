@@ -18,6 +18,8 @@ import { updateSerfs } from '../units/serfBehavior.js';
 import { hireWorkers, updateWorkers } from '../units/workers.js';
 import { updateVision } from '../vision/vision.js';
 import { addStats, decideOutcomes } from '../rules/outcome.js';
+import { createUnitGrid, type UnitGrid } from '../combat/targeting.js';
+import { updateTowers } from '../combat/towers.js';
 
 export interface StepResult {
   state: GameState;
@@ -63,6 +65,16 @@ export function stepGame(
   updateSerfs(ctx, current.tick, current.buildings, units, economy);
   updateWorkers(current.tick, current.buildings, units, economy);
   updateFighters(ctx, current.tick, units, current.buildings, hits, released);
+  // Towers shoot after the units have moved on this tick's orders (the grid is built only
+  // when a tower is ready to look).
+  let unitGrid: UnitGrid | null = null;
+  const towerCooldowns = updateTowers(
+    current.tick,
+    current.buildings,
+    () => (unitGrid ??= createUnitGrid(units)),
+    current.towerCooldowns,
+    released,
+  );
   const deaths = applyHits(units, hits, current.tick);
   payBounties(economy, deaths, (player) => current.stocks[player] !== undefined);
   if (ctx.nav.version !== navVersion) invalidateBlockedRoutes(ctx, units);
@@ -134,6 +146,7 @@ export function stepGame(
     lastWaveAt: waves.sentNow ? current.tick : current.lastWaveAt,
     stats,
     projectiles,
+    towerCooldowns,
     training: trained.training,
     nextEntityId,
   };
