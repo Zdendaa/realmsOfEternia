@@ -28,6 +28,16 @@ export interface PlaceWallCommand {
   to: Vec2;
 }
 
+/**
+ * Turn one of the issuer's wall segments into a gate: it becomes a construction site of
+ * the gate for that wall. A finished segment's gate is paid in full; a segment still
+ * being built is refunded first.
+ */
+export interface MakeGateCommand {
+  type: 'makeGate';
+  segmentId: EntityId;
+}
+
 /** Recruit one serf at a Town Hall. */
 export interface RecruitSerfCommand {
   type: 'recruitSerf';
@@ -119,6 +129,7 @@ export interface DebugWaveCommand {
 export type Command =
   | PlaceBuildingCommand
   | PlaceWallCommand
+  | MakeGateCommand
   | RecruitSerfCommand
   | MoveUnitsCommand
   | AssignBuildersCommand
@@ -187,6 +198,8 @@ export function parseCommand(input: unknown): Command | null {
         ? { type: 'placeWall', building, from, to }
         : null;
     }
+    case 'makeGate':
+      return isEntityId(data.segmentId) ? { type: 'makeGate', segmentId: data.segmentId } : null;
     case 'recruitSerf':
       return isEntityId(data.buildingId)
         ? { type: 'recruitSerf', buildingId: data.buildingId }

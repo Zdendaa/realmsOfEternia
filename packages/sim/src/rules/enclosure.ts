@@ -1,8 +1,14 @@
-import { UNITS, type BuildingId } from '@roe/game-data';
+import { isGate, UNITS, type BuildingId } from '@roe/game-data';
 import type { PlayerId, Vec2 } from '@roe/shared';
-import type { SimContext } from '../context/simContext.js';
+import { buildingStamps, type SimContext } from '../context/simContext.js';
 import { workSlots } from '../construction/workSlots.js';
-import { addBuilding, isWalkableCell, nearestWalkableCell, type NavGrid } from '../nav/navGrid.js';
+import {
+  addBuilding,
+  isWalkableCell,
+  nearestWalkableCell,
+  stampBuildings,
+  type NavGrid,
+} from '../nav/navGrid.js';
 import { toPlacedFootprint, type GameState } from '../state/gameState.js';
 import { isAlive } from '../state/units.js';
 import type { WallSegment } from './walls.js';
@@ -16,10 +22,27 @@ export interface CutOff {
 }
 
 /**
+ * The grid as `player` will find it once everything is built: their own gates open, also
+ * the ones still under construction (a gate being built is a way out to come).
+ */
+function gridWithGates(grid: NavGrid, state: GameState, player: PlayerId): NavGrid {
+  const copy: NavGrid = { ...grid, flags: grid.flags.slice(), gateOwners: new Map() };
+  stampBuildings(
+    copy,
+    buildingStamps(
+      state.buildings.map((b) =>
+        b.ownerId === player && isGate(b.type) ? { ...b, status: 'complete' } : b,
+      ),
+    ),
+  );
+  return copy;
+}
+
+/**
  * For every walkable cell the id of its connected region, and the id of the largest one
  * ("the rest of the map"). 4-neighbours are enough: paths never cut corners.
  */
-function regions(grid: NavGrid): { of: Int32Array; main: number } {
+function regions(grid: NavGrid, player: PlayerId): { of: Int32Array; main: number } {
   const { cols, rows } = grid;
   const of = new Int32Array(cols * rows);
   const stack = new Int32Array(cols * rows);
@@ -27,14 +50,14 @@ function regions(grid: NavGrid): { of: Int32Array; main: number } {
   let main = 0;
   let largest = 0;
   for (let start = 0; start < of.length; start++) {
-    if (of[start] !== 0 || !isWalkableCell(grid, start)) continue;
+    if (of[start] !== 0 || !isWalkableCell(grid, start, player)) continue;
     id++;
     let size = 0;
     let top = 0;
     stack[top++] = start;
     of[start] = id;
     const visit = (next: number) => {
-      if (of[next] === 0 && isWalkableCell(grid, next)) {
+      if (of[next] === 0 && isWalkableCell(grid, next, player)) {
         of[next] = id;
         stack[top++] = next;
       }
@@ -58,8 +81,8 @@ function regions(grid: NavGrid): { of: Int32Array; main: number } {
 
 /**
  * Which of `player`'s units and construction sites the new wall `segments` would cut off
- * from the rest of the map. A warning for the one drawing the wall, not a rule: walling
- * yourself in is allowed. Costs two flood fills of the nav grid (call it when the line
+ * from the rest of the map, with no gate of theirs to leave through. A warning for the
+ * one drawing the wall, not a rule: walling yourself in is allowed. Costs two flood fills of the nav grid (call it when the line
  * changes, not every frame). `ctx` must be synced to `state`.
  */
 export function findCutOff(
@@ -71,17 +94,18 @@ export function findCutOff(
 ): CutOff {
   if (segments.length === 0) return { units: 0, sites: 0 };
   const walls = segments.map((segment) => ({ type: building, ...segment }));
-  const after: NavGrid = { ...ctx.nav, flags: ctx.nav.flags.slice() };
-  for (const wall of walls) addBuilding(after, toPlacedFootprint(wall));
+  const open = gridWithGates(ctx.nav, state, player);
+  const after = gridWithGates(ctx.nav, state, player);
+  for (const wall of walls) addBuilding(after, { area: toPlacedFootprint(wall) });
 
-  const before = regions(ctx.nav);
-  const walled = regions(after);
+  const before = regions(open, player);
+  const walled = regions(after, player);
   const connected = (grid: NavGrid, found: typeof before, at: Vec2) => {
-    const cell = nearestWalkableCell(grid, at.x, at.z);
+    const cell = nearestWalkableCell(grid, at.x, at.z, player);
     return cell >= 0 && found.of[cell] === found.main;
   };
   const lost = (points: readonly Vec2[]) =>
-    points.some((p) => connected(ctx.nav, before, p)) &&
+    points.some((p) => connected(open, before, p)) &&
     !points.some((p) => connected(after, walled, p));
 
   const units = state.units.filter(

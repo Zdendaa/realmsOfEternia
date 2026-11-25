@@ -5,6 +5,7 @@ import {
   isWalkableCell,
   nearestWalkableCell,
   type NavGrid,
+  type Passer,
 } from './navGrid.js';
 import { smoothPath } from './smoothPath.js';
 
@@ -13,6 +14,12 @@ const STRAIGHT = 10;
 const DIAGONAL = 14;
 /** Hard cap on expanded cells per search, so an unreachable goal can't stall a tick. */
 const DEFAULT_MAX_EXPANSIONS = 30_000;
+
+export interface PathOptions {
+  /** Whose units walk the route: they may use that player's gates. */
+  passer?: Passer;
+  maxExpansions?: number;
+}
 
 export interface PathResult {
   /** World-space waypoints from the first step to the goal (or the closest reachable point). */
@@ -28,7 +35,7 @@ export interface PathResult {
  * generation stamps, so a search never clears or allocates per-cell arrays.
  */
 export interface PathFinder {
-  findPath(from: Vec2, to: Vec2, maxExpansions?: number): PathResult;
+  findPath(from: Vec2, to: Vec2, options?: PathOptions): PathResult;
 }
 
 export function createPathFinder(grid: NavGrid): PathFinder {
@@ -39,6 +46,8 @@ export function createPathFinder(grid: NavGrid): PathFinder {
   const closed = new Uint32Array(n);
   const heap = new MinHeap(n);
   let generation = 0;
+  /** Who the running search is for. */
+  let passer: Passer = null;
 
   /** Neighbour offsets: 4 straight, then 4 diagonal steps. */
   const OFFSETS = [
@@ -63,7 +72,7 @@ export function createPathFinder(grid: NavGrid): PathFinder {
     row >= 0 &&
     col < grid.cols &&
     row < grid.rows &&
-    isWalkableCell(grid, row * grid.cols + col);
+    isWalkableCell(grid, row * grid.cols + col, passer);
 
   /** Pushes every open neighbour of `current` that this route reaches more cheaply. */
   const expand = (current: number, goal: number) => {
@@ -120,13 +129,15 @@ export function createPathFinder(grid: NavGrid): PathFinder {
   };
 
   return {
-    findPath(from, to, maxExpansions = DEFAULT_MAX_EXPANSIONS) {
+    findPath(from, to, options = {}) {
+      const { maxExpansions = DEFAULT_MAX_EXPANSIONS } = options;
+      passer = options.passer ?? null;
       // Units standing inside an obstacle (a site placed on top of them) first step out.
-      const start = nearestWalkableCell(grid, from.x, from.z);
+      const start = nearestWalkableCell(grid, from.x, from.z, passer);
       const goalCell = cellIndexAt(grid, to.x, to.z);
-      const goal = isWalkableCell(grid, goalCell)
+      const goal = isWalkableCell(grid, goalCell, passer)
         ? goalCell
-        : nearestWalkableCell(grid, to.x, to.z);
+        : nearestWalkableCell(grid, to.x, to.z, passer);
       if (start < 0 || goal < 0) return { waypoints: [], reachedGoal: false, expanded: 0 };
 
       const { end, found, expanded } = search(start, goal, maxExpansions);
@@ -142,7 +153,7 @@ export function createPathFinder(grid: NavGrid): PathFinder {
       // center (the way out) stays as a waypoint.
       if (cellIndexAt(grid, from.x, from.z) === start) points[0] = { x: from.x, z: from.z };
       else points.unshift({ x: from.x, z: from.z });
-      const waypoints = smoothPath(grid, points).slice(1);
+      const waypoints = smoothPath(grid, points, passer).slice(1);
       return { waypoints, reachedGoal, expanded };
     },
   };

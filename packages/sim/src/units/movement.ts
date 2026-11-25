@@ -41,7 +41,7 @@ export function planPaths(ctx: SimContext, units: UnitInstance[]): void {
     const m = unit.movement;
     if (!m || m.waypoints) continue;
     budget--;
-    const { waypoints } = ctx.paths.findPath(unit, m.goal);
+    const { waypoints } = ctx.paths.findPath(unit, m.goal, { passer: unit.ownerId });
     // An empty route means the unit is already there, or nothing reachable exists.
     unit.movement = waypoints.length === 0 ? null : { ...m, waypoints, next: 0 };
   }
@@ -58,7 +58,7 @@ export function invalidateBlockedRoutes(ctx: SimContext, units: UnitInstance[]):
     let from: Vec2 = unit;
     for (let i = m.next; i < m.waypoints.length; i++) {
       const to = m.waypoints[i] as Vec2;
-      if (!hasLineOfSight(ctx.nav, from, to)) {
+      if (!hasLineOfSight(ctx.nav, from, to, unit.ownerId)) {
         unit.movement = { ...m, waypoints: null, next: 0 };
         break;
       }

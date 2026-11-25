@@ -1,4 +1,13 @@
-import { BUILDINGS, GATHER_RULES, isBuildingId, trainsOf, UNITS } from '@roe/game-data';
+import {
+  BUILDINGS,
+  GATHER_RULES,
+  gateFor,
+  isBuildingId,
+  trainsOf,
+  UNITS,
+  type BuildingId,
+  type ResourceAmounts,
+} from '@roe/game-data';
 import { areEnemies } from '../combat/hostility.js';
 import { sendWave } from '../combat/waves.js';
 import { buildingSeen, isVisible } from '../vision/vision.js';
@@ -38,6 +47,7 @@ import type {
   MoveUnitsCommand,
   PlaceBuildingCommand,
   PlaceWallCommand,
+  MakeGateCommand,
   RecruitSerfCommand,
   StopCommand,
   CancelTrainingCommand,
@@ -47,6 +57,10 @@ import type {
 export type CommandIssue =
   | PlacementIssue
   | WallIssue
+  /** Only a plain wall segment can become a gate. */
+  | 'notWallSegment'
+  /** A damaged segment can't be rebuilt as a gate (that would repair it). */
+  | 'damaged'
   /** The referenced building doesn't exist. */
   | 'noBuilding'
   /** The issuer doesn't own the building. */
@@ -252,6 +266,63 @@ function checkWall(
   return paid.segments.some((s) => s.status === 'ok') ? OK : fail('notEnoughResources');
 }
 
+/** What turning `segment` into `gate` takes from the stock (a site's cost comes back). */
+function stockAfterGate(
+  state: GameState,
+  issuer: PlayerId,
+  segment: BuildingInstance,
+  gate: BuildingId,
+) {
+  const stock = stockOf(state, issuer);
+  const available =
+    segment.status === 'construction' ? refund(stock, BUILDINGS[segment.type].cost) : stock;
+  const cost = BUILDINGS[gate].cost;
+  return canAfford(available, cost) ? pay(available, cost) : null;
+}
+
+function checkMakeGate(state: GameState, issuer: PlayerId, command: MakeGateCommand) {
+  const segment = findBuilding(state, command.segmentId);
+  if (!segment) return fail('noBuilding');
+  if (segment.ownerId !== issuer) return fail('notOwner');
+  const gate = gateFor(segment.type);
+  if (!gate) return fail('notWallSegment');
+  if ((state.buildingDamage[segment.id] ?? 0) > 0) return fail('damaged');
+  return stockAfterGate(state, issuer, segment, gate) ? OK : fail('notEnoughResources');
+}
+
+/**
+ * The segment leaves and a gate site takes its spot, under a new id. Material builders
+ * were carrying for a refunded site is gone with it (its cost is already back).
+ */
+function makeGate(state: GameState, issuer: PlayerId, command: MakeGateCommand): GameState {
+  const segment = findBuilding(state, command.segmentId) as BuildingInstance;
+  const gate = gateFor(segment.type) as BuildingId;
+  const stock = stockAfterGate(state, issuer, segment, gate) as ResourceAmounts;
+  const site: BuildingInstance = {
+    ...segment,
+    id: state.nextEntityId,
+    type: gate,
+    status: 'construction',
+  };
+  const units = state.units.map((u) =>
+    u.carrying?.siteId === segment.id ? { ...u, carrying: null } : u,
+  );
+  return {
+    ...withStock(state, issuer, stock),
+    buildings: [...state.buildings.filter((b) => b.id !== segment.id), site],
+    construction: {
+      ...withoutKey(state.construction, segment.id),
+      [site.id]: {
+        workDone: 0,
+        workRequired: BUILDINGS[gate].buildTime * SIMULATION_TICK_RATE,
+        delivered: {},
+      },
+    },
+    units,
+    nextEntityId: state.nextEntityId + 1,
+  };
+}
+
 /** Checks whether `issuer` may execute `command` in `state`. `ctx` must be synced to `state`. */
 export function validateCommand(
   ctx: SimContext,
@@ -268,6 +339,8 @@ export function validateCommand(
       return checkPlace(ctx, state, issuer, command);
     case 'placeWall':
       return checkWall(ctx, state, issuer, command);
+    case 'makeGate':
+      return checkMakeGate(state, issuer, command);
     case 'recruitSerf':
       return checkRecruit(state, issuer, command);
     case 'moveUnits':
@@ -560,6 +633,8 @@ export function applyCommand(
       return { ok: true, state: placeBuilding(state, issuer, command) };
     case 'placeWall':
       return { ok: true, state: placeWall(ctx, state, issuer, command) };
+    case 'makeGate':
+      return { ok: true, state: makeGate(state, issuer, command) };
     case 'recruitSerf':
       return { ok: true, state: recruitSerf(state, issuer, command) };
     case 'moveUnits':

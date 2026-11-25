@@ -1,5 +1,5 @@
 import { useGLTF } from '@react-three/drei';
-import { BUILDINGS, isWall, type BuildingDefinition, type WallModel } from '@roe/game-data';
+import { BUILDINGS, isGate, isWall, type BuildingDefinition, type WallModel } from '@roe/game-data';
 import type { HeightField } from '@roe/shared';
 import { footprintOf, type BuildingInstance, type GameState } from '@roe/sim';
 import { Suspense, useEffect, useMemo } from 'react';
@@ -9,6 +9,7 @@ import { groupIntoChunks, packMatrices } from '../scene/instanceData';
 import { ModelInstances, type ModelInstance } from '../scene/settlement/ModelInstances';
 import { publicUrl } from '../scene/settlement/modelAssets';
 import { StaticInstances } from '../scene/StaticInstances';
+import { GateDoors, type DrawnGate } from './GateDoors';
 import { wallPosts, type WallPost } from './wallLayout';
 
 /** Walls are instanced in square chunks of this size, so off-screen ones are culled. */
@@ -20,6 +21,14 @@ const SITE_START = 0.12;
 
 const wallModelOf = (type: BuildingInstance['type']) =>
   (BUILDINGS[type] as BuildingDefinition).wallModel as WallModel;
+
+/** Door nodes of each gate model, drawn by `GateDoors` (stable arrays). */
+const DOOR_NODES = new Map(
+  (Object.values(BUILDINGS) as BuildingDefinition[]).flatMap((d) => {
+    const doors = d.wallModel?.doors;
+    return doors ? [[d.id, doors.map((door) => door.node)] as const] : [];
+  }),
+);
 
 for (const definition of Object.values(BUILDINGS) as BuildingDefinition[]) {
   const post = definition.wallModel?.post;
@@ -159,7 +168,7 @@ export function Walls({
   heights: HeightField;
 }) {
   const steps = useGameStore((s) => siteSteps(s.state));
-  const { segments, posts } = useMemo(() => {
+  const { segments, posts, gates } = useMemo(() => {
     const stepOf = new Map(
       steps
         .split(',')
@@ -172,11 +181,15 @@ export function Walls({
         : SITE_START + (1 - SITE_START) * ((stepOf.get(wall.id) ?? 0) / SITE_STEPS);
     const rises = new Map(walls.map((wall) => [wall.id, riseOf(wall)]));
     const segments = walls.map((wall) => ({
+      id: wall.id,
+      ownerId: wall.ownerId,
+      complete: wall.status === 'complete',
       x: wall.x,
       z: wall.z,
       type: wall.type,
       instance: segmentInstance(wall, heights.getHeightAt(wall.x, wall.z), rises.get(wall.id) ?? 1),
     }));
+    const gateTypes = [...new Set(segments.map((s) => s.type).filter(isGate))];
     const posts = wallPosts(walls).map((post) => ({
       ...post,
       y: heights.getHeightAt(post.x, post.z),
@@ -188,6 +201,10 @@ export function Walls({
         instances: group.items.map((item) => item.instance),
       })),
       posts: byTypeAndChunk(posts),
+      gates: gateTypes.map((type) => ({
+        type,
+        gates: segments.filter((s): s is typeof s & DrawnGate => s.type === type),
+      })),
     };
   }, [walls, heights, steps]);
 
@@ -198,7 +215,12 @@ export function Walls({
           key={group.key}
           modelPath={BUILDINGS[group.type].modelPath}
           instances={group.instances}
+          skipMeshes={DOOR_NODES.get(group.type)}
         />
+      ))}
+      {gates.map((group) => (
+        // Remounted when the count changes: the door meshes are sized to it.
+        <GateDoors key={`${group.type}:${group.gates.length}`} {...group} />
       ))}
       {posts.map((group) =>
         wallModelOf(group.type).post.kind === 'log' ? (

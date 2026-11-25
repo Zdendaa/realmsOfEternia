@@ -1,5 +1,6 @@
 import {
   BUILDINGS,
+  gateFor,
   productionOf,
   RESOURCE_NODES,
   RESOURCES,
@@ -29,6 +30,12 @@ import { CostList } from './CostList';
 import { RESOURCE_ICONS } from './icons/resourceIcons';
 import { TrainingPanel } from './TrainingPanel';
 import { UnitPanel } from './UnitPanel';
+
+const GATE_MESSAGES: Partial<Record<CommandIssue, string>> = {
+  damaged: 'A damaged segment cannot be made into a gate.',
+  notEnoughResources: 'Not enough resources.',
+  gameOver: 'The game is over.',
+};
 
 const ISSUE_MESSAGES: Partial<Record<CommandIssue, string>> = {
   unitLimit: `You already have ${UNITS.serf.maxPerPlayer} serfs.`,
@@ -287,6 +294,40 @@ function BuildingHealth({ building }: { building: BuildingInstance }) {
   );
 }
 
+/**
+ * Turns the selected wall segment into a gate: its cost (what a segment still being built
+ * gives back is not shown), and the reason when it isn't possible.
+ */
+function GateAction({ building }: { building: BuildingInstance }) {
+  const dispatch = useGameStore((s) => s.dispatch);
+  const stock = useGameStore((s) => s.state.stocks[LOCAL_PLAYER] ?? EMPTY_STOCK);
+  const damaged = useGameStore((s) => (s.state.buildingDamage[building.id] ?? 0) > 0);
+  const select = useSelectionStore((s) => s.selectBuilding);
+  const [rejected, setRejected] = useState<CommandIssue | null>(null);
+  const gate = gateFor(building.type);
+  if (!gate) return null;
+
+  const make = () => {
+    // The gate gets the next id: keep it selected.
+    const next = useGameStore.getState().state.nextEntityId;
+    const check = dispatch({ type: 'makeGate', segmentId: building.id });
+    setRejected(check.ok ? null : (check.issues[0] ?? null));
+    if (check.ok) select(next);
+  };
+  const issue = damaged ? 'damaged' : rejected;
+  return (
+    <>
+      <div className="selection-action-row">
+        <button type="button" className="selection-action" onClick={make} disabled={damaged}>
+          Make gate
+        </button>
+        <CostList cost={BUILDINGS[gate].cost} stock={stock} />
+      </div>
+      {issue && <p className="selection-issue">{GATE_MESSAGES[issue] ?? issue}</p>}
+    </>
+  );
+}
+
 function BuildingSelection() {
   const buildingId = useSelectionStore((s) => s.building);
   const building = useGameStore((s) =>
@@ -315,6 +356,7 @@ function BuildingSelection() {
           {own && <WorkerStatus buildingId={building.id} type={building.type} />}
         </>
       )}
+      {own && gateFor(building.type) && <GateAction key={building.id} building={building} />}
       {own && building.type === 'townHall' && building.status === 'complete' && (
         <TownHallActions key={building.id} buildingId={building.id} />
       )}

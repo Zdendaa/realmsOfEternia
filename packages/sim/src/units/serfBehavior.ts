@@ -45,9 +45,9 @@ export function updateSerfs(
     }
 
     if (unit.task.kind === 'idle' && !unit.movement) {
-      if (!isWalkable(ctx.nav, unit.x, unit.z)) {
+      if (!isWalkable(ctx.nav, unit.x, unit.z, unit.ownerId)) {
         // A site was placed on top of this serf: step out of it.
-        const cell = nearestWalkableCell(ctx.nav, unit.x, unit.z);
+        const cell = nearestWalkableCell(ctx.nav, unit.x, unit.z, unit.ownerId);
         if (cell >= 0) unit.movement = moveTo(cellCenter(ctx.nav, cell));
       } else if ((tick + unit.id) % SERF_RULES.lookForWorkEvery === 0) {
         lookForWork(unit, buildings, units);

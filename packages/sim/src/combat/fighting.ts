@@ -81,7 +81,7 @@ function lookup(
  */
 function chase(ctx: SimContext, unit: UnitInstance, target: Vec2): UnitMovement {
   const goal = { x: target.x, z: target.z };
-  if (!hasLineOfSight(ctx.nav, unit, goal)) return moveTo(goal);
+  if (!hasLineOfSight(ctx.nav, unit, goal, unit.ownerId)) return moveTo(goal);
   return { ...moveTo(goal), waypoints: [goal] };
 }
 

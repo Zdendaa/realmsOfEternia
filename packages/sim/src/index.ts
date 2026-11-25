@@ -20,6 +20,7 @@ export {
   type MoveUnitsCommand,
   type PlaceBuildingCommand,
   type PlaceWallCommand,
+  type MakeGateCommand,
   type RecruitSerfCommand,
   type CancelTrainingCommand,
   type StopCommand,

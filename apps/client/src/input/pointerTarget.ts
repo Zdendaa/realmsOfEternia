@@ -116,7 +116,7 @@ export function pickPointerTarget(
   const building = pickBuilding(ray, knownBuildings(state), heights);
   let ground: GroundTarget | null = null;
   if (pickGround(ray, heights, hit)) {
-    const walkable = isWalkable(ctx.nav, hit.x, hit.z);
+    const walkable = isWalkable(ctx.nav, hit.x, hit.z, LOCAL_PLAYER);
     const resource = walkable ? null : resourceAt(hit.x, hit.z);
     ground = {
       x: hit.x,
@@ -124,7 +124,7 @@ export function pickPointerTarget(
       z: hit.z,
       walkable,
       reachable: isInPlayableArea(world.map, hit.x, hit.z)
-        ? nearestWalkablePoint(ctx.nav, hit.x, hit.z)
+        ? nearestWalkablePoint(ctx.nav, hit.x, hit.z, LOCAL_PLAYER)
         : null,
       resource,
       harvestable:

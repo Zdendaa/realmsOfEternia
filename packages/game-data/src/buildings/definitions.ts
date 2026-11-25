@@ -374,12 +374,85 @@ export const BUILDINGS = {
     health: 900,
     sight: 3,
   },
+  palisadeGate: {
+    id: 'palisadeGate',
+    name: 'Palisade Gate',
+    description: 'A gate in a palisade: your people pass, enemies must break it.',
+    modelPath: hexagonModel('fence_wood_straight_gate'),
+    scale: H,
+    footprint: { w: WALL_RULES.segmentLength, d: 1 },
+    wall: true,
+    gateOf: 'palisade',
+    wallModel: {
+      size: { length: 1.15, height: 0.65, depth: 0.14 },
+      turn: deg(90),
+      center: { x: -1, z: 0 },
+      height: 2.25,
+      depth: 0.6,
+      post: { kind: 'log', radius: 0.32, height: 2.3, color: '#7a5434' },
+      doors: [{ node: 'fence_wood_straight_door', openAngle: deg(100) }],
+    },
+    rotationOffset: 0,
+    buildable: false,
+    cost: { wood: 3 },
+    buildTime: 8,
+    maxBuilders: 2,
+    health: 200,
+    sight: 3,
+  },
+  stoneGate: {
+    id: 'stoneGate',
+    name: 'Stone Gate',
+    description: 'A gate in a stone wall: your people pass, enemies must break it.',
+    modelPath: hexagonModel('wall_straight_gate'),
+    scale: H,
+    footprint: { w: WALL_RULES.segmentLength, d: 1 },
+    wall: true,
+    gateOf: 'stoneWall',
+    wallModel: {
+      size: { length: 2, height: 1.41, depth: 0.9 },
+      turn: 0,
+      center: { x: 0, z: 0 },
+      height: 2.8,
+      depth: 1.15,
+      post: {
+        kind: 'model',
+        modelPath: hexagonModel('building_tower_base'),
+        scale: 1.6,
+        stretchY: 1.15,
+      },
+      doors: [
+        { node: 'wall_straight_gate_door_left', openAngle: deg(-95) },
+        { node: 'wall_straight_gate_door_right', openAngle: deg(95) },
+      ],
+    },
+    rotationOffset: 0,
+    buildable: false,
+    cost: { stone: 3, wood: 2 },
+    buildTime: 15,
+    maxBuilders: 2,
+    health: 700,
+    sight: 3,
+  },
 } as const satisfies Record<string, BuildingDefinition>;
 
 export type BuildingId = keyof typeof BUILDINGS;
 
 export const isWall = (type: BuildingId): boolean =>
   (BUILDINGS[type] as BuildingDefinition).wall === true;
+
+export const isGate = (type: BuildingId): boolean =>
+  (BUILDINGS[type] as BuildingDefinition).gateOf !== undefined;
+
+/** The gate a segment of `type` can be turned into (plain wall types have one). */
+export const gateFor = (type: BuildingId): BuildingId | undefined =>
+  (Object.keys(BUILDINGS) as BuildingId[]).find(
+    (id) => (BUILDINGS[id] as BuildingDefinition).gateOf === type,
+  );
+
+/** The wall material a segment belongs to: a gate counts as its wall type. */
+export const wallTierOf = (type: BuildingId): BuildingId =>
+  ((BUILDINGS[type] as BuildingDefinition).gateOf as BuildingId | undefined) ?? type;
 
 /** The production settings of a building type, if it is a production building. */
 export const productionOf = (type: BuildingId): BuildingDefinition['production'] =>

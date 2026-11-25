@@ -3,6 +3,7 @@ import {
   isInPlayableArea,
   type Decoration,
   type PlacedFootprint,
+  type PlayerId,
   type Vec2,
 } from '@roe/shared';
 import { PLACEMENT_RULES } from '../rules/placement.js';
@@ -14,6 +15,8 @@ const STATIC = 1;
 const BUILDING = 2;
 /** Blocked by a tree or rock; cleared when the node is depleted. */
 const DECORATION = 4;
+/** Covered by a finished gate: open to its owner's units only (`gateOwners`). */
+const GATE = 8;
 
 export const NAV_RULES = {
   /** Side length of one navigation cell, in world units. */
@@ -36,8 +39,17 @@ export interface NavGrid {
   readonly originZ: number;
   /** Bit flags per cell (0 = walkable). */
   readonly flags: Uint8Array;
+  /** The owner of the gate on each `GATE` cell. */
+  readonly gateOwners: Map<number, PlayerId>;
   /** Bumped whenever building or decoration cells change, so routes can be re-checked. */
   version: number;
+}
+
+/** What one building puts on the grid. */
+export interface BuildingStamp {
+  area: PlacedFootprint;
+  /** Set for a finished gate: its owner's units may walk through. */
+  gateOwner?: PlayerId;
 }
 
 /**
@@ -54,7 +66,15 @@ export function createNavGrid(
   const originX = -size / 2;
   const originZ = -size / 2;
   const flags = new Uint8Array(cols * rows);
-  const grid: NavGrid = { cols, rows, originX, originZ, flags, version: 0 };
+  const grid: NavGrid = {
+    cols,
+    rows,
+    originX,
+    originZ,
+    flags,
+    gateOwners: new Map(),
+    version: 0,
+  };
 
   const heights = new Float32Array(cols * rows);
   for (let row = 0; row < rows; row++) {
@@ -132,21 +152,32 @@ export function removeDecoration(
   grid.version++;
 }
 
-/** Marks every building footprint as blocked, replacing the previous building layer. */
-export function stampBuildings(grid: NavGrid, footprints: readonly PlacedFootprint[]): void {
+/** Marks every building footprint, replacing the previous building layer. */
+export function stampBuildings(grid: NavGrid, stamps: readonly BuildingStamp[]): void {
   const { flags } = grid;
-  for (let i = 0; i < flags.length; i++) flags[i] = (flags[i] as number) & ~BUILDING;
-  for (const f of footprints) addBuilding(grid, f);
+  for (let i = 0; i < flags.length; i++) flags[i] = (flags[i] as number) & ~(BUILDING | GATE);
+  grid.gateOwners.clear();
+  for (const stamp of stamps) addBuilding(grid, stamp);
   grid.version++;
 }
 
-/** Marks one more footprint as blocked (incremental update when a site is placed). */
-export function addBuilding(grid: NavGrid, area: PlacedFootprint): void {
+/**
+ * Marks one more footprint (incremental update when a site is placed). A cell that a gate
+ * shares with anything solid, or with another player's gate, is blocked for everyone.
+ */
+export function addBuilding(grid: NavGrid, { area, gateOwner }: BuildingStamp): void {
   const reach = Math.hypot(area.footprint.w, area.footprint.d) / 2 + NAV_RULES.clearance;
   forEachCellNear(grid, area.x, area.z, reach, (i, c) => {
-    if (distanceToFootprint(area, c.x, c.z, NAV_RULES.clearance) === 0) {
-      grid.flags[i] = (grid.flags[i] as number) | BUILDING;
+    if (distanceToFootprint(area, c.x, c.z, NAV_RULES.clearance) !== 0) return;
+    let flag = BUILDING;
+    if (gateOwner !== undefined) {
+      const other = grid.gateOwners.get(i);
+      if (other === undefined || other === gateOwner) {
+        grid.gateOwners.set(i, gateOwner);
+        flag = GATE;
+      }
     }
+    grid.flags[i] = (grid.flags[i] as number) | flag;
   });
   grid.version++;
 }
@@ -166,18 +197,34 @@ export function cellIndexAt(grid: NavGrid, x: number, z: number): number {
   return row * grid.cols + col;
 }
 
-export function isWalkableCell(grid: NavGrid, index: number): boolean {
-  return index >= 0 && grid.flags[index] === 0;
+/**
+ * Who is asking: a player's units also walk through that player's gates. Without one
+ * (null), gates are closed.
+ */
+export type Passer = PlayerId | null;
+
+export function isWalkableCell(grid: NavGrid, index: number, passer: Passer = null): boolean {
+  if (index < 0) return false;
+  const flags = grid.flags[index];
+  return (
+    flags === 0 || (flags === GATE && passer !== null && grid.gateOwners.get(index) === passer)
+  );
 }
 
-export function isWalkable(grid: NavGrid, x: number, z: number): boolean {
-  return isWalkableCell(grid, cellIndexAt(grid, x, z));
+export function isWalkable(grid: NavGrid, x: number, z: number, passer: Passer = null): boolean {
+  return isWalkableCell(grid, cellIndexAt(grid, x, z), passer);
 }
 
 /** Walkable cell nearest to (x, z) within `maxRadius` cells (ring search), or -1. */
-export function nearestWalkableCell(grid: NavGrid, x: number, z: number, maxRadius = 12): number {
+export function nearestWalkableCell(
+  grid: NavGrid,
+  x: number,
+  z: number,
+  passer: Passer = null,
+  maxRadius = 12,
+): number {
   const start = cellIndexAt(grid, x, z);
-  if (isWalkableCell(grid, start)) return start;
+  if (isWalkableCell(grid, start, passer)) return start;
   const col0 = Math.floor((x - grid.originX) / NAV_RULES.cellSize);
   const row0 = Math.floor((z - grid.originZ) / NAV_RULES.cellSize);
   for (let r = 1; r <= maxRadius; r++) {
@@ -190,7 +237,7 @@ export function nearestWalkableCell(grid: NavGrid, x: number, z: number, maxRadi
         const row = row0 + dr;
         if (col < 0 || row < 0 || col >= grid.cols || row >= grid.rows) continue;
         const i = row * grid.cols + col;
-        if (!isWalkableCell(grid, i)) continue;
+        if (!isWalkableCell(grid, i, passer)) continue;
         const c = cellCenterOf(grid, col, row);
         const distance = (c.x - x) ** 2 + (c.z - z) ** 2;
         if (distance < bestDistance) {
@@ -232,8 +279,13 @@ function forEachCellNear(
  * otherwise the center of the nearest walkable cell (the same rule as `findPath`'s
  * goal), or null when nothing walkable is near.
  */
-export function nearestWalkablePoint(grid: NavGrid, x: number, z: number): Vec2 | null {
-  if (isWalkable(grid, x, z)) return { x, z };
-  const cell = nearestWalkableCell(grid, x, z);
+export function nearestWalkablePoint(
+  grid: NavGrid,
+  x: number,
+  z: number,
+  passer: Passer = null,
+): Vec2 | null {
+  if (isWalkable(grid, x, z, passer)) return { x, z };
+  const cell = nearestWalkableCell(grid, x, z, passer);
   return cell < 0 ? null : cellCenter(grid, cell);
 }

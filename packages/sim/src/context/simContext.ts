@@ -1,12 +1,13 @@
-import { isWalkableBuilding } from '@roe/game-data';
+import { isGate, isWalkableBuilding } from '@roe/game-data';
 import { createVision, updateVision, type Vision } from '../vision/vision.js';
-import type { HeightField, PlacedFootprint, PlayerId } from '@roe/shared';
+import type { HeightField, PlayerId } from '@roe/shared';
 import { createPathFinder, type PathFinder } from '../nav/astar.js';
 import {
   addBuilding,
   createNavGrid,
   removeDecoration,
   stampBuildings,
+  type BuildingStamp,
   type NavGrid,
 } from '../nav/navGrid.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
@@ -64,9 +65,23 @@ export interface SimContextOptions {
   visions?: readonly PlayerId[];
 }
 
-/** Footprints that block walking: every building except walkable ones (fields). */
-const blockingFootprints = (buildings: readonly BuildingInstance[]): PlacedFootprint[] =>
-  buildings.filter((b) => !isWalkableBuilding(b.type)).map(toPlacedFootprint);
+/** The player who may walk through `building`: a finished gate's owner, else nobody. */
+const passableFor = (building: BuildingInstance) =>
+  isGate(building.type) && building.status === 'complete' ? building.ownerId : null;
+
+/** What the buildings put on the nav grid: every one except walkable ones (fields). */
+export const buildingStamps = (buildings: readonly BuildingInstance[]): BuildingStamp[] =>
+  buildings
+    .filter((b) => !isWalkableBuilding(b.type))
+    .map((b) => {
+      const gateOwner = passableFor(b);
+      const area = toPlacedFootprint(b);
+      return gateOwner === null ? { area } : { area, gateOwner };
+    });
+
+/** True while two buildings put the same thing on the nav grid. */
+const sameStamp = (a: BuildingInstance, b: BuildingInstance | undefined) =>
+  a.id === b?.id && passableFor(a) === passableFor(b);
 
 const sameIds = (a: readonly BuildingInstance[], b: readonly BuildingInstance[]) =>
   a.length === b.length && a.every((building, i) => b[i]?.id === building.id);
@@ -83,7 +98,7 @@ export function createSimContext(
 ): SimContext {
   const depleted = new Set(depletedIds(state.resourceNodes));
   const nav = createNavGrid(world, (id) => depleted.has(id));
-  stampBuildings(nav, blockingFootprints(state.buildings));
+  stampBuildings(nav, buildingStamps(state.buildings));
   return {
     world,
     heights: createStateHeights(world, state),
@@ -116,7 +131,7 @@ function syncResourceNodes(ctx: SimContext, state: GameState): void {
   if ([...ctx.depleted].some((id) => !nowSet.has(id))) {
     const fresh = createNavGrid(ctx.world, isGone);
     ctx.nav.flags.set(fresh.flags);
-    stampBuildings(ctx.nav, blockingFootprints(state.buildings));
+    stampBuildings(ctx.nav, buildingStamps(state.buildings));
     ctx.depleted.clear();
   }
   for (const id of now) {
@@ -131,7 +146,7 @@ function syncResourceNodes(ctx: SimContext, state: GameState): void {
 /**
  * Brings the context in line with `state`. Cheap when nothing changed (reference checks).
  * New buildings are stamped incrementally (walkable ones, i.e. fields, never block);
- * anything else rebuilds the building layer.
+ * anything else (a building gone, a gate finished) rebuilds the building layer.
  * Newly depleted trees and rocks are cleared from the nav grid.
  * Returns true if the buildings changed.
  */
@@ -141,17 +156,17 @@ export function syncContext(ctx: SimContext, state: GameState): boolean {
   const previous = ctx.buildings;
   const footprintsChanged =
     previous.length !== state.buildings.length ||
-    previous.some((b, i) => state.buildings[i]?.id !== b.id);
+    previous.some((b, i) => !sameStamp(b, state.buildings[i]));
   if (footprintsChanged) {
     const appended =
       state.buildings.length > previous.length &&
-      previous.every((b, i) => state.buildings[i]?.id === b.id);
+      previous.every((b, i) => sameStamp(b, state.buildings[i]));
     if (appended) {
-      for (const f of blockingFootprints(state.buildings.slice(previous.length))) {
-        addBuilding(ctx.nav, f);
+      for (const stamp of buildingStamps(state.buildings.slice(previous.length))) {
+        addBuilding(ctx.nav, stamp);
       }
     } else {
-      stampBuildings(ctx.nav, blockingFootprints(state.buildings));
+      stampBuildings(ctx.nav, buildingStamps(state.buildings));
     }
     // Walls don't shape the terrain: keep the same height field (renderers rebuild the
     // ground when it changes) while only walls were added or fell.

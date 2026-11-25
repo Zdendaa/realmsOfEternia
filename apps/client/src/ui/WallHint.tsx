@@ -32,7 +32,7 @@ export function WallHint({ building }: { building: BuildingId }) {
         </p>
         {drawn && (
           <p className="placement-hint is-warning">
-            Your wall shuts in {cutOffText(drawn)}, with no way out
+            Your wall shuts in {cutOffText(drawn)}: select a segment and make a gate
           </p>
         )}
       </div>
@@ -68,7 +68,7 @@ export function WallHint({ building }: { building: BuildingId }) {
       </div>
       {cutOff && (
         <p className="placement-hint is-warning">
-          Warning: this would shut in {cutOffText(wall.cutOff)}, with no way out
+          Warning: this would shut in {cutOffText(wall.cutOff)}, with no gate to leave by
         </p>
       )}
     </div>

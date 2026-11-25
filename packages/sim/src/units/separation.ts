@@ -102,7 +102,7 @@ export function separateUnits(ctx: SimContext, units: UnitInstance[]): void {
     }
     // A unit already inside an obstacle may move anywhere (it's on its way out).
     const free = (x: number, z: number) =>
-      isWalkable(ctx.nav, x, z) || !isWalkable(ctx.nav, u.x, u.z);
+      isWalkable(ctx.nav, x, z, u.ownerId) || !isWalkable(ctx.nav, u.x, u.z, u.ownerId);
     if (free(u.x + px, u.z + pz)) {
       u.x += px;
       u.z += pz;

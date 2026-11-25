@@ -1,4 +1,10 @@
-import { BUILDINGS, isWall, type BuildingDefinition, type BuildingId } from '@roe/game-data';
+import {
+  BUILDINGS,
+  isWall,
+  wallTierOf,
+  type BuildingDefinition,
+  type BuildingId,
+} from '@roe/game-data';
 import type { PlayerId } from '@roe/shared';
 import type { BuildingInstance } from '@roe/sim';
 
@@ -48,16 +54,18 @@ export function wallPosts(buildings: readonly BuildingInstance[]): WallPost[] {
     if (!isWall(wall.type)) continue;
     for (const end of segmentEnds(wall)) {
       const key = `${end.x},${end.z}`;
+      // A gate counts as the wall it is set in: no post breaks the run around it.
+      const tier = wallTierOf(wall.type);
       let node = nodes.get(key);
       if (!node) {
-        const post = { ...end, type: wall.type, ownerId: wall.ownerId, segmentIds: [] };
+        const post = { ...end, type: tier, ownerId: wall.ownerId, segmentIds: [] };
         node = { post, axes: [], types: new Set() };
         nodes.set(key, node);
       }
       node.axes.push(axisOf(wall.rotation));
-      node.types.add(wall.type);
+      node.types.add(tier);
       node.post.segmentIds.push(wall.id);
-      if (isStronger(wall.type, node.post.type)) node.post.type = wall.type;
+      if (isStronger(tier, node.post.type)) node.post.type = tier;
     }
   }
   return [...nodes.values()]

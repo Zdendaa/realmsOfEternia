@@ -8,7 +8,7 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | 7.1 | Walls in the sim: wall types in game-data, `placeWall`, segments, nav blocking, health, construction, cut-off check, tests                  | ✅     |
 | 7.2 | Drawing walls: mouse drag, live preview (green / red, total cost, cut-off warning), posts, instancing, damage and ruins. **Browser review** | ✅     |
-| 7.3 | Gates: a wall segment becomes a gate; the owner's units pass, others don't                                                                  |        |
+| 7.3 | Gates: a wall segment becomes a gate; the owner's units pass, others don't                                                                  | ✅     |
 | 7.4 | Breaching: enemies with no route attack the wall in the way; a wave breaks into a walled village                                            |        |
 | 7.5 | Wooden tower: shoots by itself, arrows from the top, range ring when selected. **Browser review**                                           |        |
 | 7.6 | Tower upgrades: wood → stone → crossbow, magic or fire; upgrade command, panel button, changed look                                         |        |
@@ -25,6 +25,10 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 
 - As planned. Posts stand at ends, corners, junctions and material changes. Stone posts are `building_tower_base` (yellow variant, recolored); palisade posts are a primitive log (temporary). Walls are scaled per axis in game-data: stone 2.2 high and 1 deep, palisade 1.9 and 0.45. The construction menu's buttons got narrower so 15 fit in two rows.
 - Checked in headless Chrome, dev build: real mouse drags (preview, blocked segments and reason, continuing from a wall end, right-click cancel, cut-off warning while dragging and after release), both tiers half built and built, selection, damage, rubble and a breach by dev-spawned enemies. Test shortcuts: the stock was filled, and one ring was marked complete for the damage check. Production build: one drag drew a segment and paid for it.
+
+### 7.3 notes (done 2026-11-25)
+
+- As planned. A gate is made from a selected segment ("Make gate"), with its own cost; it blocks everyone until built. Doors open for the owner's units. 8 sim tests (straight and diagonal gates, building from inside, enemies kept out until the gate breaks, the cut-off check). Checked in the browser, dev build: "Make gate" with a real click on a stone segment, both gate models closed and open, serfs walking out through the stone gate. Test shortcuts: filled stock, sites marked complete, units placed next to the gates.
 
 ## Decisions
 

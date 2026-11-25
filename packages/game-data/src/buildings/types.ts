@@ -109,6 +109,11 @@ export interface WallModel {
   /** Drawn height and thickness in world units. */
   height: number;
   depth: number;
+  /**
+   * Gate doors: model nodes drawn on their own, each swinging around its own origin (its
+   * hinge) by `openAngle` (radians, around Y) when the gate stands open.
+   */
+  doors?: readonly { node: string; openAngle: number }[];
   /** The post at wall ends, corners and junctions. */
   post:
     | { kind: 'model'; modelPath: string; scale: number; stretchY: number }
@@ -199,6 +204,11 @@ export interface BuildingDefinition {
    * √2 longer), it may touch other walls and cross paths, and it doesn't flatten terrain.
    */
   wall?: boolean;
+  /**
+   * A gate: made from a segment of the wall type named here (`makeGate`). Once complete,
+   * its owner's units walk through it; for everyone else it is a wall.
+   */
+  gateOf?: string;
   /** Set on walls: how the model is fitted to a segment. */
   wallModel?: WallModel;
   /** Set for production buildings (see `ProductionDefinition`). */
