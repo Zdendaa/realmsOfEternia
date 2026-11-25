@@ -182,6 +182,25 @@ describe('breaching', () => {
     }
   });
 
+  for (const order of ['moveUnits', 'stop'] as const) {
+    it(`a ${order} order calls a unit off the wall it is breaking`, () => {
+      const g = game();
+      g.build(...square(14));
+      const army = g.spawn('enemy', 'swordsman', 0, 20, 3);
+      g.step('enemy', { type: 'attackMove', unitIds: army, x: 0, z: 8 });
+      const breaking = () => g.units('enemy').every((u) => u.combat?.breachId !== null);
+      g.run(seconds(20), breaking);
+      expect(breaking()).toBe(true);
+      g.step(
+        'enemy',
+        order === 'stop'
+          ? { type: 'stop', unitIds: army }
+          : { type: 'moveUnits', unitIds: army, x: 0, z: 30 },
+      );
+      expect(g.units('enemy').map((u) => u.combat?.breachId)).toEqual([null, null, null]);
+    });
+  }
+
   it('soldiers ignore walls that are not in their way', () => {
     const g = game();
     g.build(wall([-8, 20], [8, 20]));

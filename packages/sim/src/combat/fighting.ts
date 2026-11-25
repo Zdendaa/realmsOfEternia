@@ -23,6 +23,13 @@ import { approachPoint, buildingReach, findBuildingTarget } from './buildings.js
 import type { Hits } from './damage.js';
 import { areEnemies } from './hostility.js';
 import { fireProjectile, type Projectile } from './projectiles.js';
+import {
+  createReachCheck,
+  isRetreating,
+  nearShooter,
+  retreatPoint,
+  unitsUnderFire,
+} from './provocation.js';
 import { createUnitGrid, edgeDistance, findTarget, type UnitGrid } from './targeting.js';
 
 /**
@@ -103,6 +110,8 @@ export function updateFighters(
   buildings: readonly BuildingInstance[],
   hits: Hits,
   projectiles: Projectile[],
+  /** Shots in flight as the tick began: those from towers provoke their targets. */
+  incoming: readonly Projectile[] = [],
 ): void {
   if (!units.some(isFighter)) return;
   const grid: UnitGrid = createUnitGrid(units);
@@ -110,6 +119,14 @@ export function updateFighters(
   for (const u of units) byId.set(u.id, u);
   const buildingsById = new Map(buildings.map((b) => [b.id, b]));
   const find = (id: EntityId | null) => lookup(id, byId, buildingsById);
+  const underFire = unitsUnderFire(incoming, byId, buildingsById, grid);
+  const canGetAt = createReachCheck(ctx);
+  /** An enemy unit in sight that can be walked straight up to, on the unit's scan tick. */
+  const attackerAtHand = (unit: UnitInstance): UnitInstance | null => {
+    if ((tick + unit.id) % COMBAT_RULES.scanEvery !== 0) return null;
+    const enemy = findTarget(unit, grid, combatOf(unit.type).sightRange ?? 0);
+    return enemy && hasLineOfSight(ctx.nav, unit, enemy, unit.ownerId) ? enemy : null;
+  };
 
   for (const unit of units) {
     if (!isFighter(unit)) continue;
@@ -140,18 +157,45 @@ export function updateFighters(
     } else if (task.kind !== 'idle' && task.kind !== 'attackMove') {
       target = null;
     }
+
+    // Shot by a tower with nothing else to fight: go for it, or get out of its range.
+    let shooter = find(combat.provokedBy)?.building ?? null;
+    const shotBy = underFire.get(unit.id);
+    const free = unit.task.kind === 'idle' || unit.task.kind === 'attackMove';
+    // (Having spotted that very tower itself doesn't count as something else to fight.)
+    const unoccupied = !target || target.building?.id === shotBy;
+    const provoker = shotBy === undefined ? undefined : find(shotBy)?.building;
+    if (!shooter && provoker && free && unoccupied && !isRetreating(unit, provoker)) {
+      const tower = provoker;
+      if (canGetAt(unit, tower, attack)) {
+        shooter = tower;
+        if (unit.task.kind === 'idle') combat.anchor ??= combat.home ?? { x: unit.x, z: unit.z };
+      } else if (unit.task.kind === 'idle') {
+        // Retreating is walking back to a spot out of range: like any walk back, it
+        // pays no attention to what it sees on the way.
+        const away = retreatPoint(ctx, unit, tower);
+        combat.anchor = away;
+        combat.targetId = null;
+        combat.breachId = null;
+        combat.strikeAt = null;
+        unit.movement = moveTo(away);
+        unit.activity = 'walking';
+        continue;
+      }
+    }
+    combat.provokedBy = shooter?.id ?? null;
+    // Going for the tower, it still turns on enemy units it meets.
+    if (shooter && free && !target?.unit) {
+      const attacker = attackerAtHand(unit);
+      target = attacker ? { unit: attacker } : { building: shooter };
+    }
+
     // A wall in the way comes first, unless an enemy unit is right there to be fought.
     const wall = find(combat.breachId);
     if (!wall) combat.breachId = null;
     else if (!target?.unit || !hasLineOfSight(ctx.nav, unit, target.unit, unit.ownerId)) {
-      target = wall;
-      const attacker =
-        (tick + unit.id) % COMBAT_RULES.scanEvery === 0
-          ? findTarget(unit, grid, combatOf(unit.type).sightRange ?? 0)
-          : null;
-      if (attacker && hasLineOfSight(ctx.nav, unit, attacker, unit.ownerId)) {
-        target = { unit: attacker };
-      }
+      const attacker = attackerAtHand(unit);
+      target = attacker ? { unit: attacker } : wall;
     }
 
     const kind = unit.task.kind;
@@ -162,8 +206,12 @@ export function updateFighters(
       target !== null &&
       kind === 'idle' &&
       combat.anchor !== null &&
-      distance(unit, combat.anchor) > COMBAT_RULES.leash;
-    if (leashed) target = null;
+      distance(unit, combat.anchor) > COMBAT_RULES.leash &&
+      !(shooter && nearShooter(unit, shooter));
+    if (leashed) {
+      target = null;
+      combat.provokedBy = null;
+    }
     if (
       !target &&
       !returning &&

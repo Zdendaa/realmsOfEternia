@@ -41,6 +41,11 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 
 - As planned: `building_tower_base` tinted wooden, self-firing, range ring. 7 sim tests. Browser, dev build: placing with the ring, building by serfs, the selection panel and ring, arrows at attackers; two towers behind an open palisade line killed 6 of 10 dev-spawned skeletons within the run, while 14 spearmen destroyed both towers (test shortcuts: stock set, the wall marked complete, attack-move orders written into the state). Production build: one click placed the tower and paid for it.
 
+### Fixes before 7.6 (done 2026-11-25)
+
+- Units shot by a tower now react (go for it, or retreat if it can't be reached). 8 sim tests; in the browser, 5 idle skeletons spawned 8–11 units from a tower went for it and damaged it.
+- Bug from 7.4: a new order didn't clear a unit's breach target, so a soldier told to move or stop kept breaking the wall. Fixed, with tests.
+
 ## Decisions
 
 1. **Wall angles:** the drag snaps to 8 directions (every 45°) on the 1-unit grid and becomes 2-unit segments, so wall placement uses eighth turns. No free angles.

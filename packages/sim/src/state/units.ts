@@ -118,6 +118,11 @@ export interface UnitCombat {
    * was doing. Null when nothing has to be broken.
    */
   breachId: EntityId | null;
+  /**
+   * The tower that shot the unit while it had nothing better to do: it goes for it, past
+   * its sight and leash, until the tower falls or a new order comes. Null otherwise.
+   */
+  provokedBy: EntityId | null;
   /** First tick on which the unit may start its next attack. */
   readyAt: number;
   /** Tick on which the attack in progress hits (melee) or releases its arrow; null when not attacking. */
@@ -176,7 +181,15 @@ export function createUnit(
     carrying: null,
     health: combatOf(type).health,
     combat: fights
-      ? { targetId: null, breachId: null, readyAt: 0, strikeAt: null, anchor: null, home: null }
+      ? {
+          targetId: null,
+          breachId: null,
+          provokedBy: null,
+          readyAt: 0,
+          strikeAt: null,
+          anchor: null,
+          home: null,
+        }
       : null,
     diedAt: null,
   };

@@ -77,6 +77,13 @@ export const COMBAT_RULES = {
    * to all of it as the work progresses.
    */
   siteHealthShare: 0.1,
+  /** Idle comrades this close to a unit a tower is shooting react along with it. */
+  alarmRadius: 6,
+  /**
+   * Units that can't get at a tower shooting them retreat this far beyond its range
+   * (also how far beyond it a unit fighting back may stray before its leash counts again).
+   */
+  retreatMargin: 2,
   /** Extra reach (world units) a strike in progress still lands within, so a target stepping away mid-swing is still hit. */
   strikeTolerance: 0.5,
 } as const;

@@ -125,7 +125,14 @@ function ownUnits(state: GameState, issuer: PlayerId, ids: readonly EntityId[]):
 
 /** A unit's combat state with no target, strike or leash (after a new order). */
 const freshCombat = (unit: UnitInstance): UnitInstance['combat'] =>
-  unit.combat && { ...unit.combat, targetId: null, strikeAt: null, anchor: null };
+  unit.combat && {
+    ...unit.combat,
+    targetId: null,
+    breachId: null,
+    provokedBy: null,
+    strikeAt: null,
+    anchor: null,
+  };
 
 const findBuilding = (state: GameState, id: EntityId) => state.buildings.find((b) => b.id === id);
 

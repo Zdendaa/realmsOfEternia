@@ -64,7 +64,7 @@ export function stepGame(
   const released: Projectile[] = [];
   updateSerfs(ctx, current.tick, current.buildings, units, economy);
   updateWorkers(current.tick, current.buildings, units, economy);
-  updateFighters(ctx, current.tick, units, current.buildings, hits, released);
+  updateFighters(ctx, current.tick, units, current.buildings, hits, released, current.projectiles);
   // Towers shoot after the units have moved on this tick's orders (the grid is built only
   // when a tower is ready to look).
   let unitGrid: UnitGrid | null = null;
