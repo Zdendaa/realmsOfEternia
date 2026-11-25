@@ -62,7 +62,7 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 | 5b.3 | Farm: production union, farmer, grow cycle, grain            | ✅     |
 | 5b.4 | Mill and bakery: process loop, spinning blades, temp. bakery | ✅     |
 | 5b.5 | Gold and iron mines on deposits                              | ✅     |
-| 5b.6 | Visual migration to the Medieval Hexagon Pack                |        |
+| 5b.6 | Visual migration to the Medieval Hexagon Pack                | ✅     |
 | 5.5  | Storehouse (from Hexagon props, after 5b.6)                  | ✅     |
 
 ### 5b.1 Population and recruit cost
@@ -109,7 +109,8 @@ _Decided 2026-11-24: the Hexagon blacksmith is the temporary bakery (5b.4)._
 - Progress 2026-11-24: style comparison approved. Buildings switched: scale 4× (castle 3.5× as the landmark), footprints re-measured (models incl. child parts, widened where off-center), house variants home_A / home_B by building id, player-colored roofs (atlas cell [2, 3], found by diffing the yellow and blue variants' UVs), dirt yards around bases and entrances, all entrances already face +Z (rotation offsets 0), the market moved 0.5 off the north road. Windmill sails and the lumbermill saw turn while their worker processes. Fields and the quarry keep Builder Pack models.
 - Construction sites (2026-11-24): Hexagon stages A–C by thirds of the work, scaffolding from stage B, a flag in the owner's color; fields keep the rising reveal; the code-built scaffold is gone. The ghost shows the real model with the player's roof color and a validity tint.
 - Tree stumps (2026-11-24): felled trees leave a Hexagon stump that sinks away after ~3 minutes.
-- Storehouse (2026-11-24): a 7 × 6 storage yard assembled from 16 Hexagon prop placements (`BuildingDefinition.parts`: model, offset, rotation, scale, height for stacking), drawn instanced per prop model like any building and as one ghost; added to `STORAGE_BUILDINGS`. Still open: pruning unused models.
+- Storehouse (2026-11-24): a 7 × 6 storage yard assembled from 16 Hexagon prop placements (`BuildingDefinition.parts`: model, offset, rotation, scale, height for stacking), drawn instanced per prop model like any building and as one ghost; added to `STORAGE_BUILDINGS`.
+- Done 2026-11-25: unused models pruned. The list of used files came from walking every asset path exported by `@roe/game-data` (all model paths live there); 219 Builder Pack files were removed (196 tiles, the replaced buildings, walls, bridges and terrain details), leaving 7 (farm plot, mine, garden trees, rocks). The build went from 19 MB to 15 MB. Unused character models and animation libraries stay for Phase 6 (military).
 
 ## Not in scope
 

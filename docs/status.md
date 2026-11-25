@@ -1,8 +1,8 @@
 # Project status
 
-_Last updated: 2026-11-24._
+_Last updated: 2026-11-25._
 
-**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) 5.3 (carried goods are visible) 5.4 (builders carry the materials to sites) and 5.6 (workers in the lumbermill and quarry) are done, and of the economy-depth part 5b.1 (population and recruit cost), 5b.2 (professions look different, tools in hand), 5b.3 (farms: farmers sow, grow and harvest grain), 5b.4 (mill and bakery: grain → flour → food) and 5b.5 (gold and iron mines on ore deposits); 5b.6 (move to the Medieval Hexagon Pack) is in progress: the buildings are switched. Phase 5 continues with economy depth (population, food chain, mines); see [phase-5b-plan.md](phase-5b-plan.md). The first part of the phase is in [phase-5-plan.md](phase-5-plan.md); the storehouse (5.5) is done (built from Hexagon props in 5b.6).
+**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) 5.3 (carried goods are visible) 5.4 (builders carry the materials to sites) and 5.6 (workers in the lumbermill and quarry) are done, and of the economy-depth part 5b.1 (population and recruit cost), 5b.2 (professions look different, tools in hand), 5b.3 (farms: farmers sow, grow and harvest grain), 5b.4 (mill and bakery: grain → flour → food) and 5b.5 (gold and iron mines on ore deposits) and 5b.6 (move to the Medieval Hexagon Pack: buildings with player-colored roofs, construction stages, tree stumps, unused models pruned) are done. With that, every milestone in [phase-5b-plan.md](phase-5b-plan.md) is done. The first part of the phase is in [phase-5-plan.md](phase-5-plan.md); the storehouse (5.5) is done (built from Hexagon props in 5b.6).
 
 ## Phases
 
@@ -33,7 +33,10 @@ _Last updated: 2026-11-24._
 | 5b.1  | Population (housing), recruit cost, population indicator                          | ✅ Done |
 | 5b.2  | Profession looks: hats, tunic colors, tools in hand, new loads                    | ✅ Done |
 | 5b.3  | Farm: farmer, sow / grow / harvest cycle, grain, walkable fields                  | ✅ Done |
-| 5b    | Economy depth: see [phase-5b-plan.md](phase-5b-plan.md)                           | ⏳ Next |
+| 5b.4  | Mill and bakery: process loop, spinning sails, temporary bakery                   | ✅ Done |
+| 5b.5  | Gold and iron mines on ore deposits                                               | ✅ Done |
+| 5b.6  | Hexagon Pack buildings, construction stages, stumps, storehouse, model pruning    | ✅ Done |
+| 5b    | Economy depth: see [phase-5b-plan.md](phase-5b-plan.md)                           | ✅ Done |
 
 ## What works today
 
@@ -77,12 +80,12 @@ _Last updated: 2026-11-24._
 
 ### Assets
 
-- **Temporary models:** the bakery is the Medieval Hexagon Pack's blacksmith (yellow variant: a straw-roofed shed with a domed stone oven), flagged `temporary` in game-data until a bakery model exists. Phase 6 (military) will want it as the blacksmith. Hexagon buildings are scaled 3.5× (Builder Pack 3×); the Hexagon pack's CC0 license is in `assets/models/hexagon/`.
+- **Temporary models:** the bakery is the Medieval Hexagon Pack's blacksmith (yellow variant: a straw-roofed shed with a domed stone oven), flagged `temporary` in game-data until a bakery model exists. Phase 6 (military) will want it as the blacksmith. Hexagon buildings are scaled 4× (castle 3.5×; Builder Pack 3×); the Hexagon pack's CC0 license is in `assets/models/hexagon/`.
 
 - **Two packs side by side:** fields (farm_plot) and the quarry (mine) are still Builder Pack models, and the small props around houses (round garden trees, rocks) too.
 - **Pack style:** the KayKit pack has no standalone village clutter; barrels, crates and fences are baked into the buildings. Its farm plots are blocky crop boxes.
 - **Mixed tree styles:** garden trees from the pack are round, while forest trees are our own conifers.
-- **Production build size:** the build includes the whole medieval pack (about 4.6 MB, including 196 unused tile models and, since 5b.6, the Builder Pack castle, house, well, mill, lumbermill and market) and all character assets (9.4 MB: six characters and all eight Rig_Medium animation libraries, of which three are loaded). Unused files can be pruned before release.
+- **Production build size:** about 15 MB (was 19 MB before 5b.6 pruning). Only the seven Builder Pack models still in use ship (farm plot, mine, garden trees, rocks; 288 KB), and every Hexagon file is used. The character folder (about 11 MB) is kept whole on purpose: the Knight, Barbarian, Mage and hooded Rogue and the combat, movement-advanced, simulation and special Rig_Medium libraries are unused today but planned for Phase 6 (military).
 
 ### Input
 
