@@ -197,7 +197,7 @@ Work proceeds one milestone at a time.
 | 5     | Economy                            | ✅ Completed |
 | 6     | Military and combat                | ✅ Completed |
 | 6c    | Fog of war                         | ✅ Completed |
-| 7     | Fortifications                     | Now          |
+| 7     | Fortifications                     | In review    |
 | 8     | Building upgrades and technologies | Planned      |
 | 9     | AI                                 | Planned      |
 | 10    | Multiplayer                        | Planned      |

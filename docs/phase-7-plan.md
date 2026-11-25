@@ -12,7 +12,7 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 | 7.4 | Breaching: enemies with no route attack the wall in the way; a wave breaks into a walled village                                            | ✅     |
 | 7.5 | Wooden tower: shoots by itself, arrows from the top, range ring when selected. **Browser review**                                           | ✅     |
 | 7.6 | Tower upgrades: wood → stone → crossbow, magic or fire; upgrade command, panel button, changed look                                         | ✅     |
-| 7.7 | Balance and check: the wave against walls and towers, performance with 300+ segments, docs                                                  |        |
+| 7.7 | Balance and check: the wave against walls and towers, performance with 300+ segments, docs                                                  | ✅     |
 
 ### 7.1 notes (done 2026-11-25)
 
@@ -46,13 +46,43 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 - Units shot by a tower now react (go for it, or retreat if it can't be reached). 8 sim tests; in the browser, 5 idle skeletons spawned 8–11 units from a tower went for it and damaged it.
 - Bug from 7.4: a new order didn't clear a unit's breach target, so a soldier told to move or stop kept breaking the wall. Fixed, with tests.
 
-### 7.6 notes (done 2026-11-25, awaiting review)
+### 7.6 notes (done 2026-11-25, accepted)
 
 - Upgrades are timed and need no serfs: turning the tower back into a construction site would have dropped it to 10% health.
 - Looks differ from decision 8: the roofs keep the owner's color, so the specials are told apart by a body tint, the rooftop prop and the projectile (still marked temporary). The stone tower is `building_tower_A`, the specials `building_tower_B`; the crossbow is the Adventurers model.
 - Added: cancelling an upgrade with a full refund; the tinted placement preview.
 - Sim tests cover the upgrade rules and each special effect, and print how each tower does against ten skeleton minions (wooden falls after killing 2; stone, crossbow, magic and fire win, with about 260, 590, 190 and 980 health left). That is one scenario, not a balance test.
 - Browser, dev build: wooden → stone → crossbow through the panel, the progress bar and scaffolding, all tower looks, each shot type, flames and haze (projectiles and effects held mid-air through the state to look at them; resources set and towers finished the same way). Production build, with no shortcuts: a tower placed by a click, built by serfs and upgraded to stone.
+
+### 7.7 notes (done 2026-11-25, awaiting final review)
+
+- Added first: a dev-only "Add 50 of every resource" button (`debugResources`).
+- **Balance** (every number in game-data):
+
+  |                   | Before                                                        | After                           |
+  | ----------------- | ------------------------------------------------------------- | ------------------------------- |
+  | Fire              | damage 10 every 2.4 s, burst radius 2.2, burn 3/s for 4 s     | 6 every 3.8 s, 1.7, 3/s for 3 s |
+  | Crossbow          | 34 every 2.8 s, 1,300 health                                  | 42 every 3.6 s, 1,200 health    |
+  | Magic             | 14 every 1.7 s, 1,100 health (did worse than the stone tower) | 16 every 1.6 s, 1,400 health    |
+  | Palisade / gate   | 250 / 200 health                                              | 400 / 300                       |
+  | Stone wall / gate | 900 / 700 health                                              | 1,400 / 1,100                   |
+
+- One tower against one army, killed (✓ = army beaten, tower standing):
+
+  | Army                | Wooden | Stone | Crossbow | Magic | Fire |
+  | ------------------- | ------ | ----- | -------- | ----- | ---- |
+  | 10 skeleton minions | 2      | 10 ✓  | 10 ✓     | 10 ✓  | 10 ✓ |
+  | 20 skeleton minions | 0      | 3     | 3        | 3     | 9    |
+  | 6 skeleton warriors | 0      | 3     | 6 ✓      | 4     | 4    |
+  | the wave (9)        | 0      | 5     | 9 ✓      | 9 ✓   | 9 ✓  |
+  | 6 swordsmen         | 0      | 1     | 4        | 1     | 0    |
+  | 5 spearmen          | 0      | 1     | 2        | 2     | 0    |
+
+  Before the change, fire beat every one of these alone.
+
+- **Wave against walls** (real map and wave, only the Town Hall, a closed 48-segment ring): the undefended hall falls at 138 s, behind a palisade at about 164 s, behind stone at about 230 s. With two wooden towers inside: 7 of 9 killed behind the palisade (hall 1,754 of 3,000), 8 behind stone (hall untouched); the same towers in the open leave the hall at 232. The survivors are crossbowmen outside the towers' reach. On the full village in the browser, open wall lines didn't force a breach: the wave walked around them.
+- **Performance** (334 segments): found and fixed two problems. (1) Every wall site finishing or segment falling stalled the client for about 64 ms, because grass, trees and ground heights were re-checked against every wall: now about 15 ms. (2) With 240 attackers shut out, breach searches explored most of the map from outside (worst tick 178 ms; 92 ms with 90): searching from the smaller side brought 240 attackers to a 6 ms worst tick.
+- Frame times were measured in headless Chrome with the frame cap off, on a dev build; not in a visible window and not on the production build.
 
 ## Decisions
 

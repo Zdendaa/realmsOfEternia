@@ -2,55 +2,55 @@
 
 _Last updated: 2026-11-25._
 
-**Current state:** Phase 6c (fog of war and win/lose, see [phase-6c-plan.md](phase-6c-plan.md)) is done: vision in the simulation (6c.1), drawn fog of war (6c.2), attacks that need sight and filtered player views (6c.3) and victory and defeat with an end screen (6c.4). Now: Phase 7 (fortifications, see [phase-7-plan.md](phase-7-plan.md)); Phase 6b (cavalry, siege weapons, heroes) later. Before it, Phase 6 (military and combat) was finished, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy, can send the next wave at once and adds 50 of every resource.
+**Current state:** Phase 7 (fortifications, see [phase-7-plan.md](phase-7-plan.md)) is built and **waiting for the final review**: walls drawn with the mouse, gates, breaching, self-firing towers, tower upgrades, and balance and performance work (7.1–7.7). Phase 6b (cavalry, siege weapons, heroes) comes later. Before it, Phase 6c (fog of war and win/lose, see [phase-6c-plan.md](phase-6c-plan.md)) was finished: vision in the simulation (6c.1), drawn fog of war (6c.2), attacks that need sight and filtered player views (6c.3) and victory and defeat with an end screen (6c.4). Before it, Phase 6 (military and combat) was finished, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy, can send the next wave at once and adds 50 of every resource.
 
 ## Phases
 
-| Phase | Scope                                                                             | Status  |
-| ----- | --------------------------------------------------------------------------------- | ------- |
-| 1     | Monorepo foundation: client, server, shared, game-data, tooling                   | ✅ Done |
-| 2.1   | Terrain heightmap, atmosphere, forests, RTS camera                                | ✅ Done |
-| 2.1b  | Camera-following shadows, mountain border ring                                    | ✅ Done |
-| 2.2   | First settlement with KayKit buildings, terrain flattening, paths                 | ✅ Done |
-| 2.2b  | Visual tuning: scale, layout, fields, soft paths, props, sun                      | ✅ Done |
-| 2.3   | Terrain detail shader, muted crops, lake with stylized water                      | ✅ Done |
-| 2.3b  | Grass tufts and flowers, uniform tree scale, subtler water highlights             | ✅ Done |
-| 2.3c  | Meadow-scale grass carpet, smaller flowers, calm water with a shoreline foam line | ✅ Done |
-| 3.1   | `@roe/sim` package; world creation moved out of the client                        | ✅ Done |
-| 3.2   | Placement rules, commands, game state, unit tests                                 | ✅ Done |
-| 3.3   | Construction menu, placement preview and placing                                  | ✅ Done |
-| 4.1   | Sim core: 10 Hz tick, serfs, nav grid + A*, separation, construction, commands    | ✅ Done |
-| 4.2   | Client tick loop, interpolation, placeholder serfs, recruiting                    | ✅ Done |
-| 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | ✅ Done |
-| 4.4   | Construction sites: visuals, progress, right-click assignment                     | ✅ Done |
-| 4.5   | Character models with baked-animation instancing                                  | ✅ Done |
-| 4.6   | Context cursors and command markers                                               | ✅ Done |
-| 5.1   | Resource stock, paid construction costs, resource bar                             | ✅ Done |
-| 5.2   | Finite trees and rocks, serf gathering, axe/pickaxe cursors                       | ✅ Done |
-| 5.3   | Carrying visual: walk with held load, low-poly bundles on the rig                 | ✅ Done |
-| 5.4   | Material delivery to construction sites                                           | ✅ Done |
-| 5.6   | Workers: lumbermill and quarry                                                    | ✅ Done |
-| 5b.1  | Population (housing), recruit cost, population indicator                          | ✅ Done |
-| 5b.2  | Profession looks: hats, tunic colors, tools in hand, new loads                    | ✅ Done |
-| 5b.3  | Farm: farmer, sow / grow / harvest cycle, grain, walkable fields                  | ✅ Done |
-| 5b.4  | Mill and bakery: process loop, spinning sails, temporary bakery                   | ✅ Done |
-| 5b.5  | Gold and iron mines on ore deposits                                               | ✅ Done |
-| 5b.6  | Hexagon Pack buildings, construction stages, stumps, storehouse, model pruning    | ✅ Done |
-| 5b    | Economy depth: see [phase-5b-plan.md](phase-5b-plan.md)                           | ✅ Done |
-| 6.1   | Combat core in the sim: health, counters, melee, arrows, death, attack orders     | ✅ Done |
-| 6.2   | Soldier visuals: models, weapons, player color, attack timing, arrows, dev spawn  | ✅ Done |
-| 6.3   | Barracks and archery range: training queue, costs, housing, training panel        | ✅ Done |
-| 6.4   | Attack commands, attack-move (F), stop (X), health bars, unit panel               | ✅ Done |
-| 6.5   | Building damage and destruction: health, attacking sites, ruins with smoke        | ✅ Done |
-| 6.6   | Skeleton camps on the deposits: guards, leash, bounties                           | ✅ Done |
-| 6.7   | Scripted skeleton wave down the north road at 8 minutes                           | ✅ Done |
-| 6     | Military and combat: see [phase-6-plan.md](phase-6-plan.md)                       | ✅ Done |
-| 6c.1  | Vision in the sim: sight ranges, visibility grid, explored, last-seen buildings   | ✅ Done |
-| 6c.2  | Fog of war drawn: black / grey fog, hidden enemies, last-seen buildings           | ✅ Done |
-| 6c.3  | Attacks need sight; player views without hidden enemy state (anti-cheat)          | ✅ Done |
-| 6c.4  | Victory and defeat: map objective, orders refused afterwards, end screen          | ✅ Done |
-| 6c    | Fog of war and win/lose: see [phase-6c-plan.md](phase-6c-plan.md)                 | ✅ Done |
-| 7     | Fortifications: see [phase-7-plan.md](phase-7-plan.md)                            | ⏳ Now  |
+| Phase | Scope                                                                             | Status    |
+| ----- | --------------------------------------------------------------------------------- | --------- |
+| 1     | Monorepo foundation: client, server, shared, game-data, tooling                   | ✅ Done   |
+| 2.1   | Terrain heightmap, atmosphere, forests, RTS camera                                | ✅ Done   |
+| 2.1b  | Camera-following shadows, mountain border ring                                    | ✅ Done   |
+| 2.2   | First settlement with KayKit buildings, terrain flattening, paths                 | ✅ Done   |
+| 2.2b  | Visual tuning: scale, layout, fields, soft paths, props, sun                      | ✅ Done   |
+| 2.3   | Terrain detail shader, muted crops, lake with stylized water                      | ✅ Done   |
+| 2.3b  | Grass tufts and flowers, uniform tree scale, subtler water highlights             | ✅ Done   |
+| 2.3c  | Meadow-scale grass carpet, smaller flowers, calm water with a shoreline foam line | ✅ Done   |
+| 3.1   | `@roe/sim` package; world creation moved out of the client                        | ✅ Done   |
+| 3.2   | Placement rules, commands, game state, unit tests                                 | ✅ Done   |
+| 3.3   | Construction menu, placement preview and placing                                  | ✅ Done   |
+| 4.1   | Sim core: 10 Hz tick, serfs, nav grid + A*, separation, construction, commands    | ✅ Done   |
+| 4.2   | Client tick loop, interpolation, placeholder serfs, recruiting                    | ✅ Done   |
+| 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | ✅ Done   |
+| 4.4   | Construction sites: visuals, progress, right-click assignment                     | ✅ Done   |
+| 4.5   | Character models with baked-animation instancing                                  | ✅ Done   |
+| 4.6   | Context cursors and command markers                                               | ✅ Done   |
+| 5.1   | Resource stock, paid construction costs, resource bar                             | ✅ Done   |
+| 5.2   | Finite trees and rocks, serf gathering, axe/pickaxe cursors                       | ✅ Done   |
+| 5.3   | Carrying visual: walk with held load, low-poly bundles on the rig                 | ✅ Done   |
+| 5.4   | Material delivery to construction sites                                           | ✅ Done   |
+| 5.6   | Workers: lumbermill and quarry                                                    | ✅ Done   |
+| 5b.1  | Population (housing), recruit cost, population indicator                          | ✅ Done   |
+| 5b.2  | Profession looks: hats, tunic colors, tools in hand, new loads                    | ✅ Done   |
+| 5b.3  | Farm: farmer, sow / grow / harvest cycle, grain, walkable fields                  | ✅ Done   |
+| 5b.4  | Mill and bakery: process loop, spinning sails, temporary bakery                   | ✅ Done   |
+| 5b.5  | Gold and iron mines on ore deposits                                               | ✅ Done   |
+| 5b.6  | Hexagon Pack buildings, construction stages, stumps, storehouse, model pruning    | ✅ Done   |
+| 5b    | Economy depth: see [phase-5b-plan.md](phase-5b-plan.md)                           | ✅ Done   |
+| 6.1   | Combat core in the sim: health, counters, melee, arrows, death, attack orders     | ✅ Done   |
+| 6.2   | Soldier visuals: models, weapons, player color, attack timing, arrows, dev spawn  | ✅ Done   |
+| 6.3   | Barracks and archery range: training queue, costs, housing, training panel        | ✅ Done   |
+| 6.4   | Attack commands, attack-move (F), stop (X), health bars, unit panel               | ✅ Done   |
+| 6.5   | Building damage and destruction: health, attacking sites, ruins with smoke        | ✅ Done   |
+| 6.6   | Skeleton camps on the deposits: guards, leash, bounties                           | ✅ Done   |
+| 6.7   | Scripted skeleton wave down the north road at 8 minutes                           | ✅ Done   |
+| 6     | Military and combat: see [phase-6-plan.md](phase-6-plan.md)                       | ✅ Done   |
+| 6c.1  | Vision in the sim: sight ranges, visibility grid, explored, last-seen buildings   | ✅ Done   |
+| 6c.2  | Fog of war drawn: black / grey fog, hidden enemies, last-seen buildings           | ✅ Done   |
+| 6c.3  | Attacks need sight; player views without hidden enemy state (anti-cheat)          | ✅ Done   |
+| 6c.4  | Victory and defeat: map objective, orders refused afterwards, end screen          | ✅ Done   |
+| 6c    | Fog of war and win/lose: see [phase-6c-plan.md](phase-6c-plan.md)                 | ✅ Done   |
+| 7     | Fortifications: see [phase-7-plan.md](phase-7-plan.md)                            | 🔍 Review |
 
 ## What works today
 
@@ -98,6 +98,7 @@ _Last updated: 2026-11-25._
 - **Pathfinding:** A* on a 1-unit grid (water, slopes, trees, rocks and buildings block) with smoothed routes; units push each other apart instead of stacking. On the prototype map a path takes about 1–1.5 ms on average and a tick with 300 moving serfs about 0.5 ms (p99 about 7 ms when many paths are planned at once).
 - **Shared rules ready for Phase 3:** `createHeightField`, `flattenHeightField`, `entrancePoint`, `createBuildRules().isBuildable` and `createWaterMap().isWater`.
 - **Server:** a Colyseus server with a placeholder 2–4 player match room. The client doesn't connect to it yet.
+- **Performance with fortifications** (measured in 7.7, 334 wall segments, Apple M1 Pro): simulation ticks stay small (mean 1.1 ms, max 9 ms in a 120 v 120 battle with breaching; a tick has 100 ms); previewing a 64-segment wall costs about 2 ms plus 5 ms for the cut-off check, only when the line changes. In headless Chrome, uncapped, dev build, whole map revealed: median frame 3.5–4 ms with or without the walls (about 100 more draw calls). A wall segment finishing or falling takes about 15 ms across two frames (about 33 ms at worst; 7 ms when nothing changes). 240 attackers shut out by a closed ring: worst tick 6 ms in a simulation benchmark.
 - **Performance:** a steady 60 FPS (vsync-capped) on an Apple M1 Pro in Chrome, also with 200 animated serfs walking at once. Uncapped frame times were last measured before Phase 4 (about 2.4 ms at the default view).
 
 ## Known limitations
@@ -152,11 +153,12 @@ _Last updated: 2026-11-25._
 - **No repair,** and a palisade can't be upgraded to stone in place.
 - **The cut-off warning** compares against the largest connected area of the map; it can't tell which side of a wall you meant to be outside.
 - **Temporary look:** the palisade posts are a primitive tapered log.
-- **Performance with hundreds of segments isn't measured yet** (7.7).
+- **Ranged units shoot over walls,** at units and at buildings behind them. A skeleton crossbowman can stay just outside a wall, beyond a tower's reach, and chip at what is inside.
+- **A wall that isn't closed only redirects:** attackers walk around its ends.
 
 ### Towers
 
-- **Balance comes from simulated fights, not from playing** (`combat/balance.test.ts`): one tower against one army, and the wave against a ring with two towers. Any one special tower, left alone against the nine-skeleton wave, beats it.
+- **Balance comes from simulated fights, not from playing** (`combat/balance.test.ts`): one tower against one army, and the real wave against a ring around the Town Hall on the real map, with no other buildings. Any one special tower, left alone against the nine-skeleton wave, beats it (fire only barely). With two wooden towers inside a ring, the wave loses 7 (palisade) or 8 (stone) of its 9 and the Town Hall holds; in the open the same towers leave it nearly destroyed. Only one two-tower layout is tested: paths limit where towers fit there, and which segment gets broken changes the result.
 - **The last skeleton archers can drag a siege out:** their arrows do 2 damage to a wall (140 s for eight of them to bring down one stone segment, many minutes for one or two). Sally out through a gate to finish them.
 - **Magic keeps its target slowed** for as long as it keeps hitting (the slow outlasts the reload). Upgrades can't be undone, and only the wooden tower is built directly.
 - **Villagers don't react to being shot,** only units that fight. A group that retreats from an unreachable tower stays out until something else draws it back in.
