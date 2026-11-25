@@ -8,6 +8,7 @@ const VILLAGER_COMBAT = { health: 40, armor: 0, armorClass: 'villager' } as cons
 export const UNITS = {
   serf: {
     id: 'serf',
+    sight: 7,
     name: 'Serf',
     description: 'Builds construction sites. Recruited at the Town Hall.',
     cost: { food: 2 },
@@ -21,6 +22,7 @@ export const UNITS = {
   },
   worker: {
     id: 'worker',
+    sight: 7,
     name: 'Worker',
     description: 'Works in a production building. Arrives when the building is finished.',
     cost: {},
@@ -34,6 +36,7 @@ export const UNITS = {
   },
   swordsman: {
     id: 'swordsman',
+    sight: 10,
     name: 'Swordsman',
     description: 'Armored infantry with sword and shield. Strong against infantry.',
     cost: { food: 3, iron: 2, gold: 1 },
@@ -59,6 +62,7 @@ export const UNITS = {
   },
   spearman: {
     id: 'spearman',
+    sight: 10,
     name: 'Spearman',
     description: 'Infantry with a long spear. Breaks buildings; later the answer to cavalry.',
     cost: { food: 2, iron: 1, wood: 2 },
@@ -84,6 +88,7 @@ export const UNITS = {
   },
   archer: {
     id: 'archer',
+    sight: 12,
     name: 'Archer',
     description: 'Shoots arrows from a distance. Weak up close and against armor.',
     cost: { food: 2, wood: 3, gold: 1 },
@@ -111,6 +116,7 @@ export const UNITS = {
   // Neutral monsters (camps, waves): never trained, never commanded by a player.
   skeletonMinion: {
     id: 'skeletonMinion',
+    sight: 8,
     name: 'Skeleton',
     description: 'A shambling skeleton with a rusty blade. Weak alone, dangerous in numbers.',
     cost: {},
@@ -129,6 +135,7 @@ export const UNITS = {
   },
   skeletonWarrior: {
     id: 'skeletonWarrior',
+    sight: 8,
     name: 'Skeleton Warrior',
     description: 'A helmeted skeleton with axe and shield.',
     cost: {},
@@ -147,6 +154,7 @@ export const UNITS = {
   },
   skeletonArcher: {
     id: 'skeletonArcher',
+    sight: 10,
     name: 'Skeleton Crossbowman',
     description: 'A hooded skeleton with a crossbow.',
     cost: {},

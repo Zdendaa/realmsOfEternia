@@ -5,6 +5,11 @@ export interface UnitDefinition {
   id: string;
   name: string;
   description: string;
+  /**
+   * How far the unit sees (world units, center of its cell to cell centers): what it
+   * reveals in the fog of war for its owner.
+   */
+  sight: number;
   /** Walking speed in world units per second. */
   speed: number;
   /** Collision radius used by separation, in world units. */

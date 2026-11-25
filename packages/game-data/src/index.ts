@@ -19,6 +19,8 @@ export {
   isWalkableBuilding,
   modelPathOf,
   buildingHealthOf,
+  buildingSightOf,
+  DEFAULT_BUILDING_SIGHT,
   productionOf,
   trainsOf,
   type BuildingId,

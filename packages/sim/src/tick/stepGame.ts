@@ -15,6 +15,7 @@ import { advanceUnits, invalidateBlockedRoutes, planPaths } from '../units/movem
 import { separateUnits } from '../units/separation.js';
 import { updateSerfs } from '../units/serfBehavior.js';
 import { hireWorkers, updateWorkers } from '../units/workers.js';
+import { updateVision } from '../vision/vision.js';
 
 export interface StepResult {
   state: GameState;
@@ -120,5 +121,6 @@ export function stepGame(
     nextEntityId,
   };
   syncContext(ctx, next);
+  for (const vision of ctx.visions.values()) updateVision(vision, next);
   return { state: next, results };
 }

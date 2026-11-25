@@ -54,8 +54,9 @@ export const BUILDINGS = {
     modelPath: hexagonModel('building_castle'),
     // The landmark: a tall castle (~14 units) at 3.5×, as in the style comparison.
     scale: 3.5,
-    // The heart of the village: much sturdier than its size alone gives.
+    // The heart of the village: much sturdier than its size alone gives, and it sees far.
     health: 3000,
+    sight: 14,
     footprint: { w: 7, d: 8 },
     yard: true,
     rotationOffset: 0,
@@ -338,6 +339,13 @@ export function buildingHealthOf(type: BuildingId): number {
   const { w, d } = definition.footprint;
   return Math.max(MIN_BUILDING_HEALTH, Math.round(w * d * HEALTH_PER_AREA));
 }
+
+/** Sight of buildings without their own `sight` (world units). */
+export const DEFAULT_BUILDING_SIGHT = 8;
+
+/** How far a building of this type sees in the fog of war. */
+export const buildingSightOf = (type: BuildingId): number =>
+  (BUILDINGS[type] as BuildingDefinition).sight ?? DEFAULT_BUILDING_SIGHT;
 
 /** The units a building type trains (empty for most buildings). */
 export const trainsOf = (type: BuildingId): readonly UnitKind[] =>

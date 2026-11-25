@@ -21,7 +21,7 @@ Fog of war as in The Settlers and Warcraft: every spot of the map is **unexplore
 
 | #    | Scope                                                                                    | Status |
 | ---- | ---------------------------------------------------------------------------------------- | ------ |
-| 6c.1 | Vision in the sim: grid, incremental stamping, explored, last-seen buildings, `sight`    |        |
+| 6c.1 | Vision in the sim: grid, incremental stamping, explored, last-seen buildings, `sight`    | ✅     |
 | 6c.2 | Fog rendering: fog pass, smooth transitions, hiding units / bars / arrows, ghosts        |        |
 | 6c.3 | Rules and filtering: attacks need sight, `viewOf` with anti-cheat tests, server visions  |        |
 | 6c.4 | Win/lose: `outcome`, map objective, commands blocked after the end, overlay with numbers |        |
@@ -30,6 +30,7 @@ Fog of war as in The Settlers and Warcraft: every spot of the map is **unexplore
 
 - game-data: `sight` on units and buildings.
 - sim: `vision/vision.ts` (grid, incremental stamping, explored, last-seen buildings). Tests: reveal and hide, explored stays, ghosts, a building destroyed out of sight stays a ghost, determinism; benchmark.
+- Done 2026-11-25: as planned. Visions live in `SimContext.visions` (players listed in `createSimContext(..., { visions })`) and `stepGame` refreshes them after each tick. A building counts as seen when its center or a footprint corner is in a visible cell. 7 tests; 200 moving units cost 0.04 ms per tick.
 
 ### 6c.2 Fog rendering
 

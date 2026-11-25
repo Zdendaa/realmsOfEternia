@@ -117,3 +117,12 @@ export {
   type PlacedBuilding,
   type SimWorld,
 } from './world/createWorld.js';
+export {
+  cellAt,
+  createVision,
+  isExplored,
+  isVisible,
+  updateVision,
+  VISION_CELL,
+  type Vision,
+} from './vision/vision.js';

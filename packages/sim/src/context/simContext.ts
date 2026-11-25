@@ -1,5 +1,6 @@
 import { isWalkableBuilding } from '@roe/game-data';
-import type { HeightField, PlacedFootprint } from '@roe/shared';
+import { createVision, updateVision, type Vision } from '../vision/vision.js';
+import type { HeightField, PlacedFootprint, PlayerId } from '@roe/shared';
 import { createPathFinder, type PathFinder } from '../nav/astar.js';
 import {
   addBuilding,
@@ -35,11 +36,18 @@ export interface SimContext {
   readonly depleted: Set<number>;
   /** Development build: dev-only commands (`debugSpawn`) are accepted. Never on the server. */
   readonly dev: boolean;
+  /**
+   * Fog of war: one vision per listed player (`SimContextOptions.visions`), updated at the
+   * end of every tick. The client keeps its local player's; the server keeps everyone's.
+   */
+  readonly visions: ReadonlyMap<PlayerId, Vision>;
 }
 
 export interface SimContextOptions {
   /** Accept dev-only commands. Only the client's dev build sets it. */
   dev?: boolean;
+  /** Players whose vision (fog of war) the context keeps. */
+  visions?: readonly PlayerId[];
 }
 
 /** Footprints that block walking: every building except walkable ones (fields). */
@@ -68,6 +76,13 @@ export function createSimContext(
     resourceNodes: state.resourceNodes,
     depleted,
     dev: options.dev ?? false,
+    visions: new Map(
+      (options.visions ?? []).map((player) => {
+        const vision = createVision(world.map, player);
+        updateVision(vision, state);
+        return [player, vision];
+      }),
+    ),
   };
 }
 
