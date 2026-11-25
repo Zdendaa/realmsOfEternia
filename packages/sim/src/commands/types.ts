@@ -47,7 +47,7 @@ export interface GatherCommand {
   nodeId: number;
 }
 
-/** Send the given fighting units after one enemy unit, until it dies. */
+/** Send the given fighting units after one enemy unit or building, until it falls. */
 export interface AttackCommand {
   type: 'attack';
   unitIds: EntityId[];

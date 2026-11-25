@@ -18,6 +18,7 @@ export {
   isBuildingId,
   isWalkableBuilding,
   modelPathOf,
+  buildingHealthOf,
   productionOf,
   trainsOf,
   type BuildingId,
@@ -56,6 +57,7 @@ export {
 export { attackOf, combatOf, isUnitKind, UNITS, type UnitKind } from './units/definitions.js';
 export type { UnitDefinition } from './units/types.js';
 export {
+  BUILDING_COMBAT,
   COMBAT_RULES,
   damageAgainst,
   type ArmorClass,

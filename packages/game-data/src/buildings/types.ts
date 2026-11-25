@@ -178,4 +178,9 @@ export interface BuildingDefinition {
    * one at a time (see `UnitDefinition.trainTime`).
    */
   trains?: readonly UnitKind[];
+  /**
+   * Hit points when complete. Absent: derived from the footprint (`buildingHealthOf`).
+   * Construction sites have a share of it that grows with their progress.
+   */
+  health?: number;
 }

@@ -62,7 +62,7 @@ export type CommandIssue =
   | 'notEnoughResources'
   /** No harvestable tree or rock with anything left at that id. */
   | 'noResource'
-  /** The attack target doesn't exist or is already dead. */
+  /** The attack target (a unit or a building) doesn't exist, or the unit is already dead. */
   | 'noTarget'
   /** The attack target isn't an enemy of the issuer. */
   | 'notEnemy'
@@ -143,8 +143,10 @@ function checkGather(ctx: SimContext, state: GameState, issuer: PlayerId, comman
 }
 
 function checkAttack(state: GameState, issuer: PlayerId, command: AttackCommand) {
-  const target = state.units.find((u) => u.id === command.targetId);
-  if (!target || !isAlive(target)) return fail('noTarget');
+  // A living unit, or a building (complete or a construction site).
+  const unit = state.units.find((u) => u.id === command.targetId);
+  const target = unit && isAlive(unit) ? unit : findBuilding(state, command.targetId);
+  if (!target) return fail('noTarget');
   if (!areEnemies(issuer, target.ownerId)) return fail('notEnemy');
   const fighters = ownUnits(state, issuer, command.unitIds).filter((u) => u.combat);
   return fighters.length === 0 ? fail('noUnits') : OK;

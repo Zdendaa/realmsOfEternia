@@ -1,5 +1,6 @@
 import { useFrame } from '@react-three/fiber';
-import { CHARACTER_PACK, combatOf, type UnitKind } from '@roe/game-data';
+import { BUILDINGS, CHARACTER_PACK, combatOf, type UnitKind } from '@roe/game-data';
+import { buildingMaxHealth } from '@roe/sim';
 import type { EntityId } from '@roe/shared';
 import { useEffect, useMemo, useRef } from 'react';
 import {
@@ -22,6 +23,9 @@ const BAR_WIDTH = 1.0;
 const BAR_HEIGHT = 0.13;
 /** Gap between the top of the head and the bar. */
 const BAR_GAP = 0.35;
+/** Building bars are this much wider, and float this high (world units) above the ground. */
+const BUILDING_BAR_SCALE = 3;
+const BUILDING_BAR_HEIGHT = 6.5;
 
 /** Standing height (world units) of each kind, for placing its bar above the head. */
 function heightOf(kind: UnitKind): number {
@@ -55,7 +59,9 @@ function createBarMaterial() {
         vUv = uv;
         vBar = aBar;
         vec4 center = modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-        center.xy += position.xy * uSize;
+        // The instance's X scale widens the bar (buildings); the rest only places it.
+        float widen = length(instanceMatrix[0].xyz);
+        center.xy += position.xy * uSize * vec2(widen, 1.0);
         gl_Position = projectionMatrix * center;
       }
     `,
@@ -122,6 +128,26 @@ function createHealthBars() {
         mesh.setMatrixAt(count, matrix);
         values[count * 2] = Math.max(0, left / max);
         values[count * 2 + 1] = unit.ownerId === LOCAL_PLAYER ? 1 : 0;
+        count++;
+      }
+      // Damaged buildings and construction sites (or all of them while showing every bar).
+      const { state, heights } = useGameStore.getState();
+      for (const building of state.buildings) {
+        if (count >= CAPACITY) break;
+        const damage = state.buildingDamage[building.id] ?? 0;
+        if (damage === 0 && !(all && building.ownerId !== null)) continue;
+        const max = buildingMaxHealth(building, state.construction[building.id]);
+        const { w, d } = BUILDINGS[building.type].footprint;
+        const lift = Math.min(BUILDING_BAR_HEIGHT, Math.max(w, d));
+        matrix.makeScale(BUILDING_BAR_SCALE, 1, 1);
+        matrix.setPosition(
+          building.x,
+          heights.getHeightAt(building.x, building.z) + lift,
+          building.z,
+        );
+        mesh.setMatrixAt(count, matrix);
+        values[count * 2] = Math.max(0, (max - damage) / max);
+        values[count * 2 + 1] = building.ownerId === LOCAL_PLAYER ? 1 : 0;
         count++;
       }
       mesh.count = count;

@@ -3,7 +3,8 @@ import type { EntityId, PlayerId } from '@roe/shared';
 import type { EconomyDraft } from '../economy/draft.js';
 import { housingCapacity, populationUsed } from '../economy/population.js';
 import type { BuildingInstance } from '../state/gameState.js';
-import { createUnit, IDLE, type UnitInstance, type WorkPhase } from '../state/units.js';
+import { createUnit, IDLE, isAlive, type UnitInstance, type WorkPhase } from '../state/units.js';
+import { areEnemies } from '../combat/hostility.js';
 import { workerDoor } from './production/common.js';
 import { updateFarmer } from './production/farm.js';
 import { updateHarvester } from './production/harvest.js';
@@ -30,7 +31,7 @@ export const employsWorker = (building: BuildingInstance) =>
 
 /**
  * Gives every complete production building without a worker its worker, as long as the
- * owner has free housing; the others keep waiting and are checked again next tick.
+ * owner has free housing and no enemy unit is near the building; the others keep waiting and are checked again next tick.
  * Buildings are served in state (id) order, so the result is deterministic. New workers
  * are appended to `units`; returns the next free entity id.
  */
@@ -54,6 +55,7 @@ export function hireWorkers(
   for (const building of buildings) {
     if (!employsWorker(building) || staffed.has(building.id)) continue;
     const owner = building.ownerId as PlayerId; // employsWorker: owned
+    if (enemiesNear(building, owner, units)) continue;
     const free =
       freeHousing.get(owner) ?? housingCapacity(buildings, owner) - populationUsed(units, owner);
     if (free <= 0) {
@@ -64,6 +66,23 @@ export function hireWorkers(
     freeHousing.set(owner, free - 1);
   }
   return next;
+}
+
+/** No worker comes out while enemy units are this close (world units, center to center). */
+const UNDER_ATTACK_RADIUS = 15;
+
+/**
+ * Whether a living enemy unit is near `building`: its replacement worker then stays
+ * inside, so a building under attack can't keep sending out free workers.
+ */
+function enemiesNear(building: BuildingInstance, owner: PlayerId, units: readonly UnitInstance[]) {
+  const max = UNDER_ATTACK_RADIUS * UNDER_ATTACK_RADIUS;
+  return units.some(
+    (u) =>
+      isAlive(u) &&
+      areEnemies(owner, u.ownerId) &&
+      (u.x - building.x) ** 2 + (u.z - building.z) ** 2 <= max,
+  );
 }
 
 /** True when a complete production building still waits for its worker (no free housing). */

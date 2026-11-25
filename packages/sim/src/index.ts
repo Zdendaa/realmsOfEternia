@@ -29,6 +29,7 @@ export {
   trainTicks,
   type TrainingQueue,
 } from './training/training.js';
+export { approachPoint, buildingMaxHealth } from './combat/buildings.js';
 export { combatTicks } from './combat/fighting.js';
 export { areEnemies, MONSTER_PLAYER } from './combat/hostility.js';
 export type { Projectile } from './combat/projectiles.js';
@@ -68,6 +69,7 @@ export {
   type ConstructionProgress,
   type GameState,
   type InitialStateOptions,
+  type Ruin,
 } from './state/gameState.js';
 export {
   gatherReach,

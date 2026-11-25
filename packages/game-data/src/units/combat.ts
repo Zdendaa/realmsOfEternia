@@ -38,6 +38,12 @@ export interface CombatStats {
   sightRange?: number;
 }
 
+/** What every building counts as when hit: some armor, and the building class. */
+export const BUILDING_COMBAT = { armor: 2, armorClass: 'building' } as const satisfies Pick<
+  CombatStats,
+  'armor' | 'armorClass'
+>;
+
 /** Shared combat tuning. */
 export const COMBAT_RULES = {
   /** Fighting units look for enemies once per this many ticks (staggered by unit id). */
@@ -54,6 +60,11 @@ export const COMBAT_RULES = {
    * from the route's goal.
    */
   repathDistance: 1.5,
+  /**
+   * A construction site has this share of its building's health when started, growing
+   * to all of it as the work progresses.
+   */
+  siteHealthShare: 0.1,
   /** Extra reach (world units) a strike in progress still lands within, so a target stepping away mid-swing is still hit. */
   strikeTolerance: 0.5,
 } as const;

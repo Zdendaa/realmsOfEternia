@@ -1,6 +1,6 @@
 import { BUILDINGS, type BuildingDefinition } from '@roe/game-data';
 import { distanceToFootprint, footprintBounds, type HeightField } from '@roe/shared';
-import { isStartingBuilding, toPlacedFootprint, type BuildingInstance } from '@roe/sim';
+import { isStartingBuilding, toPlacedFootprint, type BuildingInstance, type Ruin } from '@roe/sim';
 import { Suspense, useMemo } from 'react';
 import type { ClientWorld } from '../../world/decorateWorld';
 import { ConstructionSites, type SiteView } from '../construction/ConstructionSites';
@@ -16,6 +16,7 @@ import { ChimneySmoke } from './settlement/ChimneySmoke';
 import { Settlement, type OwnedBuilding } from './settlement/Settlement';
 import { SpinningParts, type AnimatedBuilding } from './settlement/SpinningParts';
 import { Sky } from './Sky';
+import { Ruins } from './Ruins';
 import { Stumps } from './Stumps';
 import { Terrain } from './Terrain';
 import { Trees } from './Trees';
@@ -29,10 +30,12 @@ interface WorldProps {
   buildings: readonly BuildingInstance[];
   /** Harvested trees and rocks (`GameState.resourceNodes`): depleted ones disappear. */
   resourceNodes: Readonly<Record<number, number>>;
+  /** Destroyed buildings (`GameState.ruins`), drawn as rubble. */
+  ruins: readonly Ruin[];
 }
 
 /** Renders the world for the current game state. Rendering only reads state. */
-export function World({ world, heights, buildings, resourceNodes }: WorldProps) {
+export function World({ world, heights, buildings, resourceNodes, ruins }: WorldProps) {
   const { trees, rocks } = useMemo(
     () => ({
       trees: world.decorations.filter((d) => d.kind === 'tree'),
@@ -132,6 +135,7 @@ export function World({ world, heights, buildings, resourceNodes }: WorldProps) 
       <Rocks items={rocks} groundLevel={groundLevel} resourceNodes={resourceNodes} />
       <Suspense fallback={null}>
         <Settlement buildings={placedBuildings} props={props} />
+        <Ruins ruins={ruins} buildings={buildings} heights={heights} />
         <FieldCrops fields={cropFields} />
         <SpinningParts buildings={animated} />
         <Stumps

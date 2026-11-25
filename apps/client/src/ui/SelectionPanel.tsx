@@ -11,12 +11,14 @@ import {
 import { SIMULATION_TICK_RATE } from '@roe/shared';
 import {
   awaitsWorker,
+  buildingMaxHealth,
   EMPTY_STOCK,
   fieldOf,
   isRipe,
   plotCount,
   missingResources,
   populationOf,
+  type BuildingInstance,
   type CommandIssue,
   type WorkPhase,
 } from '@roe/sim';
@@ -263,6 +265,28 @@ export function SelectionPanel() {
   return <BuildingSelection />;
 }
 
+/** A damaged building's health (hidden while unhurt). */
+function BuildingHealth({ building }: { building: BuildingInstance }) {
+  const summary = useGameStore((s) => {
+    const damage = s.state.buildingDamage[building.id] ?? 0;
+    if (damage === 0) return '';
+    const max = buildingMaxHealth(building, s.state.construction[building.id]);
+    return `${Math.max(0, max - damage)}/${max}`;
+  });
+  if (!summary) return null;
+  const [left = 0, max = 1] = summary.split('/').map(Number);
+  return (
+    <>
+      <div className="unit-health" title={`Health ${left} / ${max}`}>
+        <span style={{ width: `${(left / max) * 100}%` }} />
+      </div>
+      <p className="selection-meta">
+        Health {left} / {max}
+      </p>
+    </>
+  );
+}
+
 function BuildingSelection() {
   const buildingId = useSelectionStore((s) => s.building);
   const building = useGameStore((s) =>
@@ -275,6 +299,7 @@ function BuildingSelection() {
   return (
     <section className="hud-panel selection-panel" aria-label="Selection">
       <h2>{definition.name}</h2>
+      <BuildingHealth building={building} />
       {building.status === 'construction' ? (
         <SiteProgress
           siteId={building.id}

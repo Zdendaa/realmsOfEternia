@@ -1,5 +1,6 @@
 import {
   attackOf,
+  BUILDING_COMBAT,
   COMBAT_RULES,
   combatOf,
   damageAgainst,
@@ -16,7 +17,9 @@ import {
   type UnitInstance,
   type UnitMovement,
 } from '../state/units.js';
+import type { BuildingInstance } from '../state/gameState.js';
 import { moveTo } from '../units/orders.js';
+import { approachPoint, buildingReach, findBuildingTarget } from './buildings.js';
 import type { Hits } from './damage.js';
 import { areEnemies } from './hostility.js';
 import { fireProjectile, type Projectile } from './projectiles.js';
@@ -36,6 +39,41 @@ const distance = (a: Vec2, b: Vec2) => Math.sqrt((a.x - b.x) ** 2 + (a.z - b.z) 
 
 /** True when `unit` takes part in combat on its own this tick (fights and is alive). */
 const isFighter = (unit: UnitInstance) => unit.combat !== null && isAlive(unit);
+
+/** What a unit can fight: an enemy unit, or an enemy building (or construction site). */
+type Foe =
+  { unit: UnitInstance; building?: undefined } | { unit?: undefined; building: BuildingInstance };
+
+const foeId = (foe: Foe) => (foe.unit ?? foe.building).id;
+const ownerOf = (foe: Foe) => (foe.unit ?? foe.building).ownerId;
+
+/** Distance from `unit`'s edge to the foe's edge (radius or footprint). */
+function reachTo(unit: UnitInstance, foe: Foe): number {
+  const radius = UNITS[unit.type].radius;
+  return foe.unit
+    ? edgeDistance(unit, radius, foe.unit, UNITS[foe.unit.type].radius)
+    : buildingReach(unit, radius, foe.building);
+}
+
+/** Where to walk to reach the foe: the unit itself, or the near side of the building. */
+const goalFor = (unit: UnitInstance, foe: Foe): Vec2 =>
+  foe.unit ?? approachPoint(unit, foe.building);
+
+/**
+ * A foe by entity id (units and buildings share the id space): living units and standing
+ * buildings only.
+ */
+function lookup(
+  id: EntityId | null,
+  units: ReadonlyMap<EntityId, UnitInstance>,
+  buildings: ReadonlyMap<EntityId, BuildingInstance>,
+): Foe | null {
+  if (id === null) return null;
+  const unit = units.get(id);
+  if (unit) return isAlive(unit) ? { unit } : null;
+  const building = buildings.get(id);
+  return building ? { building } : null;
+}
 
 /**
  * A route straight at `target` when nothing blocks the line (the usual case in a
@@ -62,6 +100,7 @@ export function updateFighters(
   ctx: SimContext,
   tick: number,
   units: UnitInstance[],
+  buildings: readonly BuildingInstance[],
   hits: Hits,
   projectiles: Projectile[],
 ): void {
@@ -69,6 +108,8 @@ export function updateFighters(
   const grid: UnitGrid = createUnitGrid(units);
   const byId = new Map<EntityId, UnitInstance>();
   for (const u of units) byId.set(u.id, u);
+  const buildingsById = new Map(buildings.map((b) => [b.id, b]));
+  const find = (id: EntityId | null) => lookup(id, byId, buildingsById);
 
   for (const unit of units) {
     if (!isFighter(unit)) continue;
@@ -80,18 +121,16 @@ export function updateFighters(
 
     // A strike in progress lands (or misses) first, whatever happens to the target next.
     if (combat.strikeAt !== null && tick >= combat.strikeAt) {
-      const target = combat.targetId !== null ? byId.get(combat.targetId) : undefined;
-      if (target && isAlive(target)) strike(unit, attack, target, tick, hits, projectiles);
+      const target = find(combat.targetId);
+      if (target) strike(unit, attack, target, tick, hits, projectiles);
       combat.strikeAt = null;
     }
 
     // Which target this unit fights now.
-    const current = combat.targetId !== null ? byId.get(combat.targetId) : undefined;
-    let target =
-      current && isAlive(current) && areEnemies(unit.ownerId, current.ownerId) ? current : null;
+    const current = find(combat.targetId);
+    let target: Foe | null = current && areEnemies(unit.ownerId, ownerOf(current)) ? current : null;
     if (task.kind === 'attack') {
-      const ordered = byId.get(task.targetId);
-      target = ordered && isAlive(ordered) ? ordered : null;
+      target = find(task.targetId);
       if (!target) {
         // The ordered target is dead or gone: stand here and react to what comes next.
         unit.task = IDLE;
@@ -119,12 +158,16 @@ export function updateFighters(
       (kind === 'idle' || kind === 'attackMove') &&
       (tick + unit.id) % COMBAT_RULES.scanEvery === 0
     ) {
-      target = findTarget(unit, grid, combatOf(unit.type).sightRange ?? 0);
+      // Enemy units first; enemy buildings when no unit is in sight.
+      const sight = combatOf(unit.type).sightRange ?? 0;
+      const foe = findTarget(unit, grid, sight);
+      const building = foe ? null : findBuildingTarget(unit, buildings, sight);
+      target = foe ? { unit: foe } : building ? { building } : null;
       if (target && kind === 'idle' && !combat.anchor) combat.anchor = { x: unit.x, z: unit.z };
     }
 
     if (target) {
-      combat.targetId = target.id;
+      combat.targetId = foeId(target);
       engage(ctx, unit, combat, attack, target, tick);
       continue;
     }
@@ -155,10 +198,10 @@ function engage(
   unit: UnitInstance,
   combat: UnitCombat,
   attack: AttackDefinition,
-  target: UnitInstance,
+  target: Foe,
   tick: number,
 ): void {
-  const reach = edgeDistance(unit, UNITS[unit.type].radius, target, UNITS[target.type].radius);
+  const reach = reachTo(unit, target);
   if (reach <= attack.range || combat.strikeAt !== null) {
     unit.movement = null;
     if (combat.strikeAt === null && tick >= combat.readyAt) {
@@ -168,9 +211,10 @@ function engage(
     unit.activity = 'attacking';
     return;
   }
+  const goal = goalFor(unit, target);
   const m = unit.movement;
-  if (!m || distance(m.goal, target) > COMBAT_RULES.repathDistance) {
-    unit.movement = chase(ctx, unit, target);
+  if (!m || distance(m.goal, goal) > COMBAT_RULES.repathDistance) {
+    unit.movement = chase(ctx, unit, goal);
   }
   unit.activity = 'walking';
 }
@@ -179,14 +223,17 @@ function engage(
 function strike(
   unit: UnitInstance,
   attack: AttackDefinition,
-  target: UnitInstance,
+  target: Foe,
   tick: number,
   hits: Hits,
   projectiles: Projectile[],
 ): void {
-  const damage = damageAgainst(attack, combatOf(target.type));
-  const reach = edgeDistance(unit, UNITS[unit.type].radius, target, UNITS[target.type].radius);
-  if (reach > attack.range + COMBAT_RULES.strikeTolerance) return; // stepped away: a miss
-  if (attack.kind === 'melee') hits.add(target.id, damage);
-  else projectiles.push(fireProjectile(unit, target, tick, attack.projectileSpeed ?? 1, damage));
+  const damage = damageAgainst(attack, target.unit ? combatOf(target.unit.type) : BUILDING_COMBAT);
+  if (reachTo(unit, target) > attack.range + COMBAT_RULES.strikeTolerance) return; // a miss
+  const id = foeId(target);
+  if (attack.kind === 'melee') hits.add(id, damage);
+  else {
+    const at = target.unit ?? target.building;
+    projectiles.push(fireProjectile(unit, id, at, tick, attack.projectileSpeed ?? 1, damage));
+  }
 }

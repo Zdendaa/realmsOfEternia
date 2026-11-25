@@ -47,7 +47,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 | 6.2 | Soldier visuals: models, weapons, player color, combat animations, arrows, corpses, dev spawn                   | ✅     |
 | 6.3 | Barracks and archery range: training queue, costs, housing, training panel                                      | ✅     |
 | 6.4 | Commands and readability: attack cursor, F / X, health bars, unit stats panel, selection grouping               | ✅     |
-| 6.5 | Building damage and destruction: building health, attacking sites, ruins                                        |        |
+| 6.5 | Building damage and destruction: building health, attacking sites, ruins                                        | ✅     |
 | 6.6 | Skeleton camps: monsters player, camps on the map, guard and leash, bounty                                      |        |
 | 6.7 | Scripted wave: a skeleton group attacks the village                                                             |        |
 
@@ -79,6 +79,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 
 - sim: attacking buildings and construction sites, `buildingHealth`, destruction frees the footprint, the lost building's worker goes with it.
 - client: building health bars, ruins (Hexagon destroyed building) with smoke that fade out.
+- Done 2026-11-25: damage is stored as damage taken (`buildingDamage`) instead of health, so construction sites can grow their health with progress. Destroyed buildings become `ruins` in the sim state (not only client-side): the terrain stays flattened under them, so the sim\x27s heights and the drawn terrain keep matching. Ruins stay for the match; their smoke stops after 45 s. Found while testing: attackers kept killing the replacement workers a besieged building sent out, so no worker comes out while enemies are within 15 units. Building health was raised after the first browser check (houses fell in 2 s to five spearmen): 30 per square unit, at least 300, Town Hall 3,000. 11 tests. Checked in the browser: enemy spearmen destroying a house (rubble, smoke, population drop), a right-click attack on an enemy barracks with its health bar and fall.
 
 ### 6.6 Skeleton camps
 

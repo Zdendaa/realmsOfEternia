@@ -49,4 +49,9 @@ export const HEXAGON_PACK = {
     /** A banner on a pole (0.28 pack units tall); its cloth is the team cell. */
     flag: 'assets/models/hexagon/flag.glb',
   },
+  /** Rubble where a building was destroyed (pack units; fitted to the footprint). */
+  ruin: {
+    model: 'assets/models/hexagon/building_destroyed.glb',
+    size: { w: 1.54, d: 1.3 },
+  },
 } as const;

@@ -1,5 +1,6 @@
 import { applyCommand, type CommandResult } from '../commands/applyCommand.js';
 import type { IssuedCommand } from '../commands/types.js';
+import { applyBuildingHits } from '../combat/buildings.js';
 import { applyHits, Hits, removeCorpses } from '../combat/damage.js';
 import { updateFighters } from '../combat/fighting.js';
 import { landProjectiles, type Projectile } from '../combat/projectiles.js';
@@ -25,7 +26,7 @@ export interface StepResult {
  *
  * Order: commands → arrows landing → behavior (serfs: tasks, gathering, deliveries;
  * workers: harvesting, farming; fighters: targets, chases, strikes) → the tick's damage
- * and deaths → route invalidation → path planning → walking → separation → construction
+ * and deaths (units; then buildings, which fall into ruins with their workers) → route invalidation → path planning → walking → separation → construction
  * work → workers for production buildings that have none (housing permitting) → trained
  * units leaving their building → removal
  * of corpses that have lain long enough. `ctx` is synced along the
@@ -56,15 +57,28 @@ export function stepGame(
   const released: Projectile[] = [];
   updateSerfs(ctx, current.tick, current.buildings, units, economy);
   updateWorkers(current.tick, current.buildings, units, economy);
-  updateFighters(ctx, current.tick, units, hits, released);
+  updateFighters(ctx, current.tick, units, current.buildings, hits, released);
   applyHits(units, hits, current.tick);
   if (ctx.nav.version !== navVersion) invalidateBlockedRoutes(ctx, units);
   planPaths(ctx, units);
   advanceUnits(units);
   separateUnits(ctx, units);
   const economic = commitEconomy(economy);
+  // Buildings hit hard enough fall (with their workers) and leave ruins.
+  const standing = applyBuildingHits(
+    {
+      buildings: current.buildings,
+      construction: economic.construction,
+      fields: economic.fields,
+      buildingDamage: current.buildingDamage,
+      ruins: current.ruins,
+    },
+    units,
+    hits,
+    current.tick,
+  );
   const { buildings, construction } = progressConstruction(
-    { buildings: current.buildings, construction: economic.construction },
+    { buildings: standing.buildings, construction: standing.construction },
     units,
   );
 
@@ -84,7 +98,9 @@ export function stepGame(
     construction,
     resourceNodes: economic.resourceNodes,
     stocks: economic.stocks,
-    fields: economic.fields,
+    fields: standing.fields,
+    buildingDamage: standing.buildingDamage,
+    ruins: standing.ruins,
     projectiles,
     training: trained.training,
     nextEntityId,

@@ -63,7 +63,8 @@ function boxSelect(
 function attackUnit(unitIds: readonly number[], targetId: number) {
   const { dispatch, heights, state } = useGameStore.getState();
   const result = dispatch({ type: 'attack', unitIds: [...unitIds], targetId });
-  const target = state.units.find((u) => u.id === targetId);
+  const target =
+    state.units.find((u) => u.id === targetId) ?? state.buildings.find((b) => b.id === targetId);
   if (result.ok && target) {
     commandFeedback.push({
       kind: 'move',

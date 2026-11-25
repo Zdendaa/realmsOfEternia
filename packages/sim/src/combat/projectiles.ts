@@ -1,4 +1,4 @@
-import { SIMULATION_TICK_RATE, type EntityId, type PlayerId } from '@roe/shared';
+import { SIMULATION_TICK_RATE, type EntityId, type PlayerId, type Vec2 } from '@roe/shared';
 import type { UnitInstance } from '../state/units.js';
 import type { Hits } from './damage.js';
 
@@ -21,10 +21,14 @@ export interface Projectile {
   damage: number;
 }
 
-/** A new arrow from `attacker` to `target`, flying at `speed` units per second. */
+/**
+ * A new arrow from `attacker` to the unit or building `targetId` (now at `target`),
+ * flying at `speed` units per second.
+ */
 export function fireProjectile(
   attacker: UnitInstance,
-  target: UnitInstance,
+  targetId: EntityId,
+  target: Vec2,
   tick: number,
   speed: number,
   damage: number,
@@ -34,7 +38,7 @@ export function fireProjectile(
   return {
     attackerId: attacker.id,
     ownerId: attacker.ownerId,
-    targetId: target.id,
+    targetId,
     fromX: attacker.x,
     fromZ: attacker.z,
     firedAt: tick,

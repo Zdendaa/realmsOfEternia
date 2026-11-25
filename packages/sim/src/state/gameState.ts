@@ -45,6 +45,22 @@ export interface ConstructionProgress {
   delivered: Readonly<Partial<Record<ResourceId, number>>>;
 }
 
+/**
+ * Where a building was destroyed. Ruins don't block anything; the ground stays
+ * flattened under them (so terrain heights don't jump), and the client draws the rubble.
+ */
+export interface Ruin {
+  /** The destroyed building's id. */
+  id: EntityId;
+  type: BuildingId;
+  x: number;
+  z: number;
+  rotation: number;
+  ownerId: PlayerId | null;
+  /** Tick it was destroyed on. */
+  destroyedAt: number;
+}
+
 /** Authoritative simulation state. Plain data: serializable, never mutated in place. */
 export interface GameState {
   /** Number of simulation ticks run so far. */
@@ -77,6 +93,13 @@ export interface GameState {
    * Changes when a unit is queued, cancelled or finished.
    */
   readonly training: Readonly<Record<EntityId, TrainingQueue>>;
+  /**
+   * Damage taken by buildings (and construction sites), by building id; absent = unhurt.
+   * A building falls when its damage reaches its health (`buildingMaxHealth`).
+   */
+  readonly buildingDamage: Readonly<Record<EntityId, number>>;
+  /** Destroyed buildings, oldest first. Changes when a building falls. */
+  readonly ruins: readonly Ruin[];
   readonly nextEntityId: EntityId;
 }
 
@@ -143,6 +166,8 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     fields,
     projectiles: [],
     training: {},
+    buildingDamage: {},
+    ruins: [],
     nextEntityId,
   };
 }

@@ -17,6 +17,7 @@ const CAPACITY = 512;
 /** Arrows leave at bow height and hit at the chest (world units above the ground). */
 const RELEASE_HEIGHT = 1.15;
 const IMPACT_HEIGHT = 0.95;
+const BUILDING_IMPACT_HEIGHT = 2;
 /** Peak of the arc as a share of the flight distance. */
 const ARC = 0.12;
 /** Arrow model units → world units (the archers' scale). */
@@ -75,6 +76,17 @@ export function Projectiles() {
         end ??= new Vector3();
         end.set(target.x, target.y + IMPACT_HEIGHT, target.z);
         lastTarget.set(key, end);
+      } else if (!end) {
+        // A building: the arrow lands in its wall, at mid height.
+        const building = state.buildings.find((b) => b.id === p.targetId);
+        if (building) {
+          end = new Vector3(
+            building.x,
+            ctx.heights.getHeightAt(building.x, building.z) + BUILDING_IMPACT_HEIGHT,
+            building.z,
+          );
+          lastTarget.set(key, end);
+        }
       }
       if (!end) continue;
       const startY = ctx.heights.getHeightAt(p.fromX, p.fromZ) + RELEASE_HEIGHT;

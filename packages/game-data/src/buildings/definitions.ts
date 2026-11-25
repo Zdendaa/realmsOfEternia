@@ -54,6 +54,8 @@ export const BUILDINGS = {
     modelPath: hexagonModel('building_castle'),
     // The landmark: a tall castle (~14 units) at 3.5×, as in the style comparison.
     scale: 3.5,
+    // The heart of the village: much sturdier than its size alone gives.
+    health: 3000,
     footprint: { w: 7, d: 8 },
     yard: true,
     rotationOffset: 0,
@@ -323,6 +325,19 @@ export type BuildingId = keyof typeof BUILDINGS;
 /** The production settings of a building type, if it is a production building. */
 export const productionOf = (type: BuildingId): BuildingDefinition['production'] =>
   (BUILDINGS[type] as BuildingDefinition).production;
+
+/** Hit points per square unit of footprint, for buildings without their own `health`. */
+const HEALTH_PER_AREA = 30;
+/** No building has less than this. */
+const MIN_BUILDING_HEALTH = 300;
+
+/** Hit points of a complete building of this type. */
+export function buildingHealthOf(type: BuildingId): number {
+  const definition = BUILDINGS[type] as BuildingDefinition;
+  if (definition.health !== undefined) return definition.health;
+  const { w, d } = definition.footprint;
+  return Math.max(MIN_BUILDING_HEALTH, Math.round(w * d * HEALTH_PER_AREA));
+}
 
 /** The units a building type trains (empty for most buildings). */
 export const trainsOf = (type: BuildingId): readonly UnitKind[] =>
