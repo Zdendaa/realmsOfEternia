@@ -11,6 +11,7 @@ import {
 import { useRef } from 'react';
 import { useGameStore } from '../../state/gameStore';
 import { simClock } from '../simulation/simClock';
+import { shownAt } from '../fog/knowledge';
 import { renderedUnitList, renderedUnits, type RenderedUnit, type UnitWork } from './renderedUnits';
 
 /** How quickly units turn toward their walking direction (per second). */
@@ -115,6 +116,8 @@ export function UnitFrameDriver() {
     const turn = Math.min(1, delta * TURN_RATE);
     renderedUnitList.length = 0;
     for (const unit of state.units) {
+      // Other players' units out of the local player's sight aren't drawn (fog of war).
+      if (!shownAt(unit.ownerId, unit.x, unit.z)) continue;
       const before = look.previousUnits.get(unit.id) ?? unit;
       const x = before.x + (unit.x - before.x) * alpha;
       const z = before.z + (unit.z - before.z) * alpha;

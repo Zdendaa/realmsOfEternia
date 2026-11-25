@@ -7,6 +7,7 @@ import { Matrix4, Mesh, Quaternion, Vector3, type InstancedMesh } from 'three';
 import { useGameStore } from '../../state/gameStore';
 import { publicUrl } from '../scene/settlement/modelAssets';
 import { simClock } from '../simulation/simClock';
+import { shownAt } from '../fog/knowledge';
 import { renderedUnits } from '../units/renderedUnits';
 
 const ARROW_URL = publicUrl(`${CHARACTER_PACK.dir}${CHARACTER_PACK.arrow}`);
@@ -67,6 +68,8 @@ export function Projectiles() {
     const live = new Set<string>();
     for (const p of state.projectiles) {
       if (count >= CAPACITY) break;
+      // Arrows show when their shooter or their target is in sight.
+      if (!shownAt(p.ownerId, p.fromX, p.fromZ) && !renderedUnits.has(p.targetId)) continue;
       const key = keyOf(p);
       live.add(key);
       const t = Math.min(1, Math.max(0, (now - p.firedAt) / (p.impactAt - p.firedAt)));

@@ -49,7 +49,11 @@ const world = createWorld(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT);
 // Single player for now: the starting settlement belongs to the local player.
 const initialState = createInitialState(world, { owner: LOCAL_PLAYER });
 // Dev builds accept dev-only commands (the spawn panel); production and the server never do.
-const ctx = createSimContext(world, initialState, { dev: import.meta.env.DEV });
+const ctx = createSimContext(world, initialState, {
+  dev: import.meta.env.DEV,
+  // The fog of war shows what the local player sees.
+  visions: [LOCAL_PLAYER],
+});
 let queue: IssuedCommand[] = [];
 
 export const useGameStore = create<GameStore>()((set, get) => ({

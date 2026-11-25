@@ -22,7 +22,7 @@ Fog of war as in The Settlers and Warcraft: every spot of the map is **unexplore
 | #    | Scope                                                                                    | Status |
 | ---- | ---------------------------------------------------------------------------------------- | ------ |
 | 6c.1 | Vision in the sim: grid, incremental stamping, explored, last-seen buildings, `sight`    | ✅     |
-| 6c.2 | Fog rendering: fog pass, smooth transitions, hiding units / bars / arrows, ghosts        |        |
+| 6c.2 | Fog rendering: fog pass, smooth transitions, hiding units / bars / arrows, ghosts        | ✅     |
 | 6c.3 | Rules and filtering: attacks need sight, `viewOf` with anti-cheat tests, server visions  |        |
 | 6c.4 | Win/lose: `outcome`, map objective, commands blocked after the end, overlay with numbers |        |
 
@@ -35,6 +35,7 @@ Fog of war as in The Settlers and Warcraft: every spot of the map is **unexplore
 ### 6c.2 Fog rendering
 
 - client: `render/fog/` (fog texture from the local player's vision, full-screen pass), hiding other players' units, bars, arrows and picking, last-seen ghosts.
+- Done 2026-11-25: as planned. The fog pass takes over rendering (`useFrame` priority 1): scene into a 4× multisampled half-float target with a depth texture, then a full-screen quad that rebuilds the world position, applies the fog, then tone mapping and the sRGB conversion. The drawn fog eases toward the vision (~0.3 s). Other players\x27 units out of sight are left out of `renderedUnits` (so no drawing, rings, bars or picking); buildings drawn and picked are the "known" ones (own + last seen), while the terrain keeps the real ones; ruins show once explored. A dev-only "Reveal map" switch. Checked in the browser: the fog around the village, a scout revealing the gold camp (the skeletons appear, explored path stays grey), the camp hidden again after the scout left, a ghost barracks staying after it was removed out of sight, the production build.
 
 ### 6c.3 Rules and filtering
 

@@ -10,6 +10,7 @@ import {
   type BuildingInstance,
 } from '@roe/sim';
 import { Raycaster, Vector2, Vector3, type Camera } from 'three';
+import { knownBuildings } from '../render/fog/knowledge';
 import { pickBuilding } from '../render/picking/pickBuilding';
 import { unitAt } from '../render/picking/screenPick';
 import { pickGround } from '../render/placement/groundPick';
@@ -112,7 +113,7 @@ export function pickPointerTarget(
 
   const unitId = unitAt(ownUnitIds(), camera, rect, x, y);
   const enemyId = unitId === null ? unitAt(enemyUnitIds(), camera, rect, x, y) : null;
-  const building = pickBuilding(ray, state.buildings, heights);
+  const building = pickBuilding(ray, knownBuildings(state), heights);
   let ground: GroundTarget | null = null;
   if (pickGround(ray, heights, hit)) {
     const walkable = isWalkable(ctx.nav, hit.x, hit.z);

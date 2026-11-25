@@ -566,6 +566,14 @@ body,
   color: #e88;
 }
 
+.dev-reveal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  cursor: pointer;
+}
+
 .dev-wave {
   margin-top: 4px;
   font: inherit;

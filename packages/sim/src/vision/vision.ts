@@ -135,7 +135,8 @@ function footprintPoints(building: BuildingInstance): Vec2[] {
   ];
 }
 
-const buildingSeen = (vision: Vision, building: BuildingInstance) =>
+/** Whether any part of the building's footprint (center or a corner) is visible. */
+export const buildingSeen = (vision: Vision, building: BuildingInstance) =>
   footprintPoints(building).some((p) => isVisible(vision, p.x, p.z));
 
 /**

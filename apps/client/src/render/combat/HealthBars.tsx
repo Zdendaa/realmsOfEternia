@@ -14,6 +14,7 @@ import {
 import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import { useSelectionStore } from '../../state/selectionStore';
 import { useSettingsStore } from '../../state/settingsStore';
+import { shownAt } from '../fog/knowledge';
 import { renderedUnitList } from '../units/renderedUnits';
 
 /** Most bars drawn at once. */
@@ -142,6 +143,7 @@ function createHealthBars() {
   function writeBuildings(all: boolean) {
     const { state, heights } = useGameStore.getState();
     for (const building of state.buildings) {
+      if (!shownAt(building.ownerId, building.x, building.z)) continue;
       const damage = state.buildingDamage[building.id] ?? 0;
       if (damage === 0 && !(all && building.ownerId !== null)) continue;
       const max = buildingMaxHealth(building, state.construction[building.id]);

@@ -17,6 +17,7 @@ import { Settlement, type OwnedBuilding } from './settlement/Settlement';
 import { SpinningParts, type AnimatedBuilding } from './settlement/SpinningParts';
 import { Sky } from './Sky';
 import { Ruins } from './Ruins';
+import { exploredAt, useKnownBuildings } from '../fog/knowledge';
 import { Stumps } from './Stumps';
 import { Terrain } from './Terrain';
 import { Trees } from './Trees';
@@ -44,10 +45,19 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
     [world],
   );
 
+  // What the player knows (own buildings, others as last seen in the fog) is drawn; the
+  // terrain and the cosmetic layers follow the real buildings.
+  const known = useKnownBuildings();
+  const exploredRuins = useMemo(
+    () => ruins.filter((r) => exploredAt(r.x, r.z)),
+    // Re-checked when the ruins or the known buildings (the vision) change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ruins, known],
+  );
   // Finished buildings are instanced per model; sites get their own construction look.
   const placedBuildings = useMemo(
     () =>
-      buildings
+      known
         .filter((b) => b.status === 'complete')
         .map((b): OwnedBuilding => ({
           ...toPlacedFootprint(b),
@@ -56,22 +66,22 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
           id: b.id,
           ownerId: b.ownerId,
         })),
-    [buildings, heights],
+    [known, heights],
   );
   // Complete buildings with a crop (fields) draw it per plot, by the state of the field.
   const cropFields = useMemo(
     () =>
-      buildings
+      known
         .filter(
           (b) => b.status === 'complete' && (BUILDINGS[b.type] as BuildingDefinition).cropMesh,
         )
         .map((b): CropField => ({ building: b, y: heights.getHeightAt(b.x, b.z) })),
-    [buildings, heights],
+    [known, heights],
   );
   // Complete buildings that animate while their worker works (mill sails, bakery smoke).
   const animated = useMemo(
     () =>
-      buildings
+      known
         .filter((b) => {
           const d = BUILDINGS[b.type] as BuildingDefinition;
           return (
@@ -79,14 +89,14 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
           );
         })
         .map((b): AnimatedBuilding => ({ building: b, y: heights.getHeightAt(b.x, b.z) })),
-    [buildings, heights],
+    [known, heights],
   );
   const sites = useMemo(
     () =>
-      buildings
+      known
         .filter((b) => b.status === 'construction')
         .map((b): SiteView => ({ building: b, y: heights.getHeightAt(b.x, b.z) })),
-    [buildings, heights],
+    [known, heights],
   );
 
   // Buildings placed by players: cosmetic layers (grass, props) are cleared under them.
@@ -135,7 +145,7 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
       <Rocks items={rocks} groundLevel={groundLevel} resourceNodes={resourceNodes} />
       <Suspense fallback={null}>
         <Settlement buildings={placedBuildings} props={props} />
-        <Ruins ruins={ruins} buildings={buildings} heights={heights} />
+        <Ruins ruins={exploredRuins} buildings={known} heights={heights} />
         <FieldCrops fields={cropFields} />
         <SpinningParts buildings={animated} />
         <Stumps

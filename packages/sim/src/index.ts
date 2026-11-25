@@ -118,6 +118,7 @@ export {
   type SimWorld,
 } from './world/createWorld.js';
 export {
+  buildingSeen,
   cellAt,
   createVision,
   isExplored,

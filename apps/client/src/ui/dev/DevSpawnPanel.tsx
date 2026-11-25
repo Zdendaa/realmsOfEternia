@@ -3,6 +3,7 @@ import type { PlayerId } from '@roe/shared';
 import { useState } from 'react';
 import { cameraFocus } from '../../render/camera/cameraFocus';
 import { useGameStore } from '../../state/gameStore';
+import { useSettingsStore } from '../../state/settingsStore';
 
 /** The opponent the dev panel spawns for (any id other than the local player is hostile). */
 const DEV_ENEMY: PlayerId = 'enemy';
@@ -20,6 +21,8 @@ const SIDE_OFFSET = 8;
 export function DevSpawnPanel() {
   const dispatch = useGameStore((s) => s.dispatch);
   const [message, setMessage] = useState<string | null>(null);
+  const revealMap = useSettingsStore((s) => s.revealMap);
+  const toggleRevealMap = useSettingsStore((s) => s.toggleRevealMap);
 
   const spawn = (unit: UnitKind, owner: PlayerId | undefined) => {
     const side = owner === undefined ? -1 : 1;
@@ -58,6 +61,10 @@ export function DevSpawnPanel() {
       >
         Send next wave now
       </button>
+      <label className="dev-reveal">
+        <input type="checkbox" checked={revealMap} onChange={toggleRevealMap} />
+        Reveal map (fog off)
+      </label>
       {message && <p className="dev-message">{message}</p>}
     </section>
   );
