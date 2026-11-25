@@ -23,6 +23,7 @@ import { Terrain } from './Terrain';
 import { Trees } from './Trees';
 import { Water } from './Water';
 import { Walls } from '../walls/Walls';
+import { useStableFootprints } from './useStableFootprints';
 import { TowerToppers } from '../towers/TowerToppers';
 import { UpgradeScaffolds } from '../towers/UpgradeScaffolds';
 
@@ -112,18 +113,25 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
   );
 
   // Buildings placed by players: cosmetic layers (grass, props) are cleared under them.
-  const playerFootprints = useMemo(
-    () => buildings.filter((b) => !isStartingBuilding(world, b)).map(toPlacedFootprint),
+  const placedByPlayers = useMemo(
+    () => buildings.filter((b) => !isStartingBuilding(world, b)),
     [world, buildings],
   );
-  // Terrain only changes near player buildings (footprint + flatten reach).
+  const playerFootprints = useStableFootprints(placedByPlayers);
+  // Walls are left out of the ground's layers: they don't flatten the terrain, and grass
+  // or stumps under one are hidden inside it. Drawing or losing walls then rebuilds none
+  // of the grass, trees or ground heights.
+  const groundFootprints = useStableFootprints(
+    useMemo(() => placedByPlayers.filter((b) => !isWall(b.type)), [placedByPlayers]),
+  );
+  // Terrain only changes near these buildings (footprint + flatten reach).
   const groundLevel = useMemo(
     () =>
       createGroundLevel(
         heights,
-        playerFootprints.map((f) => footprintBounds(f, FLATTEN_REACH)),
+        groundFootprints.map((f) => footprintBounds(f, FLATTEN_REACH)),
       ),
-    [heights, playerFootprints],
+    [heights, groundFootprints],
   );
   const props = useMemo(
     () =>
@@ -150,7 +158,7 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
       <GroundCover
         cover={world.groundCover}
         groundLevel={groundLevel}
-        blockers={playerFootprints}
+        blockers={groundFootprints}
       />
       <Trees items={trees} groundLevel={groundLevel} resourceNodes={resourceNodes} />
       <Deposits deposits={world.deposits} heights={heights} buildings={buildings} />
@@ -164,7 +172,7 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
           trees={trees}
           resourceNodes={resourceNodes}
           groundLevel={groundLevel}
-          blockers={playerFootprints}
+          blockers={groundFootprints}
         />
       </Suspense>
       <ChimneySmoke buildings={animated} />

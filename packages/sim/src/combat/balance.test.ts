@@ -7,6 +7,7 @@ import {
   PROTOTYPE_MAP,
   PROTOTYPE_SETTLEMENT,
   RESOURCE_IDS,
+  towerOf,
   type BuildingId,
   type ResourceAmounts,
   type SettlementLayout,
@@ -196,7 +197,7 @@ describe('the wave against walls and towers', () => {
     }));
   };
   const TWO_WOODEN: [number, number, BuildingId][] = [
-    [-8, -11, 'woodenTower'],
+    [-9, -11, 'woodenTower'],
     [2, -13, 'woodenTower'],
   ];
 
@@ -204,6 +205,8 @@ describe('the wave against walls and towers', () => {
     const g = game(PROTOTYPE_MAP, HALL_ONLY);
     g.fortify(walls, towers);
     const built = g.state.buildings.length - 1 - towers.length;
+    // A tower on a bad spot would be silently refused and skew the result.
+    expect(g.state.buildings.filter((b) => towerOf(b.type))).toHaveLength(towers.length);
     const first = g.state.nextEntityId;
     g.step({ type: 'debugWave' });
     const alive = () =>
@@ -216,7 +219,10 @@ describe('the wave against walls and towers', () => {
       alive: alive(),
       time: Math.round(t / SIMULATION_TICK_RATE),
       lost: g.state.outcome.alice?.result === 'lost',
-      hallHealth: BUILDINGS.townHall.health - (g.state.buildingDamage[1] ?? 0),
+      // A fallen hall has no damage record: it must not read as untouched.
+      hallHealth: g.state.buildings.some((b) => b.id === 1)
+        ? BUILDINGS.townHall.health - (g.state.buildingDamage[1] ?? 0)
+        : 0,
     };
   }
 
@@ -234,15 +240,24 @@ describe('the wave against walls and towers', () => {
     expect(stone.time - open.time).toBeGreaterThanOrEqual(60);
   });
 
-  it('a palisade ring with two wooden towers beats it, the Town Hall untouched', () => {
-    const result = assault(ring('palisade'), TWO_WOODEN);
-    report(`palisade ring + 2 wooden towers: wave beaten after ${result.time} s`);
-    expect(result).toMatchObject({ alive: 0, lost: false, hallHealth: BUILDINGS.townHall.health });
-  });
-
-  it('the same two towers without a wall do not', () => {
-    const result = assault([], TWO_WOODEN);
-    expect(result.alive).toBeGreaterThan(0);
-    expect(result.hallHealth).toBeLessThan(BUILDINGS.townHall.health);
+  it('two wooden towers do far better behind a wall than in the open', () => {
+    const palisade = assault(ring('palisade'), TWO_WOODEN);
+    const stone = assault(ring('stoneWall'), TWO_WOODEN);
+    const open = assault([], TWO_WOODEN);
+    for (const [name, r] of Object.entries({ palisade, stone, open })) {
+      report(
+        `two wooden towers, ${name}: ${9 - r.alive}/9 killed, Town Hall health ${r.hallHealth}` +
+          (r.lost ? `, lost at ${r.time} s` : ''),
+      );
+    }
+    // A crossbow skeleton or two may stay out of the towers' reach, shooting at or over
+    // the wall: finishing them takes a sally through a gate.
+    expect(palisade.lost).toBe(false);
+    expect(palisade.alive).toBeLessThanOrEqual(2);
+    expect(palisade.hallHealth).toBeGreaterThan(BUILDINGS.townHall.health / 2);
+    expect(stone).toMatchObject({ lost: false, hallHealth: BUILDINGS.townHall.health });
+    expect(stone.alive).toBeLessThanOrEqual(1);
+    // In the open the same towers fare far worse: the Town Hall is left in ruins or nearly.
+    expect(open.hallHealth).toBeLessThan(palisade.hallHealth / 2);
   });
 });

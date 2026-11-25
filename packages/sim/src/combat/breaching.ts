@@ -27,6 +27,25 @@ function fallsShort(unit: Vec2, goal: Vec2, route: PathResult): boolean {
   return (end.x - goal.x) ** 2 + (end.z - goal.z) ** 2 > BREACH_PLANNING.shortOfGoal ** 2;
 }
 
+/**
+ * The search for a way through enemy walls, over the whole grid. It starts from the end
+ * in the smaller connected area (usually the enclosure being broken into).
+ */
+export function findWayThrough(ctx: SimContext, unit: UnitInstance, goal: Vec2): PathResult {
+  const passer = unit.ownerId;
+  const { of, sizes } = ctx.regions(passer);
+  const sizeAt = (p: Vec2) => {
+    const cell = nearestWalkableCell(ctx.nav, p.x, p.z, passer);
+    return cell < 0 ? Infinity : (sizes[of[cell] as number] ?? Infinity);
+  };
+  return ctx.paths.findPath(unit, goal, {
+    passer,
+    breach: true,
+    maxExpansions: ctx.nav.flags.length,
+    fromGoal: sizeAt(goal) < sizeAt(unit),
+  });
+}
+
 /** The goal is a walkable spot in another region: no walking there, no need to search. */
 function cutOff(ctx: SimContext, unit: UnitInstance, goal: Vec2): boolean {
   const goalCell = cellIndexAt(ctx.nav, goal.x, goal.z);
@@ -68,11 +87,7 @@ export function createRoutePlanner(ctx: SimContext) {
     if (known !== undefined) return { breachId: known };
     if (searches === 0) return 'later';
     searches--;
-    const through = ctx.paths.findPath(unit, goal, {
-      passer,
-      breach: true,
-      maxExpansions: ctx.nav.flags.length,
-    });
+    const through = findWayThrough(ctx, unit, goal);
     if (through.breach !== null) {
       shared.set(key, through.breach);
       return { breachId: through.breach };

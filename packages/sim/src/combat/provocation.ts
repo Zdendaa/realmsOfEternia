@@ -5,6 +5,7 @@ import { cellCenter, nearestWalkableCell } from '../nav/navGrid.js';
 import type { BuildingInstance } from '../state/gameState.js';
 import { isAlive, type UnitInstance } from '../state/units.js';
 import { approachPoint, buildingReach } from './buildings.js';
+import { findWayThrough } from './breaching.js';
 import type { Projectile } from './projectiles.js';
 import type { UnitGrid } from './targeting.js';
 
@@ -68,11 +69,7 @@ export function createReachCheck(ctx: SimContext) {
     const key = `${unit.ownerId}:${of[from]}:${tower.id}`;
     let answer = searched.get(key);
     if (answer === undefined) {
-      const through = ctx.paths.findPath(unit, goal, {
-        passer: unit.ownerId,
-        breach: true,
-        maxExpansions: ctx.nav.flags.length,
-      });
+      const through = findWayThrough(ctx, unit, goal);
       answer = through.breach !== null || through.reachedGoal;
       searched.set(key, answer);
     }

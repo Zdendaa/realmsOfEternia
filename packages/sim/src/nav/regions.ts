@@ -6,6 +6,8 @@ export interface Regions {
   of: Int32Array;
   /** The largest region: "the rest of the map". */
   main: number;
+  /** Cells in each region, by its number (index 0 is unused). */
+  sizes: readonly number[];
 }
 
 /**
@@ -19,6 +21,7 @@ export function findRegions(grid: NavGrid, passer: Passer): Regions {
   let id = 0;
   let main = 0;
   let largest = 0;
+  const sizes = [0];
   for (let start = 0; start < of.length; start++) {
     if (of[start] !== 0 || !isWalkableCell(grid, start, passer)) continue;
     id++;
@@ -41,12 +44,13 @@ export function findRegions(grid: NavGrid, passer: Passer): Regions {
       if (cell >= cols) visit(cell - cols);
       if (cell < cols * (rows - 1)) visit(cell + cols);
     }
+    sizes.push(size);
     if (size > largest) {
       largest = size;
       main = id;
     }
   }
-  return { of, main };
+  return { of, main, sizes };
 }
 
 /**

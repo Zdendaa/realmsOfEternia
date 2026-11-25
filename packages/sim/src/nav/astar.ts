@@ -25,6 +25,13 @@ export interface PathOptions {
    * route crosses (`PathResult.breach`).
    */
   breach?: boolean;
+  /**
+   * Search from the goal toward the start (the route comes out the same way round). Much
+   * cheaper for a breach into a small enclosure: searched from outside, the whole map is
+   * cheaper than the first wall cell and gets explored before it. A search that fails
+   * this way returns no waypoints.
+   */
+  fromGoal?: boolean;
 }
 
 export interface PathResult {
@@ -162,10 +169,17 @@ export function createPathFinder(grid: NavGrid): PathFinder {
         return { waypoints: [], reachedGoal: false, expanded: 0, breach: null };
       }
 
-      const { end, found, expanded } = search(start, goal, maxExpansions);
+      const backwards = options.fromGoal ?? false;
+      const { end, found, expanded } = backwards
+        ? search(goal, start, maxExpansions)
+        : search(start, goal, maxExpansions);
+      if (backwards && !found) {
+        return { waypoints: [], reachedGoal: false, expanded, breach: null };
+      }
+      // The parents lead back to where the search began.
       const cells: number[] = [];
       for (let c = end; c !== -1; c = parent[c] as number) cells.push(c);
-      cells.reverse();
+      if (!backwards) cells.reverse();
       const crossing = breaching ? cells.find((c) => !isWalkableCell(grid, c, passer)) : undefined;
       const breach =
         crossing === undefined ? null : (breachableCell(grid, crossing, passer)?.id ?? null);

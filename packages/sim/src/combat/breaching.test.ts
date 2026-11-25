@@ -9,6 +9,7 @@ import { now, report } from '../test/bench.js';
 import { FLAT_MAP, TOWN } from '../test/fixtures.js';
 import { stepGame } from '../tick/stepGame.js';
 import { createWorld } from '../world/createWorld.js';
+import { findWayThrough } from './breaching.js';
 import { MONSTER_PLAYER } from './hostility.js';
 
 const RICH = Object.fromEntries(RESOURCE_IDS.map((id) => [id, 900])) as ResourceAmounts;
@@ -200,6 +201,28 @@ describe('breaching', () => {
       expect(g.units('enemy').map((u) => u.combat?.breachId)).toEqual([null, null, null]);
     });
   }
+
+  it('finds the way in or out from the smaller side, without exploring the map', () => {
+    const g = game();
+    g.build(...square(14));
+    const [outside] = g.spawn('enemy', 'swordsman', 0, 30, 1);
+    const [inside] = g.spawn('enemy', 'swordsman', 0, 9, 1);
+    for (const [id, goal] of [
+      [outside, { x: 0, z: 8 }],
+      [inside, { x: 0, z: 30 }],
+    ] as const) {
+      const unit = g.state.units.find((u) => u.id === id);
+      if (!unit) throw new Error('no unit');
+      const route = findWayThrough(g.ctx, unit, goal);
+      expect(route.reachedGoal).toBe(true);
+      // The first wall on the way from the unit: the side of the square between them.
+      expect(g.state.buildings.find((b) => b.id === route.breach)?.z).toBe(14);
+      // Waypoints run from the unit to the goal.
+      expect(route.waypoints.at(-1)).toEqual(goal);
+      // The enclosure (about 700 cells) and the way on, not the 14,000-cell map.
+      expect(route.expanded).toBeLessThan(1500);
+    }
+  });
 
   it('soldiers ignore walls that are not in their way', () => {
     const g = game();
