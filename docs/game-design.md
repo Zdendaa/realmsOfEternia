@@ -187,8 +187,8 @@ Work proceeds one milestone at a time.
 | 2     | First real settlement              | ✅ Completed |
 | 3     | Building placement                 | ✅ Completed |
 | 4     | Villagers                          | ✅ Completed |
-| 5     | Economy                            | ⏳ Current   |
-| 6     | Military and combat                | Planned      |
+| 5     | Economy                            | ✅ Completed |
+| 6     | Military and combat                | ⏳ Current   |
 | 7     | Fortifications                     | Planned      |
 | 8     | Building upgrades and technologies | Planned      |
 | 9     | AI                                 | Planned      |
@@ -211,11 +211,11 @@ A construction menu with display-only costs; a placement preview snapped to a gr
 
 First villagers, basic movement, walking between buildings, simple work behavior and basic pathfinding. Introduces serfs and workers (see 4.4).
 
-### Phase 5 – Economy ⏳
+### Phase 5 – Economy ✅
 
 Resource storage, gathering, transportation, production chains, worker assignment and economy UI. Buildings become construction sites built by serfs with delivered resources (see 4.4).
 
-### Phase 6 – Military and combat
+### Phase 6 – Military and combat ⏳
 
 Infantry and archers trained in a barracks and an archery range, unit commands, deterministic combat with counters, destructible buildings, neutral skeleton camps and a first scripted wave (see [phase-6-plan.md](phase-6-plan.md)). Cavalry, siege weapons and heroes follow as **Phase 6b**. Comes right after the economy (including its depth part, Phase 5b): armies give the economy a purpose, and everything after it needs enemies.
 

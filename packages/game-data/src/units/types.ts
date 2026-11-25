@@ -1,4 +1,5 @@
 import type { ResourceCost } from '../resources/definitions.js';
+import type { CombatStats } from './combat.js';
 
 export interface UnitDefinition {
   id: string;
@@ -22,4 +23,6 @@ export interface UnitDefinition {
   requires?: string;
   /** The player can select it and give it orders (workers run on their own). */
   controllable: boolean;
+  /** Health, armor and (for fighting units) the attack. */
+  combat: CombatStats;
 }

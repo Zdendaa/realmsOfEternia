@@ -1,4 +1,5 @@
 import { BUILDINGS, GATHER_RULES, isBuildingId, UNITS } from '@roe/game-data';
+import { areEnemies } from '../combat/hostility.js';
 import {
   entrancePoint,
   isInPlayableArea,
@@ -13,7 +14,7 @@ import { checkPlacement, quarterTurnsToRadians, type PlacementIssue } from '../r
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import { nodeById, nodesNear, remainingAmount } from '../state/resourceNodes.js';
 import { spawnPoint } from '../state/spawn.js';
-import { IDLE, type UnitInstance } from '../state/units.js';
+import { createUnit, IDLE, isAlive, type UnitInstance } from '../state/units.js';
 import { startGathering } from '../units/gathering.js';
 import {
   assignToSlot,
@@ -25,11 +26,15 @@ import {
 } from '../units/orders.js';
 import type {
   AssignBuildersCommand,
+  AttackCommand,
+  AttackMoveCommand,
   Command,
+  DebugSpawnCommand,
   GatherCommand,
   MoveUnitsCommand,
   PlaceBuildingCommand,
   RecruitSerfCommand,
+  StopCommand,
 } from './types.js';
 
 export type CommandIssue =
@@ -53,7 +58,13 @@ export type CommandIssue =
   /** The issuer's stock can't pay the cost. */
   | 'notEnoughResources'
   /** No harvestable tree or rock with anything left at that id. */
-  | 'noResource';
+  | 'noResource'
+  /** The attack target doesn't exist or is already dead. */
+  | 'noTarget'
+  /** The attack target isn't an enemy of the issuer. */
+  | 'notEnemy'
+  /** A development command sent to a simulation that doesn't accept them. */
+  | 'devOnly';
 
 export interface CommandCheck {
   ok: boolean;
@@ -68,15 +79,19 @@ const OK: CommandCheck = { ok: true, issues: [] };
 const fail = (...issues: CommandIssue[]): CommandCheck => ({ ok: false, issues });
 
 /**
- * Units among `ids` that exist, belong to `issuer` and take orders (workers don't), in
- * state order.
+ * Units among `ids` that exist, are alive, belong to `issuer` and take orders (workers
+ * don't), in state order.
  */
 function ownUnits(state: GameState, issuer: PlayerId, ids: readonly EntityId[]): UnitInstance[] {
   const wanted = new Set(ids);
   return state.units.filter(
-    (u) => wanted.has(u.id) && u.ownerId === issuer && UNITS[u.type].controllable,
+    (u) => wanted.has(u.id) && u.ownerId === issuer && isAlive(u) && UNITS[u.type].controllable,
   );
 }
+
+/** A unit's combat state with no target, strike or leash (after a new order). */
+const freshCombat = (unit: UnitInstance): UnitInstance['combat'] =>
+  unit.combat && { ...unit.combat, targetId: null, strikeAt: null, anchor: null };
 
 const findBuilding = (state: GameState, id: EntityId) => state.buildings.find((b) => b.id === id);
 
@@ -118,6 +133,32 @@ function checkGather(ctx: SimContext, state: GameState, issuer: PlayerId, comman
   return serfs.length === 0 ? fail('noUnits') : OK;
 }
 
+function checkAttack(state: GameState, issuer: PlayerId, command: AttackCommand) {
+  const target = state.units.find((u) => u.id === command.targetId);
+  if (!target || !isAlive(target)) return fail('noTarget');
+  if (!areEnemies(issuer, target.ownerId)) return fail('notEnemy');
+  const fighters = ownUnits(state, issuer, command.unitIds).filter((u) => u.combat);
+  return fighters.length === 0 ? fail('noUnits') : OK;
+}
+
+function checkAttackMove(
+  ctx: SimContext,
+  state: GameState,
+  issuer: PlayerId,
+  command: AttackMoveCommand,
+) {
+  return checkMove(ctx, state, issuer, { ...command, type: 'moveUnits' });
+}
+
+function checkStop(state: GameState, issuer: PlayerId, command: StopCommand) {
+  return ownUnits(state, issuer, command.unitIds).length === 0 ? fail('noUnits') : OK;
+}
+
+function checkDebugSpawn(ctx: SimContext, command: DebugSpawnCommand) {
+  if (!ctx.dev) return fail('devOnly');
+  return isInPlayableArea(ctx.world.map, command.x, command.z) ? OK : fail('outOfBounds');
+}
+
 /** Placement rules for the spot, then the cost (an unknown building has no cost to check). */
 function checkPlace(
   ctx: SimContext,
@@ -151,6 +192,14 @@ export function validateCommand(
       return checkAssign(state, issuer, command);
     case 'gather':
       return checkGather(ctx, state, issuer, command);
+    case 'attack':
+      return checkAttack(state, issuer, command);
+    case 'attackMove':
+      return checkAttackMove(ctx, state, issuer, command);
+    case 'stop':
+      return checkStop(state, issuer, command);
+    case 'debugSpawn':
+      return checkDebugSpawn(ctx, command);
   }
 }
 
@@ -184,30 +233,30 @@ function placeBuilding(state: GameState, issuer: PlayerId, command: PlaceBuildin
 function recruitSerf(state: GameState, issuer: PlayerId, command: RecruitSerfCommand): GameState {
   const townHall = findBuilding(state, command.buildingId) as BuildingInstance;
   const at = spawnPoint(townHall, state.nextEntityId);
-  const serf: UnitInstance = {
-    id: state.nextEntityId,
-    type: 'serf',
-    ownerId: issuer,
-    x: at.x,
-    z: at.z,
-    task: IDLE,
-    movement: null,
-    activity: 'idle',
-    carrying: null,
-  };
+  const serf = createUnit(state.nextEntityId, 'serf', issuer, at);
   const paid = withStock(state, issuer, pay(stockOf(state, issuer), UNITS.serf.cost));
   return { ...paid, units: [...state.units, serf], nextEntityId: state.nextEntityId + 1 };
 }
 
-/** Sends `units` to spread-out points around (x, z); the nearest unit takes the center. */
-function sendGroup(units: readonly UnitInstance[], x: number, z: number) {
+/**
+ * Sends `units` to spread-out points around (x, z); the nearest unit takes the center.
+ * With `fight`, units that fight attack-move there (the others just walk). Any target
+ * or leash from before is dropped.
+ */
+function sendGroup(units: readonly UnitInstance[], x: number, z: number, fight = false) {
   const target = { x, z };
   const offsets = formationOffsets(units.length);
   const changed = new Map<EntityId, UnitInstance>();
   byDistanceTo(units, target).forEach((unit, i) => {
     const offset = offsets[i] ?? { x: 0, z: 0 };
     const goal = { x: x + offset.x, z: z + offset.z };
-    changed.set(unit.id, { ...unit, task: { kind: 'move', ...goal }, movement: moveTo(goal) });
+    const kind = fight && unit.combat ? 'attackMove' : 'move';
+    changed.set(unit.id, {
+      ...unit,
+      task: { kind, ...goal },
+      movement: moveTo(goal),
+      combat: freshCombat(unit),
+    });
   });
   return changed;
 }
@@ -215,6 +264,51 @@ function sendGroup(units: readonly UnitInstance[], x: number, z: number) {
 function moveUnits(state: GameState, issuer: PlayerId, command: MoveUnitsCommand): GameState {
   const changed = sendGroup(ownUnits(state, issuer, command.unitIds), command.x, command.z);
   return { ...state, units: replaceUnits(state.units, changed) };
+}
+
+function attack(state: GameState, issuer: PlayerId, command: AttackCommand): GameState {
+  const changed = new Map<EntityId, UnitInstance>();
+  for (const unit of ownUnits(state, issuer, command.unitIds)) {
+    const combat = freshCombat(unit);
+    if (!combat) continue;
+    changed.set(unit.id, {
+      ...unit,
+      task: { kind: 'attack', targetId: command.targetId },
+      movement: null,
+      combat: { ...combat, targetId: command.targetId },
+    });
+  }
+  return { ...state, units: replaceUnits(state.units, changed) };
+}
+
+function attackMove(state: GameState, issuer: PlayerId, command: AttackMoveCommand): GameState {
+  const changed = sendGroup(ownUnits(state, issuer, command.unitIds), command.x, command.z, true);
+  return { ...state, units: replaceUnits(state.units, changed) };
+}
+
+/** Stopped units stand where they are; cargo stays in their hands. */
+function stop(state: GameState, issuer: PlayerId, command: StopCommand): GameState {
+  const changed = new Map<EntityId, UnitInstance>();
+  for (const unit of ownUnits(state, issuer, command.unitIds)) {
+    changed.set(unit.id, { ...unit, task: IDLE, movement: null, combat: freshCombat(unit) });
+  }
+  return { ...state, units: replaceUnits(state.units, changed) };
+}
+
+/** Dev spawn: `count` fresh units spread around the point, appended in id order. */
+function debugSpawn(state: GameState, issuer: PlayerId, command: DebugSpawnCommand): GameState {
+  const owner = command.owner === undefined ? issuer : command.owner;
+  const spawned = formationOffsets(command.count).map((offset, i) =>
+    createUnit(state.nextEntityId + i, command.unit, owner, {
+      x: command.x + offset.x,
+      z: command.z + offset.z,
+    }),
+  );
+  return {
+    ...state,
+    units: [...state.units, ...spawned],
+    nextEntityId: state.nextEntityId + spawned.length,
+  };
 }
 
 /**
@@ -298,5 +392,13 @@ export function applyCommand(
       return { ok: true, state: assignBuilders(state, issuer, command) };
     case 'gather':
       return { ok: true, state: gather(ctx, state, issuer, command) };
+    case 'attack':
+      return { ok: true, state: attack(state, issuer, command) };
+    case 'attackMove':
+      return { ok: true, state: attackMove(state, issuer, command) };
+    case 'stop':
+      return { ok: true, state: stop(state, issuer, command) };
+    case 'debugSpawn':
+      return { ok: true, state: debugSpawn(state, issuer, command) };
   }
 }

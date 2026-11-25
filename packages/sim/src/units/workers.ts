@@ -3,7 +3,7 @@ import type { EntityId, PlayerId } from '@roe/shared';
 import type { EconomyDraft } from '../economy/draft.js';
 import { housingCapacity, populationUsed } from '../economy/population.js';
 import type { BuildingInstance } from '../state/gameState.js';
-import { IDLE, type UnitInstance, type WorkPhase } from '../state/units.js';
+import { createUnit, IDLE, type UnitInstance, type WorkPhase } from '../state/units.js';
 import { workerDoor } from './production/common.js';
 import { updateFarmer } from './production/farm.js';
 import { updateHarvester } from './production/harvest.js';
@@ -13,18 +13,13 @@ export { WORKER_RULES } from './production/common.js';
 
 /** A new worker for a just-completed production building, at its door. */
 export function createWorker(building: BuildingInstance, id: EntityId): UnitInstance {
-  const at = workerDoor(building);
-  return {
-    id,
-    type: 'worker',
-    ownerId: building.ownerId,
-    x: at.x,
-    z: at.z,
-    task: { kind: 'work', buildingId: building.id, phase: 'waiting', target: -1, progress: 0 },
-    movement: null,
-    activity: 'idle',
-    carrying: null,
-  };
+  return createUnit(id, 'worker', building.ownerId, workerDoor(building), {
+    kind: 'work',
+    buildingId: building.id,
+    phase: 'waiting',
+    target: -1,
+    progress: 0,
+  });
 }
 
 /** True for complete, owned production buildings, which get one worker each. */

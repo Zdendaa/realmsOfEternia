@@ -43,7 +43,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 
 | #   | Scope                                                                                                           | Status |
 | --- | --------------------------------------------------------------------------------------------------------------- | ------ |
-| 6.1 | Combat core in the sim: health, armor, counters, melee, arrows, death, auto-engage, attack / attack-move / stop |        |
+| 6.1 | Combat core in the sim: health, armor, counters, melee, arrows, death, auto-engage, attack / attack-move / stop | ✅     |
 | 6.2 | Soldier visuals: models, weapons, player color, combat animations, arrows, corpses, dev spawn                   |        |
 | 6.3 | Barracks and archery range: training queue, costs, housing, training panel                                      |        |
 | 6.4 | Commands and readability: attack cursor, F / X, health bars, unit stats panel, selection grouping               |        |
@@ -55,6 +55,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 
 - game-data: `units/combat.ts` (armor classes, attack definitions, damage), combat stats for the three soldiers and the villagers (serfs and workers can be killed, they don't fight back), building health.
 - sim: `combat/` (damage, targeting, attacks, projectiles, death), military unit tasks (`attack`, `attackMove`), `attack` / `attackMove` / `stop` commands, `areEnemies`, the dev-only `debugSpawn`. Tests: counters, armor, melee and ranged kills, a missed arrow when the target dies, auto-engage, leash, determinism.
+- Done 2026-11-25: as planned. Villagers got an armor class of their own (`villager`, health 40) so infantry bonuses don't hit them. Strikes have a `windup` (swing 0.5–0.7 s) so damage can land with the animation; a strike in progress misses a target that stepped 0.5 beyond reach. Chases walk straight at the target when the line is clear and use the path planner otherwise. 22 tests (incl. a 100 vs 100 benchmark: 0.27 ms/tick mean, p99 1.44 ms). The client only got the new kinds and activities typed (soldiers aren't drawn until 6.2).
 
 ### 6.2 Soldier visuals
 

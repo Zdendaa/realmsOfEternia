@@ -1,4 +1,4 @@
-import { isBuildingId, type BuildingId } from '@roe/game-data';
+import { isBuildingId, isUnitKind, type BuildingId, type UnitKind } from '@roe/game-data';
 import type { EntityId, PlayerId } from '@roe/shared';
 
 /**
@@ -47,12 +47,54 @@ export interface GatherCommand {
   nodeId: number;
 }
 
+/** Send the given fighting units after one enemy unit, until it dies. */
+export interface AttackCommand {
+  type: 'attack';
+  unitIds: EntityId[];
+  targetId: EntityId;
+}
+
+/**
+ * Walk the given units to a point (spread out like a move), fighting every enemy they
+ * meet on the way. Units that don't fight just walk.
+ */
+export interface AttackMoveCommand {
+  type: 'attackMove';
+  unitIds: EntityId[];
+  x: number;
+  z: number;
+}
+
+/** The given units drop what they are doing (orders, targets, routes) and stand. */
+export interface StopCommand {
+  type: 'stop';
+  unitIds: EntityId[];
+}
+
+/**
+ * Development only: spawn `count` units of `unit` around (x, z) for `owner` (null:
+ * neutral; absent: the issuer). Accepted only by a simulation context created with
+ * `dev: true`; the server never creates one.
+ */
+export interface DebugSpawnCommand {
+  type: 'debugSpawn';
+  unit: UnitKind;
+  count: number;
+  x: number;
+  z: number;
+  owner?: PlayerId | null;
+}
+
 export type Command =
   | PlaceBuildingCommand
   | RecruitSerfCommand
   | MoveUnitsCommand
   | AssignBuildersCommand
-  | GatherCommand;
+  | GatherCommand
+  | AttackCommand
+  | AttackMoveCommand
+  | StopCommand
+  | DebugSpawnCommand;
 
 /** A command together with the player who issued it, attached by the receiver. */
 export interface IssuedCommand {
@@ -62,6 +104,9 @@ export interface IssuedCommand {
 
 /** Most units one command may address. */
 export const MAX_COMMAND_UNITS = 256;
+
+/** Most units one dev spawn may create. */
+export const MAX_DEBUG_SPAWN = 100;
 
 const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const isEntityId = (v: unknown): v is EntityId =>
@@ -111,6 +156,31 @@ export function parseCommand(input: unknown): Command | null {
       const unitIds = parseUnitIds(data.unitIds);
       if (!unitIds || !isNodeId(data.nodeId)) return null;
       return { type: 'gather', unitIds, nodeId: data.nodeId };
+    }
+    case 'attack': {
+      const unitIds = parseUnitIds(data.unitIds);
+      if (!unitIds || !isEntityId(data.targetId)) return null;
+      return { type: 'attack', unitIds, targetId: data.targetId };
+    }
+    case 'attackMove': {
+      const unitIds = parseUnitIds(data.unitIds);
+      const { x, z } = data;
+      if (!unitIds || !isFiniteNumber(x) || !isFiniteNumber(z)) return null;
+      return { type: 'attackMove', unitIds, x, z };
+    }
+    case 'stop': {
+      const unitIds = parseUnitIds(data.unitIds);
+      return unitIds ? { type: 'stop', unitIds } : null;
+    }
+    case 'debugSpawn': {
+      const { unit, count, x, z, owner } = data;
+      if (!isUnitKind(unit) || !isFiniteNumber(x) || !isFiniteNumber(z)) return null;
+      if (!Number.isSafeInteger(count) || (count as number) < 1) return null;
+      if ((count as number) > MAX_DEBUG_SPAWN) return null;
+      if (owner !== undefined && owner !== null && typeof owner !== 'string') return null;
+      const command: DebugSpawnCommand = { type: 'debugSpawn', unit, count: count as number, x, z };
+      if (owner !== undefined) command.owner = owner;
+      return command;
     }
     default:
       return null;

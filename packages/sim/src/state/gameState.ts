@@ -8,9 +8,10 @@ import {
   type ResourceId,
 } from '@roe/game-data';
 import type { EntityId, PlacedFootprint, PlayerId } from '@roe/shared';
+import type { Projectile } from '../combat/projectiles.js';
 import type { SimWorld } from '../world/createWorld.js';
 import { RIPE_FIELD, type FieldState } from './fields.js';
-import { IDLE, type UnitInstance } from './units.js';
+import { createUnit, type UnitInstance } from './units.js';
 import { hireWorkers } from '../units/workers.js';
 import { spawnPoint } from './spawn.js';
 
@@ -68,6 +69,8 @@ export interface GameState {
    * fresh (bare, to be sown). Changes when a plot is sown or harvested.
    */
   readonly fields: Readonly<Record<EntityId, FieldState>>;
+  /** Arrows in flight. Changes when one is released or lands. */
+  readonly projectiles: readonly Projectile[];
   readonly nextEntityId: EntityId;
 }
 
@@ -111,18 +114,7 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
   const units: UnitInstance[] = [];
   if (townHall) {
     for (let i = 0; i < world.startingSerfs; i++) {
-      const at = spawnPoint(townHall, i);
-      units.push({
-        id: nextEntityId++,
-        type: 'serf',
-        ownerId: owner,
-        x: at.x,
-        z: at.z,
-        task: IDLE,
-        movement: null,
-        activity: 'idle',
-        carrying: null,
-      });
+      units.push(createUnit(nextEntityId++, 'serf', owner, spawnPoint(townHall, i)));
     }
   }
   // Production buildings of an owned starting settlement come with their workers
@@ -143,6 +135,7 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     stocks,
     resourceNodes: {},
     fields,
+    projectiles: [],
     nextEntityId,
   };
 }

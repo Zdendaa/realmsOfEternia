@@ -22,11 +22,14 @@ export function unitPose(activity: UnitActivity, time: number, phase: number): P
       const t = time * WALK_RATE + phase;
       return { lift: Math.abs(Math.sin(t)) * 0.07, pitch: 0.08, roll: Math.sin(t) * 0.06 };
     }
-    case 'working': {
+    case 'working':
+    case 'attacking': {
       const t = time * WORK_RATE + phase;
       const swing = Math.max(0, Math.sin(t));
       return { lift: 0, pitch: 0.1 + swing * swing * 0.45, roll: 0 };
     }
+    case 'dying':
+      return { lift: 0, pitch: 1.4, roll: 0 };
     case 'idle':
       return { lift: Math.sin(time * 1.5 + phase) * 0.008, pitch: 0, roll: 0 };
   }

@@ -7,19 +7,31 @@ export {
 } from './commands/applyCommand.js';
 export {
   MAX_COMMAND_UNITS,
+  MAX_DEBUG_SPAWN,
   parseCommand,
   type AssignBuildersCommand,
+  type AttackCommand,
+  type AttackMoveCommand,
   type Command,
+  type DebugSpawnCommand,
   type GatherCommand,
   type IssuedCommand,
   type MoveUnitsCommand,
   type PlaceBuildingCommand,
   type RecruitSerfCommand,
+  type StopCommand,
 } from './commands/types.js';
+export { areEnemies, MONSTER_PLAYER } from './combat/hostility.js';
+export type { Projectile } from './combat/projectiles.js';
 export { workSlots } from './construction/workSlots.js';
 export { hasFreeHousing, populationOf, type Population } from './economy/population.js';
 export { canAfford, EMPTY_STOCK, missingResources, stockOf } from './economy/stock.js';
-export { createSimContext, syncContext, type SimContext } from './context/simContext.js';
+export {
+  createSimContext,
+  syncContext,
+  type SimContext,
+  type SimContextOptions,
+} from './context/simContext.js';
 export { createPathFinder, type PathFinder, type PathResult } from './nav/astar.js';
 export {
   cellIndexAt,
@@ -67,10 +79,12 @@ export {
   type FieldPhase,
   type FieldState,
 } from './state/fields.js';
+export { createUnit, isAlive } from './state/units.js';
 export type {
   Cargo,
   GatherPhase,
   UnitActivity,
+  UnitCombat,
   UnitInstance,
   UnitMovement,
   UnitTask,

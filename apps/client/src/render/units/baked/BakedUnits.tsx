@@ -18,8 +18,11 @@ import { bakeCharacter, combineClips } from './bakeCharacter';
 import { createHatSources, createToolSources, type ToolModel } from './professionProps';
 import { createVillagerInstances } from './villagerInstances';
 
-/** The character model of each unit kind. */
-const CHARACTERS: Record<UnitKind, CharacterModel> = {
+/** Unit kinds drawn as villagers (soldiers get their own renderer). */
+type VillagerKind = Extract<UnitKind, 'serf' | 'worker'>;
+
+/** The character model of each villager kind. */
+const CHARACTERS: Record<VillagerKind, CharacterModel> = {
   serf: CHARACTER_PACK.serf,
   worker: CHARACTER_PACK.worker,
 };
@@ -61,7 +64,7 @@ function useAxe(): ToolModel {
 }
 
 /** Loads one character and its clips (suspends), then bakes them once. */
-function useVillagerInstances(kind: UnitKind) {
+function useVillagerInstances(kind: VillagerKind) {
   const character = CHARACTERS[kind];
   const urls = characterUrls(character);
   const [model, ...libraries] = useGLTF([urls.model, ...urls.animations], false);
@@ -105,7 +108,7 @@ function useVillagerInstances(kind: UnitKind) {
 }
 
 /** One kind of villager: one instanced mesh, plus one per load, hat and tool shape. */
-function BakedVillagers({ kind }: { kind: UnitKind }) {
+function BakedVillagers({ kind }: { kind: VillagerKind }) {
   const villagers = useVillagerInstances(kind);
   const ref = useRef<InstancedMesh>(null);
 

@@ -3,7 +3,7 @@ import type { SimContext } from '../context/simContext.js';
 import type { EconomyDraft } from '../economy/draft.js';
 import { cellCenter, isWalkable, nearestWalkableCell } from '../nav/navGrid.js';
 import { toPlacedFootprint, type BuildingInstance } from '../state/gameState.js';
-import { IDLE, type UnitInstance } from '../state/units.js';
+import { IDLE, isAlive, type UnitInstance } from '../state/units.js';
 import { materialsInTransit } from '../construction/delivery.js';
 import { isBuilding, updateBuilder, updateDeliverer } from './building.js';
 import { updateGatherer } from './gathering.js';
@@ -32,7 +32,7 @@ export function updateSerfs(
   const byId = new Map<EntityId, BuildingInstance>(buildings.map((b) => [b.id, b]));
   const transit = materialsInTransit(units);
   for (const unit of units) {
-    if (unit.type !== 'serf') continue;
+    if (unit.type !== 'serf' || !isAlive(unit)) continue;
     const task = unit.task;
     if (task.kind === 'build') {
       updateBuilder(unit, byId.get(task.siteId), buildings, economy, transit);

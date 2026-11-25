@@ -1,5 +1,8 @@
 import { applyCommand, type CommandResult } from '../commands/applyCommand.js';
 import type { IssuedCommand } from '../commands/types.js';
+import { applyHits, Hits, removeCorpses } from '../combat/damage.js';
+import { updateFighters } from '../combat/fighting.js';
+import { landProjectiles, type Projectile } from '../combat/projectiles.js';
 import { progressConstruction } from '../construction/construction.js';
 import { syncContext, type SimContext } from '../context/simContext.js';
 import { commitEconomy, createEconomyDraft } from '../economy/draft.js';
@@ -19,10 +22,11 @@ export interface StepResult {
  * Advances the game by one fixed tick (`SIMULATION_TICK_MS`). Client and server call
  * exactly this with the same commands in the same order and get the same state.
  *
- * Order: commands → behavior (serfs: tasks, gathering, deliveries; workers: harvesting,
- * farming) → route
- * invalidation → path planning → walking → separation → construction work → workers for
- * production buildings that have none (housing permitting). `ctx` is synced along the
+ * Order: commands → arrows landing → behavior (serfs: tasks, gathering, deliveries;
+ * workers: harvesting, farming; fighters: targets, chases, strikes) → the tick's damage
+ * and deaths → route invalidation → path planning → walking → separation → construction
+ * work → workers for production buildings that have none (housing permitting) → removal
+ * of corpses that have lain long enough. `ctx` is synced along the
  * way and left matching the returned state. The given state is never mutated.
  */
 export function stepGame(
@@ -45,8 +49,13 @@ export function stepGame(
   // Working copies: units are shallow-copied once per tick and mutated in place below.
   const units = current.units.map((u) => ({ ...u }));
   const economy = createEconomyDraft(ctx.world, current);
+  const hits = new Hits();
+  const flying = landProjectiles(current.projectiles, current.tick, hits);
+  const released: Projectile[] = [];
   updateSerfs(ctx, current.tick, current.buildings, units, economy);
   updateWorkers(current.tick, current.buildings, units, economy);
+  updateFighters(ctx, current.tick, units, hits, released);
+  applyHits(units, hits, current.tick);
   if (ctx.nav.version !== navVersion) invalidateBlockedRoutes(ctx, units);
   planPaths(ctx, units);
   advanceUnits(units);
@@ -59,16 +68,19 @@ export function stepGame(
 
   // Production buildings without a worker get one while their owner has free housing.
   const nextEntityId = hireWorkers(buildings, units, current.nextEntityId);
+  const remaining = removeCorpses(units, current.tick);
+  const projectiles = released.length > 0 ? [...flying, ...released] : flying;
 
   const next: GameState = {
     ...current,
     tick: current.tick + 1,
-    units,
+    units: remaining,
     buildings,
     construction,
     resourceNodes: economic.resourceNodes,
     stocks: economic.stocks,
     fields: economic.fields,
+    projectiles,
     nextEntityId,
   };
   syncContext(ctx, next);

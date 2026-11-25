@@ -1,7 +1,7 @@
 import { housingOf } from '@roe/game-data';
 import type { PlayerId } from '@roe/shared';
 import type { BuildingInstance, GameState } from '../state/gameState.js';
-import type { UnitInstance } from '../state/units.js';
+import { isAlive, type UnitInstance } from '../state/units.js';
 
 /** A player's population: units alive and the housing for them. */
 export interface Population {
@@ -24,11 +24,11 @@ export function housingCapacity(
   return capacity;
 }
 
-/** Units owned by `player`. */
+/** Living units owned by `player` (the dead free their place right away). */
 export function populationUsed(units: readonly UnitInstance[], player: PlayerId | null): number {
   if (player === null) return 0;
   let used = 0;
-  for (const u of units) if (u.ownerId === player) used++;
+  for (const u of units) if (u.ownerId === player && isAlive(u)) used++;
   return used;
 }
 

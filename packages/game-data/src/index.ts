@@ -49,8 +49,15 @@ export {
   type BuildingPlacement,
   type SettlementLayout,
 } from './maps/prototypeSettlement.js';
-export { isUnitKind, UNITS, type UnitKind } from './units/definitions.js';
+export { attackOf, combatOf, isUnitKind, UNITS, type UnitKind } from './units/definitions.js';
 export type { UnitDefinition } from './units/types.js';
+export {
+  COMBAT_RULES,
+  damageAgainst,
+  type ArmorClass,
+  type AttackDefinition,
+  type CombatStats,
+} from './units/combat.js';
 export {
   PROFESSIONS,
   type HatStyle,

@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-25._
 
-**Current state:** Phase 5 (economy) in progress: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) 5.3 (carried goods are visible) 5.4 (builders carry the materials to sites) and 5.6 (workers in the lumbermill and quarry) are done, and of the economy-depth part 5b.1 (population and recruit cost), 5b.2 (professions look different, tools in hand), 5b.3 (farms: farmers sow, grow and harvest grain), 5b.4 (mill and bakery: grain → flour → food) and 5b.5 (gold and iron mines on ore deposits) and 5b.6 (move to the Medieval Hexagon Pack: buildings with player-colored roofs, construction stages, tree stumps, unused models pruned) are done. With that, every milestone in [phase-5b-plan.md](phase-5b-plan.md) is done. The first part of the phase is in [phase-5-plan.md](phase-5-plan.md); the storehouse (5.5) is done (built from Hexagon props in 5b.6).
+**Current state:** Phase 6 (military and combat) in progress, see [phase-6-plan.md](phase-6-plan.md): 6.1 (combat core in the simulation: health, armor, counters, melee, arrows, death, auto-engage, attack / attack-move / stop) is done; there is nothing to see in the game yet (soldiers get models in 6.2 and are trained from 6.3). Phase 5 (economy) is done: 5.1 (player stocks, construction costs paid at placement, resource bar) 5.2 (serfs gather wood and stone; trees and rocks run out) 5.3 (carried goods are visible) 5.4 (builders carry the materials to sites) and 5.6 (workers in the lumbermill and quarry) are done, and of the economy-depth part 5b.1 (population and recruit cost), 5b.2 (professions look different, tools in hand), 5b.3 (farms: farmers sow, grow and harvest grain), 5b.4 (mill and bakery: grain → flour → food) and 5b.5 (gold and iron mines on ore deposits) and 5b.6 (move to the Medieval Hexagon Pack: buildings with player-colored roofs, construction stages, tree stumps, unused models pruned) are done. With that, every milestone in [phase-5b-plan.md](phase-5b-plan.md) is done. The first part of the phase is in [phase-5-plan.md](phase-5-plan.md); the storehouse (5.5) is done (built from Hexagon props in 5b.6).
 
 ## Phases
 
@@ -37,12 +37,15 @@ _Last updated: 2026-11-25._
 | 5b.5  | Gold and iron mines on ore deposits                                               | ✅ Done |
 | 5b.6  | Hexagon Pack buildings, construction stages, stumps, storehouse, model pruning    | ✅ Done |
 | 5b    | Economy depth: see [phase-5b-plan.md](phase-5b-plan.md)                           | ✅ Done |
+| 6.1   | Combat core in the sim: health, counters, melee, arrows, death, attack orders     | ✅ Done |
+| 6     | Military and combat: see [phase-6-plan.md](phase-6-plan.md)                       | ⏳ Now  |
 
 ## What works today
 
 - **World:** a 240×240 playable map generated deterministically from a seed. It has rolling hills, a flat 40×40 settlement plateau, noise-clustered forests, scattered rocks, one lake, and about 41,000 instanced grass patches (a short meadow carpet) with about 950 flower clusters. A ring of forested mountains surrounds the map and fades into the fog.
 - **Settlement:** a Town Hall, a market, a well, six houses, a mill with two 2×3 fields and a lumbermill (workers: a woodcutter, a miller and two farmers; population 9 / 34), connected by dirt paths. Two roads leave toward the map edge.
 - **Building style:** the buildings are KayKit Medieval Hexagon Pack models at 4× (slightly larger than units, as in most RTS games): a tall castle as the Town Hall (3.5×, about 14 units high, the village landmark), two house styles (half-timbered cottage and a taller house with steps) that alternate by building id, a roofed well, a windmill whose sails turn while the miller works, a lumbermill (its saw blade turns while the woodcutter prepares wood), a market with stalls, the bakery and the mines. Roofs, banners and trims take the owner's color (blue for the local player; neutral buildings keep the pack's yellow), keeping the roof shading. Every building stands in a trampled dirt yard that reaches about two units past its walls and widens in front of the entrance; placed buildings get theirs when they are placed. Fields and the quarry keep their Builder Pack models (the Hexagon pack has no 2 × 3 field or quarry).
+- **Combat (simulation only, not visible yet):** every unit has health; swordsmen, spearmen and archers (game-data, starting numbers) fight with armor, cooldowns, reach and counter bonuses (swordsmen ×1.5 against infantry, spearmen ×3 against buildings, archers ×0.5 against buildings; arrows lose most of their damage on a swordsman's armor). Idle soldiers engage enemies within sight on their own and walk back to their spot afterwards (or when a chase goes beyond 12 units); `attack`, `attack-move` and `stop` orders exist. Archers release arrows that fly (speed 18) and land a few ticks later; an arrow at a target that died meanwhile does nothing. The dead lie for 3 s, then vanish; they free their housing at once. A 100 vs 100 battle costs about 0.3 ms per tick (p99 1.4 ms).
 - **Rendering:**
   - sky dome, fog, ACES tone mapping
   - a sun at about 48° whose shadows follow the camera
@@ -108,6 +111,13 @@ _Last updated: 2026-11-25._
 - **The game pauses in a hidden tab:** the client tick runs from the render loop (fine for single player; the server will be authoritative).
 - **Only buildings and own units can be selected;** there is no double-click "select all of type" yet.
 - **Building picking uses footprint boxes** with a rough height, not the model shape.
+
+### Combat
+
+- **No opponent yet:** combat runs only in tests and, from 6.2, with the dev spawn. Villagers can be killed but never fight back or flee.
+- **Workers are targetable inside their building** (they stand at its door), and a killed worker is replaced at once like any worker (free, housing permitting).
+- **Units walking back after a fight ignore enemies** until they are back at their spot; units on a plain move never fight (by design: attack-move does).
+- **Buildings can't be attacked yet** (6.5).
 
 ### Architecture
 

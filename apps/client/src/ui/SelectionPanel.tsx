@@ -17,6 +17,7 @@ import {
   missingResources,
   populationOf,
   type CommandIssue,
+  type UnitActivity,
   type WorkPhase,
 } from '@roe/sim';
 import { useState } from 'react';
@@ -258,7 +259,13 @@ function UnitSelection({ ids }: { ids: readonly number[] }) {
   // A primitive selector result (a string), so the panel re-renders only when counts change.
   const summary = useGameStore((s) => {
     const wanted = new Set(ids);
-    const counts = { idle: 0, walking: 0, working: 0 };
+    const counts: Record<UnitActivity, number> = {
+      idle: 0,
+      walking: 0,
+      working: 0,
+      attacking: 0,
+      dying: 0,
+    };
     for (const u of s.state.units) if (wanted.has(u.id)) counts[u.activity]++;
     return `${counts.idle + counts.walking + counts.working},${counts.idle},${counts.walking},${counts.working}`;
   });

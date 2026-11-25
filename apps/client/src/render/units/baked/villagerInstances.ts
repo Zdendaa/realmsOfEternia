@@ -40,6 +40,9 @@ const CLIP_FOR: Record<UnitActivity, CharacterAnimation> = {
   idle: 'idle',
   walking: 'walk',
   working: 'build',
+  // Villagers don't fight; the death clip comes with the soldier visuals (6.2).
+  attacking: 'idle',
+  dying: 'idle',
 };
 
 /** Tunic color per profession; units without one keep this neutral brown-green. */

@@ -33,6 +33,13 @@ export interface SimContext {
   resourceNodes: NodeAmounts;
   /** Ids of depleted nodes already cleared from the nav grid. */
   readonly depleted: Set<number>;
+  /** Development build: dev-only commands (`debugSpawn`) are accepted. Never on the server. */
+  readonly dev: boolean;
+}
+
+export interface SimContextOptions {
+  /** Accept dev-only commands. Only the client's dev build sets it. */
+  dev?: boolean;
 }
 
 /** Footprints that block walking: every building except walkable ones (fields). */
@@ -44,7 +51,11 @@ const depletedIds = (nodes: NodeAmounts) =>
     .filter(([, amount]) => amount === 0)
     .map(([id]) => Number(id));
 
-export function createSimContext(world: SimWorld, state: GameState): SimContext {
+export function createSimContext(
+  world: SimWorld,
+  state: GameState,
+  options: SimContextOptions = {},
+): SimContext {
   const depleted = new Set(depletedIds(state.resourceNodes));
   const nav = createNavGrid(world, (id) => depleted.has(id));
   stampBuildings(nav, blockingFootprints(state.buildings));
@@ -56,6 +67,7 @@ export function createSimContext(world: SimWorld, state: GameState): SimContext 
     buildings: state.buildings,
     resourceNodes: state.resourceNodes,
     depleted,
+    dev: options.dev ?? false,
   };
 }
 

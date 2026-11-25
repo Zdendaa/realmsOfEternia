@@ -1,4 +1,4 @@
-import type { ResourceId, UnitKind } from '@roe/game-data';
+import { attackOf, combatOf, type ResourceId, type UnitKind } from '@roe/game-data';
 import type { EntityId, PlayerId, Vec2 } from '@roe/shared';
 
 /** What a unit has been told (or decided) to do. */
@@ -29,7 +29,11 @@ export type UnitTask =
       resource: ResourceId;
       phase: DeliverPhase;
     }
-  | WorkTask;
+  | WorkTask
+  /** Chase and fight one enemy unit until it dies (ordered by the player). */
+  | { kind: 'attack'; targetId: EntityId }
+  /** Walk to a point, fighting every enemy met on the way. */
+  | { kind: 'attackMove'; x: number; z: number };
 
 /** Where a builder fetching material is. */
 export type DeliverPhase = 'toStorage' | 'toSite';
@@ -100,7 +104,25 @@ export interface UnitMovement {
 }
 
 /** What the unit is visibly doing; rendering picks the animation from this. */
-export type UnitActivity = 'idle' | 'walking' | 'working';
+export type UnitActivity = 'idle' | 'walking' | 'working' | 'attacking' | 'dying';
+
+/**
+ * A fighting unit's combat state. Timers are tick numbers (not countdowns), so they
+ * only change when something happens.
+ */
+export interface UnitCombat {
+  /** The enemy being fought or chased, or null. */
+  targetId: EntityId | null;
+  /** First tick on which the unit may start its next attack. */
+  readyAt: number;
+  /** Tick on which the attack in progress hits (melee) or releases its arrow; null when not attacking. */
+  strikeAt: number | null;
+  /**
+   * Where a unit that engaged on its own (while idle) returns after the fight, and what
+   * its leash is measured from; null otherwise.
+   */
+  anchor: Vec2 | null;
+}
 
 export interface UnitInstance {
   id: EntityId;
@@ -113,6 +135,40 @@ export interface UnitInstance {
   activity: UnitActivity;
   /** What the unit carries, or null. Kept through other orders until delivered. */
   carrying: Cargo | null;
+  /** Hit points left (integer); the unit dies at 0. */
+  health: number;
+  /** Combat state of units that fight; null for villagers. */
+  combat: UnitCombat | null;
+  /** Tick the unit died on (it lies on the ground until removed), or null while alive. */
+  diedAt: number | null;
 }
 
 export const IDLE: UnitTask = { kind: 'idle' };
+
+/** A fresh, idle unit of `type` at full health. */
+export function createUnit(
+  id: EntityId,
+  type: UnitKind,
+  ownerId: PlayerId | null,
+  at: Vec2,
+  task: UnitTask = IDLE,
+): UnitInstance {
+  const fights = attackOf(type) !== undefined;
+  return {
+    id,
+    type,
+    ownerId,
+    x: at.x,
+    z: at.z,
+    task,
+    movement: null,
+    activity: 'idle',
+    carrying: null,
+    health: combatOf(type).health,
+    combat: fights ? { targetId: null, readyAt: 0, strikeAt: null, anchor: null } : null,
+    diedAt: null,
+  };
+}
+
+/** True while the unit is alive (dead units lie on the ground until removed). */
+export const isAlive = (unit: Pick<UnitInstance, 'diedAt'>) => unit.diedAt === null;

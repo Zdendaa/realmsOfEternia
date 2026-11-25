@@ -1,0 +1,63 @@
+import { SIMULATION_TICK_RATE, type EntityId, type PlayerId } from '@roe/shared';
+import type { UnitInstance } from '../state/units.js';
+import type { Hits } from './damage.js';
+
+/**
+ * An arrow in flight. It homes on its target and can't miss a living one: on
+ * `impactAt` the damage applies if the target is still alive, otherwise the arrow lands
+ * harmlessly. Rendering draws the arc between the release point and the target.
+ * Keyed by `attackerId` + `firedAt` (a unit releases at most one arrow per tick).
+ */
+export interface Projectile {
+  attackerId: EntityId;
+  /** The shooter's owner (kept after the shooter dies). */
+  ownerId: PlayerId | null;
+  targetId: EntityId;
+  fromX: number;
+  fromZ: number;
+  firedAt: number;
+  impactAt: number;
+  /** Damage on impact, worked out at release (bonus and armor included). */
+  damage: number;
+}
+
+/** A new arrow from `attacker` to `target`, flying at `speed` units per second. */
+export function fireProjectile(
+  attacker: UnitInstance,
+  target: UnitInstance,
+  tick: number,
+  speed: number,
+  damage: number,
+): Projectile {
+  const distance = Math.sqrt((target.x - attacker.x) ** 2 + (target.z - attacker.z) ** 2);
+  const flightTicks = Math.max(1, Math.ceil((distance / speed) * SIMULATION_TICK_RATE));
+  return {
+    attackerId: attacker.id,
+    ownerId: attacker.ownerId,
+    targetId: target.id,
+    fromX: attacker.x,
+    fromZ: attacker.z,
+    firedAt: tick,
+    impactAt: tick + flightTicks,
+    damage,
+  };
+}
+
+/**
+ * Lands every arrow due on `tick` (adding its damage to `hits`, whether or not the
+ * target still lives; dead targets ignore hits) and returns the ones still flying.
+ * Returns the same array when nothing landed.
+ */
+export function landProjectiles(
+  projectiles: readonly Projectile[],
+  tick: number,
+  hits: Hits,
+): readonly Projectile[] {
+  if (!projectiles.some((p) => p.impactAt <= tick)) return projectiles;
+  const flying: Projectile[] = [];
+  for (const p of projectiles) {
+    if (p.impactAt <= tick) hits.add(p.targetId, p.damage);
+    else flying.push(p);
+  }
+  return flying;
+}

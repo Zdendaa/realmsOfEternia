@@ -1,7 +1,7 @@
 import { UNITS } from '@roe/game-data';
 import type { SimContext } from '../context/simContext.js';
 import { isWalkable } from '../nav/navGrid.js';
-import type { UnitInstance } from '../state/units.js';
+import { isAlive, type UnitInstance } from '../state/units.js';
 
 export const SEPARATION_RULES = {
   /** Fraction of the overlap resolved per tick (soft, so groups settle without jitter). */
@@ -38,6 +38,8 @@ export function separateUnits(ctx: SimContext, units: UnitInstance[]): void {
   const size = SEPARATION_RULES.cellSize;
   const cells = new Map<number, number[]>();
   units.forEach((u, i) => {
+    // The dead lie where they fell: they neither push nor get pushed.
+    if (!isAlive(u)) return;
     const key = cellKey(Math.floor(u.x / size), Math.floor(u.z / size));
     const list = cells.get(key);
     if (list) list.push(i);
@@ -50,6 +52,7 @@ export function separateUnits(ctx: SimContext, units: UnitInstance[]): void {
     u.activity === 'working' ? SEPARATION_RULES.workingWeight : 1;
 
   units.forEach((a, i) => {
+    if (!isAlive(a)) return;
     const cx = Math.floor(a.x / size);
     const cz = Math.floor(a.z / size);
     for (let ox = -1; ox <= 1; ox++) {
