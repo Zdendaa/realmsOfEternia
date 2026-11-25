@@ -21,6 +21,7 @@ export {
   type RecruitSerfCommand,
   type StopCommand,
 } from './commands/types.js';
+export { combatTicks } from './combat/fighting.js';
 export { areEnemies, MONSTER_PLAYER } from './combat/hostility.js';
 export type { Projectile } from './combat/projectiles.js';
 export { workSlots } from './construction/workSlots.js';

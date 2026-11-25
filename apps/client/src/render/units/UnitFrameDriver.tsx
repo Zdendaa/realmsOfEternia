@@ -1,7 +1,13 @@
 import { useFrame } from '@react-three/fiber';
-import { productionOf, type ProfessionId } from '@roe/game-data';
-import type { Decoration, EntityId } from '@roe/shared';
-import { plotCenter, type BuildingInstance, type GameState, type UnitInstance } from '@roe/sim';
+import { attackOf, productionOf, type ProfessionId } from '@roe/game-data';
+import { SIMULATION_TICK_RATE, type Decoration, type EntityId } from '@roe/shared';
+import {
+  combatTicks,
+  plotCenter,
+  type BuildingInstance,
+  type GameState,
+  type UnitInstance,
+} from '@roe/sim';
 import { useRef } from 'react';
 import { useGameStore } from '../../state/gameStore';
 import { simClock } from '../simulation/simClock';
@@ -9,6 +15,22 @@ import { renderedUnitList, renderedUnits, type RenderedUnit, type UnitWork } fro
 
 /** How quickly units turn toward their walking direction (per second). */
 const TURN_RATE = 12;
+
+/** A corpse starts sinking this long after death (s) and is gone below ground by removal. */
+const SINK_START = 1.8;
+/** How fast corpses sink (units per second). */
+const SINK_SPEED = 0.9;
+
+/**
+ * Seconds since the current attack of `unit` started at render tick `now` (the
+ * attack began `cooldown` ticks before `readyAt`), or null when it isn't attacking.
+ */
+function attackElapsed(unit: UnitInstance, now: number): number | null {
+  const attack = unit.activity === 'attacking' && unit.combat ? attackOf(unit.type) : undefined;
+  if (!attack || !unit.combat) return null;
+  const start = unit.combat.readyAt - combatTicks(attack.cooldown);
+  return Math.max(0, now - start) / SIMULATION_TICK_RATE;
+}
 
 /** Shortest signed angle from `a` to `b`. */
 const angleDelta = (a: number, b: number) => {
@@ -66,6 +88,8 @@ export function UnitFrameDriver() {
     previousUnits: new Map<EntityId, UnitInstance>(),
     buildingsRef: null as readonly BuildingInstance[] | null,
     buildings: new Map<EntityId, BuildingInstance>(),
+    unitsRef: null as readonly UnitInstance[] | null,
+    units: new Map<EntityId, UnitInstance>(),
   });
 
   useFrame((_, delta) => {
@@ -80,7 +104,14 @@ export function UnitFrameDriver() {
       look.buildings = new Map(state.buildings.map((b) => [b.id, b]));
     }
 
+    if (look.unitsRef !== state.units) {
+      look.unitsRef = state.units;
+      look.units = new Map(state.units.map((u) => [u.id, u]));
+    }
+
     const alpha = simClock.alpha;
+    // Rendering runs one tick behind: between the previous state (tick - 1) and this one.
+    const now = state.tick - 1 + alpha;
     const turn = Math.min(1, delta * TURN_RATE);
     renderedUnitList.length = 0;
     for (const unit of state.units) {
@@ -103,6 +134,8 @@ export function UnitFrameDriver() {
           inside: false,
           carrying: null,
           ownerId: null,
+          attackElapsed: null,
+          deathElapsed: null,
         };
         renderedUnits.set(unit.id, r);
       }
@@ -111,6 +144,9 @@ export function UnitFrameDriver() {
       let target: number | null = null;
       if (unit.activity === 'walking' && dx * dx + dz * dz > 1e-6) {
         target = Math.atan2(dx, dz);
+      } else if (unit.activity === 'attacking' && unit.combat?.targetId != null) {
+        const foe = look.units.get(unit.combat.targetId);
+        if (foe) target = Math.atan2(foe.x - x, foe.z - z);
       } else if (unit.activity === 'working' && unit.task.kind === 'build') {
         const site = look.buildings.get(unit.task.siteId);
         if (site) target = Math.atan2(site.x - x, site.z - z);
@@ -133,7 +169,12 @@ export function UnitFrameDriver() {
       if (target !== null) r.heading += angleDelta(r.heading, target) * turn;
       r.x = x;
       r.z = z;
-      r.y = ctx.heights.getHeightAt(x, z);
+      r.deathElapsed =
+        unit.diedAt === null ? null : Math.max(0, now - unit.diedAt) / SIMULATION_TICK_RATE;
+      r.attackElapsed = attackElapsed(unit, now);
+      const sink =
+        r.deathElapsed === null ? 0 : Math.max(0, r.deathElapsed - SINK_START) * SINK_SPEED;
+      r.y = ctx.heights.getHeightAt(x, z) - sink;
       r.activity = unit.activity;
       r.work = workOf(unit, world.decorations);
       r.profession = professionOf(unit, look.buildings);

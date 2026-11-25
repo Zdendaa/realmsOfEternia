@@ -48,7 +48,8 @@ interface GameStore {
 const world = createWorld(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT);
 // Single player for now: the starting settlement belongs to the local player.
 const initialState = createInitialState(world, { owner: LOCAL_PLAYER });
-const ctx = createSimContext(world, initialState);
+// Dev builds accept dev-only commands (the spawn panel); production and the server never do.
+const ctx = createSimContext(world, initialState, { dev: import.meta.env.DEV });
 let queue: IssuedCommand[] = [];
 
 export const useGameStore = create<GameStore>()((set, get) => ({

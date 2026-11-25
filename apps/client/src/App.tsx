@@ -1,5 +1,6 @@
 import { GameCanvas } from './render/GameCanvas';
 import { ConstructionMenu } from './ui/ConstructionMenu';
+import { DevSpawnPanel } from './ui/dev/DevSpawnPanel';
 import { Hud } from './ui/Hud';
 import { ResourceBar } from './ui/ResourceBar';
 import { SelectionBox } from './ui/SelectionBox';
@@ -14,6 +15,7 @@ export function App() {
       <ConstructionMenu />
       <SelectionPanel />
       <SelectionBox />
+      {import.meta.env.DEV && <DevSpawnPanel />}
     </div>
   );
 }

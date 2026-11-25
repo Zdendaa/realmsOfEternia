@@ -1,12 +1,13 @@
 import { Stats } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
 import { PROTOTYPE_SETTLEMENT } from '@roe/game-data';
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { ACESFilmicToneMapping } from 'three';
 import { useGameStore } from '../state/gameStore';
 import { useSettingsStore } from '../state/settingsStore';
 import { decorateWorld } from '../world/decorateWorld';
 import { RtsCameraControls } from './camera/RtsCameraControls';
+import { Projectiles } from './combat/Projectiles';
 import { CommandMarkers } from './commands/CommandMarkers';
 import { PlacementPreview } from './placement/PlacementPreview';
 import { ATMOSPHERE } from './scene/atmosphere';
@@ -50,6 +51,9 @@ export function GameCanvas() {
       <UnitFrameDriver />
       <World world={world} heights={heights} buildings={buildings} resourceNodes={resourceNodes} />
       <Units />
+      <Suspense fallback={null}>
+        <Projectiles />
+      </Suspense>
       <SelectionRings />
       <SelectionMarkers />
       <CommandMarkers />

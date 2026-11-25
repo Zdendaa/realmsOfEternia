@@ -2,6 +2,7 @@ import {
   CHARACTER_PACK,
   PROFESSIONS,
   UNITS,
+  type AtlasCell,
   type CharacterAnimation,
   type CharacterModel,
   type HatStyle,
@@ -40,9 +41,9 @@ const CLIP_FOR: Record<UnitActivity, CharacterAnimation> = {
   idle: 'idle',
   walking: 'walk',
   working: 'build',
-  // Villagers don't fight; the death clip comes with the soldier visuals (6.2).
+  // Villagers don't fight.
   attacking: 'idle',
-  dying: 'idle',
+  dying: 'death',
 };
 
 /** Tunic color per profession; units without one keep this neutral brown-green. */
@@ -80,9 +81,21 @@ export interface VillagerInstances {
  * Feet don't slide: cycles per second = speed / stride per cycle (in world units), so
  * the playback rate is speed · duration / stride. Clamped only as a safety net.
  */
-function strideRate(clip: BakedClip, character: CharacterModel, speed: number) {
+export function strideRate(clip: BakedClip, character: { scale: number }, speed: number) {
   const worldStride = clip.stride * character.scale;
   return worldStride > 0 ? Math.min(4, Math.max(0.25, (speed * clip.duration) / worldStride)) : 1;
+}
+
+/**
+ * Animation values for a clip played once from its start (death): the clip time is set
+ * directly and the rate is 0, so the shader shows exactly that frame; the last frame is
+ * held.
+ */
+export function onceAt(clip: BakedClip, seconds: number, fps: number, out: number[]): void {
+  out[0] = clip.start;
+  out[1] = clip.frames;
+  out[2] = Math.min(Math.max(0, seconds), (clip.frames - 1) / fps);
+  out[3] = 0;
 }
 
 /** Brightness gain where the atlas can't be measured (about right for mid-tone swatches). */
@@ -92,11 +105,20 @@ const FALLBACK_GAIN = 2.2;
  * Atlas cell roles of a character (1 = team color, 2 = profession color) and per-cell
  * gains measured from its texture.
  */
-function atlasTint(character: CharacterModel, map: Texture | null): AtlasTint {
+export function atlasTint(
+  character: {
+    tint: {
+      grid: readonly [number, number];
+      team: readonly AtlasCell[];
+      profession?: readonly AtlasCell[];
+    };
+  },
+  map: Texture | null,
+): AtlasTint {
   const [columns, rows] = character.tint.grid;
   const roles = new Array<number>(columns * rows).fill(0);
   for (const [c, r] of character.tint.team) roles[r * columns + c] = 1;
-  for (const [c, r] of character.tint.profession) roles[r * columns + c] = 2;
+  for (const [c, r] of character.tint.profession ?? []) roles[r * columns + c] = 2;
   const luma = measureCellLuma(map?.image as CanvasImageSource | undefined, character.tint.grid);
   const gains = roles.map((_, i) => {
     const l = luma?.[i] ?? 0;
@@ -106,7 +128,7 @@ function atlasTint(character: CharacterModel, map: Texture | null): AtlasTint {
 }
 
 /** Per-instance attributes of the body: animation (row, frames, phase, rate) and colors. */
-function bodyAttributes(geometry: BufferGeometry, capacity: number) {
+export function bodyAttributes(geometry: BufferGeometry, capacity: number) {
   const make = (size: number) => {
     const attribute = new InstancedBufferAttribute(new Float32Array(capacity * size), size);
     attribute.setUsage(DynamicDrawUsage);
@@ -205,15 +227,20 @@ export function createVillagerInstances(
           unit.carrying && !working ? bundles.get(BUNDLE_FOR[unit.carrying]) : undefined;
         let name: CharacterAnimation = CLIP_FOR[unit.activity];
         if (working) name = unit.work;
+        else if (unit.activity === 'dying') name = 'death';
         else if (bundle) name = unit.activity === 'walking' ? 'carry' : 'hold';
         const clip = baked.clips[name];
         let rate = 1;
         if (name === 'walk') rate = walkRate;
         else if (name === 'carry') rate = carryRate;
-        animValues[0] = clip.start;
-        animValues[1] = clip.frames;
-        animValues[2] = (unit.id * 0.37) % clip.duration;
-        animValues[3] = rate;
+        if (name === 'death') {
+          onceAt(clip, unit.deathElapsed ?? 0, CHARACTER_PACK.bakeFps, animValues);
+        } else {
+          animValues[0] = clip.start;
+          animValues[1] = clip.frames;
+          animValues[2] = (unit.id * 0.37) % clip.duration;
+          animValues[3] = rate;
+        }
         animArray.set(animValues, i * 4);
         ownerColor(unit.ownerId).toArray(teamArray, i * 3);
         const profession = unit.profession ? PROFESSIONS[unit.profession] : null;

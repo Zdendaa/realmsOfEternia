@@ -12,6 +12,7 @@ import {
   RGBAFormat,
   SkinnedMesh,
   Vector3,
+  type KeyframeTrack,
   type Material,
   type Object3D,
 } from 'three';
@@ -90,6 +91,47 @@ export function combineClips(
     ...lower.tracks.filter((t) => !isUpper(t.name)),
     ...upper.tracks.filter((t) => isUpper(t.name)),
   ]);
+}
+
+/** Gap between the two halves of a sequence, so their boundary keys don't share a time. */
+const SEQUENCE_GAP = 1e-3;
+
+/**
+ * `first` followed by `second` as one clip (the archer's draw, then release). Tracks are
+ * joined by name; a bone animated in only one half keeps its keys there.
+ */
+export function sequenceClips(
+  name: string,
+  first: AnimationClip,
+  second: AnimationClip,
+): AnimationClip {
+  const offset = first.duration + SEQUENCE_GAP;
+  const shifted = (track: KeyframeTrack) => {
+    const copy = track.clone();
+    copy.shift(offset);
+    return copy;
+  };
+  const seconds = new Map(second.tracks.map((t) => [t.name, t]));
+  const tracks = first.tracks.map((track) => {
+    const next = seconds.get(track.name);
+    if (!next) return track.clone();
+    seconds.delete(track.name);
+    const later = shifted(next);
+    const times = new Float32Array(track.times.length + later.times.length);
+    times.set(track.times);
+    times.set(later.times, track.times.length);
+    const values = new Float32Array(track.values.length + later.values.length);
+    values.set(track.values);
+    values.set(later.values, track.values.length);
+    const Track = track.constructor as new (
+      name: string,
+      times: Float32Array,
+      values: Float32Array,
+    ) => KeyframeTrack;
+    return new Track(track.name, times, values);
+  });
+  for (const track of seconds.values()) tracks.push(shifted(track));
+  return new AnimationClip(name, offset + second.duration, tracks);
 }
 
 /** `CarryAttachment` from the first frame of `clip`. */

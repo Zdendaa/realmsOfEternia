@@ -22,7 +22,12 @@ import { areEnemies } from './hostility.js';
 import { fireProjectile, type Projectile } from './projectiles.js';
 import { createUnitGrid, edgeDistance, findTarget, type UnitGrid } from './targeting.js';
 
-const ticks = (seconds: number) => Math.max(1, Math.round(seconds * SIMULATION_TICK_RATE));
+/**
+ * Seconds of an attack (windup, cooldown) in whole ticks, at least 1. Rendering uses it
+ * to time attack animations exactly like the simulation.
+ */
+export const combatTicks = (seconds: number) =>
+  Math.max(1, Math.round(seconds * SIMULATION_TICK_RATE));
 
 /** An attack-mover this close to its own goal has arrived. */
 const ARRIVED = 1;
@@ -157,8 +162,8 @@ function engage(
   if (reach <= attack.range || combat.strikeAt !== null) {
     unit.movement = null;
     if (combat.strikeAt === null && tick >= combat.readyAt) {
-      combat.strikeAt = tick + ticks(attack.windup);
-      combat.readyAt = tick + ticks(attack.cooldown);
+      combat.strikeAt = tick + combatTicks(attack.windup);
+      combat.readyAt = tick + combatTicks(attack.cooldown);
     }
     unit.activity = 'attacking';
     return;

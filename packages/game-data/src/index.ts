@@ -5,6 +5,9 @@ export {
   type CharacterAnimation,
   type AtlasCell,
   type CharacterModel,
+  type SoldierAnimation,
+  type SoldierModel,
+  type WeaponId,
 } from './assets/characterPack.js';
 export { HEXAGON_PACK } from './assets/hexagonPack.js';
 export { MEDIEVAL_PACK, type MaterialOverride } from './assets/medievalPack.js';

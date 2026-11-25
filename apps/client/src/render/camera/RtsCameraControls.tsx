@@ -6,6 +6,7 @@ import { MOUSE, Vector3 } from 'three';
 import { usePointerTracker, type PointerTrack } from '../../input/usePointerTracker';
 import { usePressedKeys } from '../../input/usePressedKeys';
 import { useSettingsStore } from '../../state/settingsStore';
+import { cameraFocus } from './cameraFocus';
 
 type MapControlsImpl = ComponentRef<typeof MapControls>;
 
@@ -106,6 +107,8 @@ export function RtsCameraControls({ bounds, heights }: RtsCameraControlsProps) {
     const minCameraY =
       heights.getHeightAt(camera.position.x, camera.position.z) + CAMERA_GROUND_CLEARANCE;
     if (camera.position.y < minCameraY) camera.position.y = minCameraY;
+    cameraFocus.x = target.x;
+    cameraFocus.z = target.z;
   });
 
   return (

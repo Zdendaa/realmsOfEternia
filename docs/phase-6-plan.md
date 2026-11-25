@@ -44,7 +44,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 | #   | Scope                                                                                                           | Status |
 | --- | --------------------------------------------------------------------------------------------------------------- | ------ |
 | 6.1 | Combat core in the sim: health, armor, counters, melee, arrows, death, auto-engage, attack / attack-move / stop | ✅     |
-| 6.2 | Soldier visuals: models, weapons, player color, combat animations, arrows, corpses, dev spawn                   |        |
+| 6.2 | Soldier visuals: models, weapons, player color, combat animations, arrows, corpses, dev spawn                   | ✅     |
 | 6.3 | Barracks and archery range: training queue, costs, housing, training panel                                      |        |
 | 6.4 | Commands and readability: attack cursor, F / X, health bars, unit stats panel, selection grouping               |        |
 | 6.5 | Building damage and destruction: building health, attacking sites, ruins                                        |        |
@@ -61,6 +61,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 
 - game-data: soldier character models in `CHARACTER_PACK` (Knight, Barbarian, Rogue_Hooded), combat animations, weapon accessories.
 - client: soldiers in the baked instancing (one mesh set per character), weapons and shields on the hand slots, player color on shields and cloth, attack / shoot / death animations, flying arrows, corpses that sink, a dev spawn panel.
+- Done 2026-11-25: player color goes on cloth, not the shield (Knight: cape and tabard [0, 1]; Barbarian: waist wrap and bracers [6, 0] with trim [2, 1]; hooded Rogue: hood and cape [1, 1]; cells found from UVs, vertex heights and the textures). The shield is `shield_badge_color` as shipped. Attack clips: `Melee_1H_Attack_Chop`, `Melee_2H_Attack_Stab`, `Ranged_Bow_Draw` + `Ranged_Bow_Release` joined; `ready`: `Melee_Blocking`, `Melee_2H_Idle`, `Ranged_Bow_Aiming_Idle`; death `Death_A` for everyone (villagers too). The bow's string-draw morph is dropped. Checked in the browser: close-ups from front and back for both teams, a 12 vs 12 battle (engaging, swings, arrows, corpses), attack timing against the strike tick, the production build loading all 55 model files.
 
 ### 6.3 Barracks and archery range
 

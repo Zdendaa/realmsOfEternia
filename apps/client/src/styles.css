@@ -418,3 +418,39 @@ body,
   border: 1px solid rgb(255 224 138 / 90%);
   background: rgb(255 224 138 / 12%);
 }
+
+/* Development-only spawn panel (not in production builds). */
+.dev-panel {
+  top: 84px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.dev-panel h2 {
+  margin: 0 0 2px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.dev-row {
+  display: grid;
+  grid-template-columns: 80px auto auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.dev-row button {
+  font: inherit;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.dev-message {
+  margin: 2px 0 0;
+  color: #e88;
+}

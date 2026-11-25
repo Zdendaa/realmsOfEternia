@@ -1,6 +1,7 @@
 import { UNITS } from '@roe/game-data';
 import { isInPlayableArea, type Decoration, type EntityId, type Vec2 } from '@roe/shared';
 import {
+  isAlive,
   isWalkable,
   nearestWalkablePoint,
   PLACEMENT_RULES,
@@ -56,7 +57,9 @@ const hit = new Vector3();
 export const ownUnitIds = (): EntityId[] =>
   useGameStore
     .getState()
-    .state.units.filter((u) => u.ownerId === LOCAL_PLAYER && UNITS[u.type].controllable)
+    .state.units.filter(
+      (u) => u.ownerId === LOCAL_PLAYER && isAlive(u) && UNITS[u.type].controllable,
+    )
     .map((u) => u.id);
 
 /** Tree or rock whose blocking circle (plus a margin) contains (x, z), nearest first. */

@@ -10,6 +10,11 @@ export interface AnimationClipRef {
    * Used for carrying: a walk with the arms of a holding pose.
    */
   upperBody?: { file: string; clip: string };
+  /**
+   * Optional clip played right after this one, joined into one clip at load time (the
+   * archer's draw, then release).
+   */
+  then?: { file: string; clip: string };
 }
 
 /** What a unit's visible activity looks like. Keys are referenced by the renderer. */
@@ -25,7 +30,9 @@ export type CharacterAnimation =
   /** Walking with a load held in both arms. */
   | 'carry'
   /** Standing with a load held in both arms. */
-  | 'hold';
+  | 'hold'
+  /** Falling down; played once, the last frame held. */
+  | 'death';
 
 /** One swatch of a character's texture atlas: [column, row], row 0 at the top. */
 export type AtlasCell = readonly [number, number];
@@ -105,7 +112,51 @@ const VILLAGER_ANIMATIONS = {
     upperBody: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Holding_A' },
   },
   hold: { file: `${MEDIUM}Rig_Medium_Tools.glb`, clip: 'Holding_A' },
+  death: { file: `${MEDIUM}Rig_Medium_General.glb`, clip: 'Death_A' },
 } as const satisfies Record<CharacterAnimation, AnimationClipRef>;
+
+/** What a soldier's visible activity looks like. Keys are referenced by the renderer. */
+export type SoldierAnimation =
+  | 'idle'
+  | 'walk'
+  /** One attack (swing, thrust, or draw and release), played once per attack. */
+  | 'attack'
+  /** Between attacks, once the attack clip has ended: a guard or aiming stance. */
+  | 'ready'
+  | 'death';
+
+/** Weapons and gear soldiers hold or wear (files in `CHARACTER_PACK.weapons`; the spear is built in code). */
+export type WeaponId = 'sword' | 'shield' | 'spear' | 'bow' | 'quiver';
+
+export interface SoldierModel {
+  /** Model file relative to `CHARACTER_PACK.dir`. */
+  model: string;
+  hiddenMeshes: readonly string[];
+  /** Model units → world units. */
+  scale: number;
+  /** Standing height in model units. */
+  height: number;
+  animations: Readonly<Record<SoldierAnimation, AnimationClipRef>>;
+  /**
+   * Seconds into the `attack` clip where the blow lands or the arrow leaves. The renderer
+   * plays the clip so that this moment meets the simulation's strike (the attack's
+   * `windup`).
+   */
+  attackHitAt: number;
+  /** Atlas cells in the owner's color (see `CharacterModel.tint`). */
+  tint: { grid: readonly [number, number]; team: readonly AtlasCell[] };
+  /** Gear on bones: weapons in the hand slots (in that bone's frame), a quiver on the back. */
+  weapons: readonly { weapon: WeaponId; bone: string }[];
+}
+
+const MELEE = `${MEDIUM}Rig_Medium_CombatMelee.glb`;
+const RANGED = `${MEDIUM}Rig_Medium_CombatRanged.glb`;
+const GENERAL = `${MEDIUM}Rig_Medium_General.glb`;
+const WALK = { file: `${MEDIUM}Rig_Medium_MovementBasic.glb`, clip: 'Walking_B' };
+const DEATH = { file: GENERAL, clip: 'Death_A' };
+
+/** Soldiers stand a bit taller than villagers (1.15×), so they read at RTS zoom. */
+const SOLDIER_SCALE = 0.71;
 
 /**
  * KayKit Adventurers 2.0 (FREE) characters with KayKit Character Animations 1.1, both
@@ -165,4 +216,87 @@ export const CHARACTER_PACK = {
   accessories: {
     axe: 'accessories/axe_1handed.glb',
   },
+  /** Soldiers' gear (KayKit Adventurers accessories, packed to GLB). */
+  weapons: {
+    sword: 'accessories/sword_1handed.glb',
+    shield: 'accessories/shield_badge_color.glb',
+    bow: 'accessories/bow_withString.glb',
+    quiver: 'accessories/quiver.glb',
+  } as Readonly<Partial<Record<WeaponId, string>>>,
+  /** The arrow drawn in flight. */
+  arrow: 'accessories/arrow_bow.glb',
+  soldiers: {
+    // The Knight: plate armor, helmet with visor, sword and shield; red cape and tabard
+    // take the player color.
+    swordsman: {
+      model: 'adventurers/Knight.glb',
+      hiddenMeshes: [],
+      scale: SOLDIER_SCALE,
+      height: 2.4,
+      animations: {
+        idle: { file: GENERAL, clip: 'Idle_A' },
+        walk: WALK,
+        attack: { file: MELEE, clip: 'Melee_1H_Attack_Chop' },
+        ready: { file: MELEE, clip: 'Melee_Blocking' },
+        death: DEATH,
+      },
+      attackHitAt: 0.45,
+      tint: { grid: [8, 4], team: [[0, 1]] },
+      weapons: [
+        { weapon: 'sword', bone: 'handslot.r' },
+        { weapon: 'shield', bone: 'handslot.l' },
+      ],
+    },
+    // The Barbarian with a long spear held in both hands: a bulky, bear-hatted silhouette
+    // unlike any other unit. The waist wrap and bracers ([6, 0]) and their trim ([2, 1])
+    // take the player color.
+    spearman: {
+      model: 'adventurers/Barbarian.glb',
+      hiddenMeshes: [],
+      scale: SOLDIER_SCALE,
+      height: 2.4,
+      animations: {
+        idle: { file: MELEE, clip: 'Melee_2H_Idle' },
+        walk: WALK,
+        attack: { file: MELEE, clip: 'Melee_2H_Attack_Stab' },
+        ready: { file: MELEE, clip: 'Melee_2H_Idle' },
+        death: DEATH,
+      },
+      attackHitAt: 0.6,
+      tint: {
+        grid: [8, 4],
+        team: [
+          [2, 1],
+          [6, 0],
+        ],
+      },
+      weapons: [{ weapon: 'spear', bone: 'handslot.r' }],
+    },
+    // The hooded Rogue with bow and quiver; hood and cape take the player color. Not the
+    // Ranger: serfs are Rangers, and archers must not be mistaken for them.
+    archer: {
+      model: 'adventurers/Rogue_Hooded.glb',
+      hiddenMeshes: [],
+      scale: SOLDIER_SCALE,
+      height: 2.3,
+      animations: {
+        idle: { file: RANGED, clip: 'Ranged_Bow_Idle' },
+        walk: WALK,
+        attack: {
+          file: RANGED,
+          clip: 'Ranged_Bow_Draw',
+          then: { file: RANGED, clip: 'Ranged_Bow_Release' },
+        },
+        ready: { file: RANGED, clip: 'Ranged_Bow_Aiming_Idle' },
+        death: DEATH,
+      },
+      // The string leaves the hand just after the release clip starts.
+      attackHitAt: 1.43,
+      tint: { grid: [8, 4], team: [[1, 1]] },
+      weapons: [
+        { weapon: 'bow', bone: 'handslot.l' },
+        { weapon: 'quiver', bone: 'chest' },
+      ],
+    },
+  } satisfies Record<'swordsman' | 'spearman' | 'archer', SoldierModel>,
 } as const;

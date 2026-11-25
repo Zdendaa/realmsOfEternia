@@ -21,6 +21,13 @@ export interface RenderedUnit {
   /** The resource the unit carries, or null. */
   carrying: ResourceId | null;
   ownerId: PlayerId | null;
+  /**
+   * Seconds since the unit's current attack started (rendering time, so the swing lines
+   * up with the simulation's strike), or null when it isn't attacking.
+   */
+  attackElapsed: number | null;
+  /** Seconds since the unit died, or null while alive. */
+  deathElapsed: number | null;
 }
 
 export type UnitWork = 'build' | 'chop' | 'mine' | 'sow' | 'reap';
