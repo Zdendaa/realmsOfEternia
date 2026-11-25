@@ -89,3 +89,16 @@
     image-set(url('./mine.svg') 2x) 12 12,
     pointer;
 }
+
+/* Attack: a sword pointing up-left; the hotspot is its tip. */
+.game-canvas canvas[data-cursor='attack'] {
+  cursor:
+    url('./attack.svg') 8 8,
+    crosshair;
+  cursor:
+    -webkit-image-set(url('./attack.svg') 2x) 4 4,
+    crosshair;
+  cursor:
+    image-set(url('./attack.svg') 2x) 4 4,
+    crosshair;
+}

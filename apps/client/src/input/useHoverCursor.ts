@@ -2,10 +2,12 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import { Matrix4 } from 'three';
 import { useGameStore } from '../state/gameStore';
+import { useCommandModeStore } from '../state/commandModeStore';
 import { usePlacementStore } from '../state/placementStore';
 import { useSelectionStore } from '../state/selectionStore';
 import { cursorFor, type CursorKind } from './cursorKind';
 import { pickPointerTarget } from './pointerTarget';
+import { selectionKinds } from './selectionKinds';
 
 interface Hover {
   x: number;
@@ -32,6 +34,7 @@ export function useHoverCursor() {
     state: null as unknown,
     selection: null as unknown,
     placing: false,
+    mode: null as unknown,
     cursor: '' as CursorKind | '',
   });
 
@@ -70,12 +73,14 @@ export function useHoverCursor() {
     const state = useGameStore.getState().state;
     const selection = useSelectionStore.getState().units;
     const placing = usePlacementStore.getState().selected !== null;
+    const mode = useCommandModeStore.getState().mode;
     const unchanged =
       h.x === l.x &&
       h.y === l.y &&
       state === l.state &&
       selection === l.selection &&
       placing === l.placing &&
+      mode === l.mode &&
       camera.matrixWorld.equals(l.camera);
     if (unchanged) return;
     l.x = h.x;
@@ -83,13 +88,14 @@ export function useHoverCursor() {
     l.state = state;
     l.selection = selection;
     l.placing = placing;
+    l.mode = mode;
     l.camera.copy(camera.matrixWorld);
 
     let cursor: CursorKind = 'default';
     // The construction tool shows its own ghost; keep the plain pointer for it.
     if (!placing) {
-      const serfsSelected = selection.length > 0;
-      cursor = cursorFor(pickPointerTarget(gl.domElement, camera, h.x, h.y), serfsSelected);
+      const target = pickPointerTarget(gl.domElement, camera, h.x, h.y);
+      cursor = cursorFor(target, selectionKinds(selection), mode === 'attackMove');
     }
     if (cursor !== l.cursor) {
       l.cursor = cursor;

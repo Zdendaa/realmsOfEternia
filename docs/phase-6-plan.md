@@ -46,7 +46,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 | 6.1 | Combat core in the sim: health, armor, counters, melee, arrows, death, auto-engage, attack / attack-move / stop | ✅     |
 | 6.2 | Soldier visuals: models, weapons, player color, combat animations, arrows, corpses, dev spawn                   | ✅     |
 | 6.3 | Barracks and archery range: training queue, costs, housing, training panel                                      | ✅     |
-| 6.4 | Commands and readability: attack cursor, F / X, health bars, unit stats panel, selection grouping               |        |
+| 6.4 | Commands and readability: attack cursor, F / X, health bars, unit stats panel, selection grouping               | ✅     |
 | 6.5 | Building damage and destruction: building health, attacking sites, ruins                                        |        |
 | 6.6 | Skeleton camps: monsters player, camps on the map, guard and leash, bounty                                      |        |
 | 6.7 | Scripted wave: a skeleton group attacks the village                                                             |        |
@@ -73,6 +73,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 ### 6.4 Commands and readability
 
 - client: sword cursor over enemies, right-click attack, F (attack-move) and X (stop), command bar, instanced health bars (damaged, selected, hovered, or all while Alt is held), unit stats panel (health, damage, armor, range, speed, strong / weak against), a mixed selection grouped by type, soldier scale tuning.
+- Done 2026-11-25: as planned, except health bars show for hurt and selected units (not hovered). Attack-move with F, then a left click (an enemy under the click is attacked directly); Shift keeps the mode. The soldier scale (1.15× villagers) was kept: it reads at the default zoom. Checked in the browser with real mouse and key events: sword cursor over an enemy, right-click attack, X, F + click, the panels, health bars, pruning of dead units from the selection.
 
 ### 6.5 Building damage and destruction
 

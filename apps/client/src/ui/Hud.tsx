@@ -3,7 +3,10 @@ import { useSettingsStore } from '../state/settingsStore';
 const CONTROLS: readonly [key: string, action: string][] = [
   ['Left click', 'Select unit / building'],
   ['Left drag', 'Box select (Shift adds)'],
-  ['Right click', 'Move / build / gather'],
+  ['Right click', 'Move / attack / work'],
+  ['F, then click', 'Attack-move'],
+  ['X', 'Stop'],
+  ['Alt (hold)', 'All health bars'],
   ['Right drag', 'Rotate camera'],
   ['W A S D / Middle drag / Edge', 'Pan camera'],
   ['Mouse wheel', 'Zoom'],
@@ -16,6 +19,8 @@ export function Hud() {
   const toggleStats = useSettingsStore((s) => s.toggleStats);
   const edgeScroll = useSettingsStore((s) => s.edgeScroll);
   const toggleEdgeScroll = useSettingsStore((s) => s.toggleEdgeScroll);
+  const allHealthBars = useSettingsStore((s) => s.allHealthBars);
+  const toggleAllHealthBars = useSettingsStore((s) => s.toggleAllHealthBars);
 
   return (
     <div className="hud">
@@ -36,6 +41,10 @@ export function Hud() {
         <label>
           <input type="checkbox" checked={edgeScroll} onChange={toggleEdgeScroll} />
           Edge scrolling
+        </label>
+        <label title="Hold Alt to show them for a moment">
+          <input type="checkbox" checked={allHealthBars} onChange={toggleAllHealthBars} />
+          All health bars
         </label>
       </section>
 

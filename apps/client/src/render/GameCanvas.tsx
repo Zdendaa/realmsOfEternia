@@ -7,6 +7,7 @@ import { useGameStore } from '../state/gameStore';
 import { useSettingsStore } from '../state/settingsStore';
 import { decorateWorld } from '../world/decorateWorld';
 import { RtsCameraControls } from './camera/RtsCameraControls';
+import { HealthBars } from './combat/HealthBars';
 import { Projectiles } from './combat/Projectiles';
 import { CommandMarkers } from './commands/CommandMarkers';
 import { PlacementPreview } from './placement/PlacementPreview';
@@ -55,6 +56,7 @@ export function GameCanvas() {
         <Projectiles />
       </Suspense>
       <SelectionRings />
+      <HealthBars />
       <SelectionMarkers />
       <CommandMarkers />
       <PlacementPreview />

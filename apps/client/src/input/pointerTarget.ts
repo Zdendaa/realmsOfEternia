@@ -1,6 +1,7 @@
 import { UNITS } from '@roe/game-data';
 import { isInPlayableArea, type Decoration, type EntityId, type Vec2 } from '@roe/shared';
 import {
+  areEnemies,
   isAlive,
   isWalkable,
   nearestWalkablePoint,
@@ -40,6 +41,8 @@ export interface GroundTarget {
 export interface PointerTarget {
   /** An own unit drawn under the pointer (screen-space pick). */
   unitId: EntityId | null;
+  /** A living enemy unit drawn under the pointer (when no own unit is). */
+  enemyId: EntityId | null;
   /** The building whose box the ray hits first. */
   building: BuildingInstance | null;
   /** Where the ray hits the terrain; null if it misses (sky, beyond the map). */
@@ -60,6 +63,13 @@ export const ownUnitIds = (): EntityId[] =>
     .state.units.filter(
       (u) => u.ownerId === LOCAL_PLAYER && isAlive(u) && UNITS[u.type].controllable,
     )
+    .map((u) => u.id);
+
+/** Living units of the local player's enemies (what attacks can target). */
+export const enemyUnitIds = (): EntityId[] =>
+  useGameStore
+    .getState()
+    .state.units.filter((u) => isAlive(u) && areEnemies(LOCAL_PLAYER, u.ownerId))
     .map((u) => u.id);
 
 /** Tree or rock whose blocking circle (plus a margin) contains (x, z), nearest first. */
@@ -101,6 +111,7 @@ export function pickPointerTarget(
   const ray = raycaster.ray;
 
   const unitId = unitAt(ownUnitIds(), camera, rect, x, y);
+  const enemyId = unitId === null ? unitAt(enemyUnitIds(), camera, rect, x, y) : null;
   const building = pickBuilding(ray, state.buildings, heights);
   let ground: GroundTarget | null = null;
   if (pickGround(ray, heights, hit)) {
@@ -119,5 +130,5 @@ export function pickPointerTarget(
         resource !== null && remainingAmount(world, state.resourceNodes, resource.id) > 0,
     };
   }
-  return { unitId, building, ground };
+  return { unitId, enemyId, building, ground };
 }

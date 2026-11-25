@@ -4,11 +4,17 @@ import type { Camera } from 'three';
 import { commandFeedback } from '../render/commands/commandFeedback';
 import { unitsInBox } from '../render/picking/screenPick';
 import { useGameStore } from '../state/gameStore';
+import { useCommandModeStore } from '../state/commandModeStore';
 import { usePlacementStore } from '../state/placementStore';
 import { useSelectionStore } from '../state/selectionStore';
 import { dragBox } from '../ui/dragBox';
-import { commandIntent } from './cursorKind';
+import { attackMoveIntent, commandIntent, type CommandIntent } from './cursorKind';
 import { ownUnitIds, pickPointerTarget } from './pointerTarget';
+import { selectionKinds } from './selectionKinds';
+
+/** Keys typed into a form field are not commands. */
+const isTyping = (target: EventTarget | null) =>
+  target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
 
 /** A press that moves less than this (px) is a click; more starts a box or a camera drag. */
 const CLICK_TOLERANCE = 5;
@@ -53,18 +59,83 @@ function boxSelect(
   selection.selectUnits(add ? [...new Set([...selection.units, ...boxed])] : boxed);
 }
 
+/** Attacks `targetId` with the selected units; a red marker under the target when accepted. */
+function attackUnit(unitIds: readonly number[], targetId: number) {
+  const { dispatch, heights, state } = useGameStore.getState();
+  const result = dispatch({ type: 'attack', unitIds: [...unitIds], targetId });
+  const target = state.units.find((u) => u.id === targetId);
+  if (result.ok && target) {
+    commandFeedback.push({
+      kind: 'move',
+      x: target.x,
+      y: heights.getHeightAt(target.x, target.z),
+      z: target.z,
+      attack: true,
+    });
+  }
+}
+
 /**
- * Right click with units selected (see `commandIntent`): build an own construction site,
- * harvest a tree or rock, or walk. Blocked spots do nothing, matching the "not allowed"
- * cursor. Accepted commands get a marker.
+ * Left click while attack-move waits (F): attack the enemy under the pointer, or
+ * attack-move to the point. Shift keeps the mode for further orders.
+ */
+function attackMoveSelected(
+  element: HTMLElement,
+  camera: Camera,
+  x: number,
+  y: number,
+  keep: boolean,
+) {
+  const unitIds = useSelectionStore.getState().units;
+  const intent: CommandIntent = attackMoveIntent(pickPointerTarget(element, camera, x, y));
+  if (intent.kind === 'attack') attackUnit(unitIds, intent.targetId);
+  else if (intent.kind === 'move') {
+    const { dispatch, heights } = useGameStore.getState();
+    const result = dispatch({
+      type: 'attackMove',
+      unitIds: [...unitIds],
+      x: intent.x,
+      z: intent.z,
+    });
+    const { x: dx, z: dz } = intent.destination;
+    if (result.ok) {
+      commandFeedback.push({
+        kind: 'move',
+        x: dx,
+        y: heights.getHeightAt(dx, dz),
+        z: dz,
+        attack: true,
+      });
+    }
+  } else return;
+  if (!keep) useCommandModeStore.getState().setMode(null);
+}
+
+/** X: the selected units stop what they are doing. */
+function stopSelected() {
+  const unitIds = useSelectionStore.getState().units;
+  if (unitIds.length > 0) useGameStore.getState().dispatch({ type: 'stop', unitIds: [...unitIds] });
+}
+
+/** F: attack-move waits for a target click, if any selected unit fights. */
+function startAttackMove() {
+  if (selectionKinds().fighters) useCommandModeStore.getState().setMode('attackMove');
+}
+
+/**
+ * Right click with units selected (see `commandIntent`): attack an enemy (soldiers),
+ * build an own construction site, harvest a tree or rock, or walk. Blocked spots do
+ * nothing, matching the "not allowed" cursor. Accepted commands get a marker.
  */
 function commandSelected(element: HTMLElement, camera: Camera, x: number, y: number) {
   const unitIds = useSelectionStore.getState().units;
   if (unitIds.length === 0) return;
   const target = pickPointerTarget(element, camera, x, y);
-  const intent = commandIntent(target);
+  const intent = commandIntent(target, selectionKinds(unitIds).fighters);
   const { dispatch, heights } = useGameStore.getState();
-  if (intent.kind === 'build' && target.building) {
+  if (intent.kind === 'attack') {
+    attackUnit(unitIds, intent.targetId);
+  } else if (intent.kind === 'build' && target.building) {
     const site = target.building;
     const result = dispatch({ type: 'assignBuilders', unitIds: [...unitIds], siteId: site.id });
     if (result.ok) {
@@ -122,6 +193,12 @@ export function useSelectionInput() {
         left = null;
         dragBox.hide();
         if (press.placing) return;
+        // Attack-move ends when no selected unit can fight any more.
+        if (!selectionKinds().fighters) useCommandModeStore.getState().setMode(null);
+        if (useCommandModeStore.getState().mode === 'attackMove' && !press.boxing) {
+          attackMoveSelected(element, camera, event.clientX, event.clientY, event.shiftKey);
+          return;
+        }
         if (press.boxing)
           boxSelect(element, camera, press, event.clientX, event.clientY, event.shiftKey);
         else clickSelect(element, camera, event.clientX, event.clientY, event.shiftKey);
@@ -131,14 +208,21 @@ export function useSelectionInput() {
         right = null;
         const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y);
         if (!press.placing && moved <= CLICK_TOLERANCE) {
-          commandSelected(element, camera, event.clientX, event.clientY);
+          // A right click cancels a waiting attack-move instead of commanding.
+          if (useCommandModeStore.getState().mode) useCommandModeStore.getState().setMode(null);
+          else commandSelected(element, camera, event.clientX, event.clientY);
         }
       }
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.code === 'Escape' && !usePlacementStore.getState().selected) {
-        useSelectionStore.getState().clear();
-      }
+      if (isTyping(event.target) || usePlacementStore.getState().selected) return;
+      if (event.code === 'Escape') {
+        // First cancel a waiting attack-move, then clear the selection.
+        const modes = useCommandModeStore.getState();
+        if (modes.mode) modes.setMode(null);
+        else useSelectionStore.getState().clear();
+      } else if (event.code === 'KeyF' && !event.repeat) startAttackMove();
+      else if (event.code === 'KeyX' && !event.repeat) stopSelected();
     };
 
     // Presses start on the canvas; moves and releases are tracked on the window, so a box

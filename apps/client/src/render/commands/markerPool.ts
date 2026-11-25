@@ -1,6 +1,7 @@
 import { BUILDINGS } from '@roe/game-data';
 import {
   CanvasTexture,
+  Color,
   InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
@@ -20,6 +21,8 @@ import { createMarkerMaterial, MARKER_DURATION, MARKER_KIND } from './markerMate
 
 /** Ground markers alive at once; the oldest is reused when the pool is full. */
 const GROUND_POOL = 16;
+/** Attack and attack-move markers are red, whatever the player's color. */
+const ATTACK_COLOR = new Color('#e0483a');
 /** Hammer icons alive at once. */
 const ICON_POOL = 4;
 /** Side of the move marker's quad (world units). */
@@ -119,11 +122,11 @@ export function createMarkerPool(): MarkerPool {
   let nextIcon = 0;
   let activeUntil = -1;
 
-  function spawnGround(now: number, kind: number, sizeX: number, sizeZ: number) {
+  function spawnGround(now: number, kind: number, sizeX: number, sizeZ: number, attack = false) {
     const slot = nextGround;
     nextGround = (slot + 1) % GROUND_POOL;
     ground.setMatrixAt(slot, matrix.compose(position, quaternion, scale.set(sizeX, 1, sizeZ)));
-    const color = ownerColor(LOCAL_PLAYER);
+    const color = attack ? ATTACK_COLOR : ownerColor(LOCAL_PLAYER);
     markerAttr.setXYZW(slot, now, kind, sizeX, sizeZ);
     colorAttr.setXYZ(slot, color.r, color.g, color.b);
     ground.instanceMatrix.needsUpdate = true;
@@ -138,7 +141,7 @@ export function createMarkerPool(): MarkerPool {
       // Lie on the slope: tilt the quad to the terrain normal.
       quaternion.setFromUnitVectors(up, terrainNormal(event.x, event.z, normal));
       position.set(event.x, event.y + 0.08, event.z);
-      spawnGround(now, MARKER_KIND.move, MOVE_SIZE, MOVE_SIZE);
+      spawnGround(now, MARKER_KIND.move, MOVE_SIZE, MOVE_SIZE, event.attack === true);
       return;
     }
     const { site, groundY } = event;

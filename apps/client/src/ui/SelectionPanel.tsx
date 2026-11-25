@@ -18,7 +18,6 @@ import {
   missingResources,
   populationOf,
   type CommandIssue,
-  type UnitActivity,
   type WorkPhase,
 } from '@roe/sim';
 import { useState } from 'react';
@@ -27,6 +26,7 @@ import { useSelectionStore } from '../state/selectionStore';
 import { CostList } from './CostList';
 import { RESOURCE_ICONS } from './icons/resourceIcons';
 import { TrainingPanel } from './TrainingPanel';
+import { UnitPanel } from './UnitPanel';
 
 const ISSUE_MESSAGES: Partial<Record<CommandIssue, string>> = {
   unitLimit: `You already have ${UNITS.serf.maxPerPlayer} serfs.`,
@@ -256,40 +256,10 @@ function WorkerStatus({ buildingId, type }: { buildingId: number; type: keyof ty
   return <p className="selection-meta">Worker: {text}</p>;
 }
 
-/** Selected units: how many, and what they are doing. */
-function UnitSelection({ ids }: { ids: readonly number[] }) {
-  // A primitive selector result (a string), so the panel re-renders only when counts change.
-  const summary = useGameStore((s) => {
-    const wanted = new Set(ids);
-    const counts: Record<UnitActivity, number> = {
-      idle: 0,
-      walking: 0,
-      working: 0,
-      attacking: 0,
-      dying: 0,
-    };
-    for (const u of s.state.units) if (wanted.has(u.id)) counts[u.activity]++;
-    return `${counts.idle + counts.walking + counts.working},${counts.idle},${counts.walking},${counts.working}`;
-  });
-  const [total = 0, idle = 0, walking = 0, working = 0] = summary.split(',').map(Number);
-  if (total === 0) return null;
-  return (
-    <section className="hud-panel selection-panel" aria-label="Selection">
-      <h2>{total === 1 ? 'Serf' : `${total} serfs`}</h2>
-      <p className="selection-meta">
-        {working} working · {walking} walking · {idle} idle
-      </p>
-      <p className="selection-meta">
-        Right-click: move · a construction site: build · a tree or rock: gather
-      </p>
-    </section>
-  );
-}
-
 /** Panel for the current selection: units, or a building with its actions. */
 export function SelectionPanel() {
   const unitIds = useSelectionStore((s) => s.units);
-  if (unitIds.length > 0) return <UnitSelection ids={unitIds} />;
+  if (unitIds.length > 0) return <UnitPanel ids={unitIds} />;
   return <BuildingSelection />;
 }
 

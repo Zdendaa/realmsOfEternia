@@ -2,7 +2,8 @@ import type { BuildingInstance } from '@roe/sim';
 
 /** A command the player just gave, to be acknowledged visually. */
 export type CommandFeedback =
-  | { kind: 'move'; x: number; y: number; z: number }
+  /** A move, or with `attack` an attack or attack-move (drawn in red). */
+  | { kind: 'move'; x: number; y: number; z: number; attack?: boolean }
   | { kind: 'build'; site: BuildingInstance; groundY: number };
 
 const queue: CommandFeedback[] = [];
