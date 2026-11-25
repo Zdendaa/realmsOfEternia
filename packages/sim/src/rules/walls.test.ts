@@ -46,6 +46,9 @@ function game(resources: ResourceAmounts = RICH) {
       return result.results;
     },
     walls: () => state.buildings.filter((b) => b.type !== 'townHall'),
+    stepAs(issuer: PlayerId, command: Command) {
+      state = stepGame(ctx, state, [{ issuer, command }]).state;
+    },
     run(seconds: number, until?: (s: GameState) => boolean) {
       for (let i = 0; i < seconds * SIMULATION_TICK_RATE; i++) {
         if (until?.(state)) return;
@@ -293,7 +296,13 @@ describe('falling walls', () => {
     const g = game();
     g.step(wall([-2, 14], [0, 14]));
     expect(isWalkable(g.ctx.nav, -1, 14)).toBe(false);
+    const first = g.state.nextEntityId;
     g.step({ type: 'debugSpawn', unit: 'spearman', count: 8, x: -1, z: 17, owner: 'enemy' });
+    // Walls are only attacked on order (or when they block the way).
+    const unitIds = Array.from({ length: 8 }, (_, i) => first + i);
+    const target = g.walls()[0]?.id ?? 0;
+    const attack = { type: 'attack', unitIds, targetId: target } as const;
+    g.stepAs('enemy', attack);
     g.run(60, (s) => s.ruins.length > 0);
     expect(g.state.ruins.map((r) => r.type)).toEqual(['palisade']);
     expect(isWalkable(g.ctx.nav, -1, 14)).toBe(true);

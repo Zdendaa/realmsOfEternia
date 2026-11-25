@@ -1,4 +1,4 @@
-import { buildingHealthOf, COMBAT_RULES } from '@roe/game-data';
+import { buildingHealthOf, COMBAT_RULES, isWall } from '@roe/game-data';
 import { distanceToFootprint, type EntityId, type Vec2 } from '@roe/shared';
 import {
   toPlacedFootprint,
@@ -64,7 +64,8 @@ export function approachPoint(unit: Vec2, building: BuildingInstance): Vec2 {
 
 /**
  * The nearest enemy building whose footprint lies within `sightRange` of `unit`, ties
- * by id; null when none. Units are preferred over buildings by the caller.
+ * by id; null when none. Units are preferred over buildings by the caller. Walls and
+ * gates are never picked: they are attacked on order, or when they block the way.
  */
 export function findBuildingTarget(
   unit: UnitInstance,
@@ -74,7 +75,7 @@ export function findBuildingTarget(
   let best: BuildingInstance | null = null;
   let bestDistance = Infinity;
   for (const building of buildings) {
-    if (!areEnemies(unit.ownerId, building.ownerId)) continue;
+    if (!areEnemies(unit.ownerId, building.ownerId) || isWall(building.type)) continue;
     const distance = distanceToFootprint(toPlacedFootprint(building), unit.x, unit.z);
     if (distance > sightRange) continue;
     if (distance < bestDistance || (distance === bestDistance && best && building.id < best.id)) {

@@ -9,7 +9,7 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 | 7.1 | Walls in the sim: wall types in game-data, `placeWall`, segments, nav blocking, health, construction, cut-off check, tests                  | ✅     |
 | 7.2 | Drawing walls: mouse drag, live preview (green / red, total cost, cut-off warning), posts, instancing, damage and ruins. **Browser review** | ✅     |
 | 7.3 | Gates: a wall segment becomes a gate; the owner's units pass, others don't                                                                  | ✅     |
-| 7.4 | Breaching: enemies with no route attack the wall in the way; a wave breaks into a walled village                                            |        |
+| 7.4 | Breaching: enemies with no route attack the wall in the way; a wave breaks into a walled village                                            | ✅     |
 | 7.5 | Wooden tower: shoots by itself, arrows from the top, range ring when selected. **Browser review**                                           |        |
 | 7.6 | Tower upgrades: wood → stone → crossbow, magic or fire; upgrade command, panel button, changed look                                         |        |
 | 7.7 | Balance and check: the wave against walls and towers, performance with 300+ segments, docs                                                  |        |
@@ -29,6 +29,13 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 ### 7.3 notes (done 2026-11-25)
 
 - As planned. A gate is made from a selected segment ("Make gate"), with its own cost; it blocks everyone until built. Doors open for the owner's units. 8 sim tests (straight and diagonal gates, building from inside, enemies kept out until the gate breaks, the cut-off check). Checked in the browser, dev build: "Make gate" with a real click on a stone segment, both gate models closed and open, serfs walking out through the stone gate. Test shortcuts: filled stock, sites marked complete, units placed next to the gates.
+
+### 7.4 notes (done 2026-11-25)
+
+- As planned, with one change in behavior it needed: soldiers no longer pick walls as targets on their own (otherwise a passing wave would stop to hack at any wall in sight). Walls are attacked on order or when they block the way.
+- Idle soldiers who see an enemy behind a wall and have no way to them also breach. Archers shoot over walls when in range.
+- Performance: the first version took 288 ms in the worst tick with 90 shut-out attackers (120 × 120 test map); with the region check, the shared choice and the per-tick cap it is about 50 ms (2 ms on average). In the browser on the prototype map with 40 attackers: 2.3 ms on average, 25 ms worst.
+- 11 sim tests: waves breaking into square, diagonal and double rings, walking around an open side, preferring the gate, ordered targets, defenders, own walls and plain moves, determinism, the benchmark.
 
 ## Decisions
 

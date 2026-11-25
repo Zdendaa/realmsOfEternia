@@ -2,13 +2,8 @@ import { isGate, UNITS, type BuildingId } from '@roe/game-data';
 import type { PlayerId, Vec2 } from '@roe/shared';
 import { buildingStamps, type SimContext } from '../context/simContext.js';
 import { workSlots } from '../construction/workSlots.js';
-import {
-  addBuilding,
-  isWalkableCell,
-  nearestWalkableCell,
-  stampBuildings,
-  type NavGrid,
-} from '../nav/navGrid.js';
+import { findRegions } from '../nav/regions.js';
+import { addBuilding, nearestWalkableCell, stampBuildings, type NavGrid } from '../nav/navGrid.js';
 import { toPlacedFootprint, type GameState } from '../state/gameState.js';
 import { isAlive } from '../state/units.js';
 import type { WallSegment } from './walls.js';
@@ -39,47 +34,6 @@ function gridWithGates(grid: NavGrid, state: GameState, player: PlayerId): NavGr
 }
 
 /**
- * For every walkable cell the id of its connected region, and the id of the largest one
- * ("the rest of the map"). 4-neighbours are enough: paths never cut corners.
- */
-function regions(grid: NavGrid, player: PlayerId): { of: Int32Array; main: number } {
-  const { cols, rows } = grid;
-  const of = new Int32Array(cols * rows);
-  const stack = new Int32Array(cols * rows);
-  let id = 0;
-  let main = 0;
-  let largest = 0;
-  for (let start = 0; start < of.length; start++) {
-    if (of[start] !== 0 || !isWalkableCell(grid, start, player)) continue;
-    id++;
-    let size = 0;
-    let top = 0;
-    stack[top++] = start;
-    of[start] = id;
-    const visit = (next: number) => {
-      if (of[next] === 0 && isWalkableCell(grid, next, player)) {
-        of[next] = id;
-        stack[top++] = next;
-      }
-    };
-    while (top > 0) {
-      const cell = stack[--top] as number;
-      size++;
-      const col = cell % cols;
-      if (col > 0) visit(cell - 1);
-      if (col < cols - 1) visit(cell + 1);
-      if (cell >= cols) visit(cell - cols);
-      if (cell < cols * (rows - 1)) visit(cell + cols);
-    }
-    if (size > largest) {
-      largest = size;
-      main = id;
-    }
-  }
-  return { of, main };
-}
-
-/**
  * Which of `player`'s units and construction sites the new wall `segments` would cut off
  * from the rest of the map, with no gate of theirs to leave through. A warning for the
  * one drawing the wall, not a rule: walling yourself in is allowed. Costs two flood fills of the nav grid (call it when the line
@@ -98,8 +52,8 @@ export function findCutOff(
   const after = gridWithGates(ctx.nav, state, player);
   for (const wall of walls) addBuilding(after, { area: toPlacedFootprint(wall) });
 
-  const before = regions(open, player);
-  const walled = regions(after, player);
+  const before = findRegions(open, player);
+  const walled = findRegions(after, player);
   const connected = (grid: NavGrid, found: typeof before, at: Vec2) => {
     const cell = nearestWalkableCell(grid, at.x, at.z, player);
     return cell >= 0 && found.of[cell] === found.main;

@@ -66,6 +66,7 @@ export { attackOf, combatOf, isUnitKind, UNITS, type UnitKind } from './units/de
 export type { UnitDefinition } from './units/types.js';
 export {
   BUILDING_COMBAT,
+  BREACH_RULES,
   COMBAT_RULES,
   damageAgainst,
   type ArmorClass,

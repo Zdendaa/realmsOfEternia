@@ -1,4 +1,4 @@
-import { isGate, isWalkableBuilding } from '@roe/game-data';
+import { BREACH_RULES, buildingHealthOf, isGate, isWall, isWalkableBuilding } from '@roe/game-data';
 import { createVision, updateVision, type Vision } from '../vision/vision.js';
 import type { HeightField, PlayerId } from '@roe/shared';
 import { createPathFinder, type PathFinder } from '../nav/astar.js';
@@ -9,7 +9,9 @@ import {
   stampBuildings,
   type BuildingStamp,
   type NavGrid,
+  type Passer,
 } from '../nav/navGrid.js';
+import { createRegionCache, type Regions } from '../nav/regions.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import type { NodeAmounts } from '../state/resourceNodes.js';
 import { createStateHeights, flattens } from '../state/stateHeights.js';
@@ -29,6 +31,8 @@ export interface SimContext {
   heights: HeightField;
   readonly nav: NavGrid;
   readonly paths: PathFinder;
+  /** The nav grid's connected regions for a passer, recomputed after the grid changes. */
+  readonly regions: (passer: Passer) => Regions;
   /** The buildings array the context was last synced with. */
   buildings: readonly BuildingInstance[];
   /** The resource node amounts the context was last synced with. */
@@ -69,14 +73,23 @@ export interface SimContextOptions {
 const passableFor = (building: BuildingInstance) =>
   isGate(building.type) && building.status === 'complete' ? building.ownerId : null;
 
+/** What it costs a breaching route to go through a cell of `building`. */
+const wallCellOf = (building: Pick<BuildingInstance, 'id' | 'type' | 'ownerId'>) => ({
+  id: building.id,
+  owner: building.ownerId,
+  cost: BREACH_RULES.cellCost + BREACH_RULES.costPerHealth * buildingHealthOf(building.type),
+});
+
 /** What the buildings put on the nav grid: every one except walkable ones (fields). */
 export const buildingStamps = (buildings: readonly BuildingInstance[]): BuildingStamp[] =>
   buildings
     .filter((b) => !isWalkableBuilding(b.type))
     .map((b) => {
+      const stamp: BuildingStamp = { area: toPlacedFootprint(b) };
       const gateOwner = passableFor(b);
-      const area = toPlacedFootprint(b);
-      return gateOwner === null ? { area } : { area, gateOwner };
+      if (gateOwner !== null) stamp.gateOwner = gateOwner;
+      if (isWall(b.type)) stamp.wall = wallCellOf(b);
+      return stamp;
     });
 
 /** True while two buildings put the same thing on the nav grid. */
@@ -104,6 +117,7 @@ export function createSimContext(
     heights: createStateHeights(world, state),
     nav,
     paths: createPathFinder(nav),
+    regions: createRegionCache(nav),
     buildings: state.buildings,
     resourceNodes: state.resourceNodes,
     depleted,

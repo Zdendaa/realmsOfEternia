@@ -2,10 +2,12 @@ import {
   distanceToFootprint,
   isInPlayableArea,
   type Decoration,
+  type EntityId,
   type PlacedFootprint,
   type PlayerId,
   type Vec2,
 } from '@roe/shared';
+import { areEnemies } from '../combat/hostility.js';
 import { PLACEMENT_RULES } from '../rules/placement.js';
 import type { SimWorld } from '../world/createWorld.js';
 
@@ -17,6 +19,8 @@ const BUILDING = 2;
 const DECORATION = 4;
 /** Covered by a finished gate: open to its owner's units only (`gateOwners`). */
 const GATE = 8;
+/** Covered by a wall segment (or an unfinished gate): enemies may break through it. */
+const WALL = 16;
 
 export const NAV_RULES = {
   /** Side length of one navigation cell, in world units. */
@@ -41,8 +45,19 @@ export interface NavGrid {
   readonly flags: Uint8Array;
   /** The owner of the gate on each `GATE` cell. */
   readonly gateOwners: Map<number, PlayerId>;
+  /** The wall segment on each cell a wall covers, for breaching. */
+  readonly wallCells: Map<number, WallCell>;
   /** Bumped whenever building or decoration cells change, so routes can be re-checked. */
   version: number;
+}
+
+/** What breaking through a cell of wall means. */
+export interface WallCell {
+  /** A segment covering the cell (the first stamped, where two overlap). */
+  id: EntityId;
+  owner: PlayerId | null;
+  /** The path cost of going through; overlapping segments add up. */
+  cost: number;
 }
 
 /** What one building puts on the grid. */
@@ -50,6 +65,8 @@ export interface BuildingStamp {
   area: PlacedFootprint;
   /** Set for a finished gate: its owner's units may walk through. */
   gateOwner?: PlayerId;
+  /** Set for wall segments and gates: they can be breached. */
+  wall?: WallCell;
 }
 
 /**
@@ -73,6 +90,7 @@ export function createNavGrid(
     originZ,
     flags,
     gateOwners: new Map(),
+    wallCells: new Map(),
     version: 0,
   };
 
@@ -155,22 +173,35 @@ export function removeDecoration(
 /** Marks every building footprint, replacing the previous building layer. */
 export function stampBuildings(grid: NavGrid, stamps: readonly BuildingStamp[]): void {
   const { flags } = grid;
-  for (let i = 0; i < flags.length; i++) flags[i] = (flags[i] as number) & ~(BUILDING | GATE);
+  const layers = BUILDING | GATE | WALL;
+  for (let i = 0; i < flags.length; i++) flags[i] = (flags[i] as number) & ~layers;
   grid.gateOwners.clear();
+  grid.wallCells.clear();
   for (const stamp of stamps) addBuilding(grid, stamp);
   grid.version++;
 }
 
+/** Records the wall on cell `i`; false when walls of two owners meet there. */
+function addWallCell(grid: NavGrid, i: number, wall: WallCell): boolean {
+  const there = grid.wallCells.get(i);
+  if (!there) grid.wallCells.set(i, wall);
+  else if (there.owner !== wall.owner) return false;
+  else grid.wallCells.set(i, { ...there, cost: there.cost + wall.cost });
+  return true;
+}
+
 /**
  * Marks one more footprint (incremental update when a site is placed). A cell that a gate
- * shares with anything solid, or with another player's gate, is blocked for everyone.
+ * shares with anything solid, or with another player's gate, is blocked for everyone, and
+ * only a cell covered by nothing but one owner's walls can be breached.
  */
-export function addBuilding(grid: NavGrid, { area, gateOwner }: BuildingStamp): void {
+export function addBuilding(grid: NavGrid, { area, gateOwner, wall }: BuildingStamp): void {
   const reach = Math.hypot(area.footprint.w, area.footprint.d) / 2 + NAV_RULES.clearance;
   forEachCellNear(grid, area.x, area.z, reach, (i, c) => {
     if (distanceToFootprint(area, c.x, c.z, NAV_RULES.clearance) !== 0) return;
     let flag = BUILDING;
-    if (gateOwner !== undefined) {
+    if (wall && addWallCell(grid, i, wall)) flag = WALL;
+    if (gateOwner !== undefined && (!wall || flag === WALL)) {
       const other = grid.gateOwners.get(i);
       if (other === undefined || other === gateOwner) {
         grid.gateOwners.set(i, gateOwner);
@@ -195,6 +226,16 @@ export function cellIndexAt(grid: NavGrid, x: number, z: number): number {
   const row = Math.floor((z - grid.originZ) / NAV_RULES.cellSize);
   if (col < 0 || row < 0 || col >= grid.cols || row >= grid.rows) return -1;
   return row * grid.cols + col;
+}
+
+/**
+ * The enemy wall on cell `i` that `attacker` could break through, or null: the cell is
+ * blocked by walls (or a gate) only, and they are an enemy's.
+ */
+export function breachableCell(grid: NavGrid, i: number, attacker: Passer): WallCell | null {
+  if (((grid.flags[i] as number) & ~(WALL | GATE)) !== 0) return null;
+  const wall = grid.wallCells.get(i);
+  return wall && areEnemies(attacker, wall.owner) ? wall : null;
 }
 
 /**

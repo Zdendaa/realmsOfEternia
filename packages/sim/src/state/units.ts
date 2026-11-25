@@ -113,6 +113,11 @@ export type UnitActivity = 'idle' | 'walking' | 'working' | 'attacking' | 'dying
 export interface UnitCombat {
   /** The enemy being fought or chased, or null. */
   targetId: EntityId | null;
+  /**
+   * The enemy wall segment in the way: the unit breaks it before it goes on with what it
+   * was doing. Null when nothing has to be broken.
+   */
+  breachId: EntityId | null;
   /** First tick on which the unit may start its next attack. */
   readyAt: number;
   /** Tick on which the attack in progress hits (melee) or releases its arrow; null when not attacking. */
@@ -171,7 +176,7 @@ export function createUnit(
     carrying: null,
     health: combatOf(type).health,
     combat: fights
-      ? { targetId: null, readyAt: 0, strikeAt: null, anchor: null, home: null }
+      ? { targetId: null, breachId: null, readyAt: 0, strikeAt: null, anchor: null, home: null }
       : null,
     diedAt: null,
   };

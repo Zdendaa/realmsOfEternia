@@ -44,6 +44,18 @@ export const BUILDING_COMBAT = { armor: 2, armorClass: 'building' } as const sat
   'armor' | 'armorClass'
 >;
 
+/**
+ * Breaching: fighters with no way to where they want to go break through an enemy wall.
+ * These costs only choose which segment: they are in path-search units (a straight step
+ * of one cell costs 10).
+ */
+export const BREACH_RULES = {
+  /** Per wall cell crossed: so high that any way around always wins. */
+  cellCost: 10_000,
+  /** Added per cell for each hit point of the segment: weak spots (gates) are preferred. */
+  costPerHealth: 10,
+} as const;
+
 /** Shared combat tuning. */
 export const COMBAT_RULES = {
   /** Fighting units look for enemies once per this many ticks (staggered by unit id). */

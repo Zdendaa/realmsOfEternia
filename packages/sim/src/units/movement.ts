@@ -1,5 +1,6 @@
 import { UNITS } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type Vec2 } from '@roe/shared';
+import { createRoutePlanner } from '../combat/breaching.js';
 import type { SimContext } from '../context/simContext.js';
 import { hasLineOfSight } from '../nav/smoothPath.js';
 import type { UnitInstance, UnitMovement } from '../state/units.js';
@@ -36,12 +37,21 @@ function remainingLength(x: number, z: number, waypoints: readonly Vec2[], next:
 /** Plans routes for units waiting for one, up to the per-tick budget, in state order. */
 export function planPaths(ctx: SimContext, units: UnitInstance[]): void {
   let budget: number = MOVEMENT_RULES.pathsPerTick;
+  const plan = createRoutePlanner(ctx);
   for (const unit of units) {
     if (budget === 0) return;
     const m = unit.movement;
     if (!m || m.waypoints) continue;
     budget--;
-    const { waypoints } = ctx.paths.findPath(unit, m.goal, { passer: unit.ownerId });
+    const planned = plan(unit, m.goal);
+    if (planned === 'later') continue;
+    if ('breachId' in planned) {
+      // The fighting code takes it from here: the wall is the target now.
+      if (unit.combat) unit.combat = { ...unit.combat, breachId: planned.breachId };
+      unit.movement = null;
+      continue;
+    }
+    const { waypoints } = planned.route;
     // An empty route means the unit is already there, or nothing reachable exists.
     unit.movement = waypoints.length === 0 ? null : { ...m, waypoints, next: 0 };
   }

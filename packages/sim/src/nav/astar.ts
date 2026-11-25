@@ -1,5 +1,6 @@
-import type { Vec2 } from '@roe/shared';
+import type { EntityId, Vec2 } from '@roe/shared';
 import {
+  breachableCell,
   cellCenter,
   cellIndexAt,
   isWalkableCell,
@@ -19,6 +20,11 @@ export interface PathOptions {
   /** Whose units walk the route: they may use that player's gates. */
   passer?: Passer;
   maxExpansions?: number;
+  /**
+   * Also plan through enemy walls, at their cells' cost, and report the first one the
+   * route crosses (`PathResult.breach`).
+   */
+  breach?: boolean;
 }
 
 export interface PathResult {
@@ -28,6 +34,11 @@ export interface PathResult {
   reachedGoal: boolean;
   /** Cells expanded by the search (for measurements and tests). */
   expanded: number;
+  /**
+   * With `PathOptions.breach`: the wall segment to break first, or null when the route
+   * crosses none. A route with a breach isn't walkable as it stands.
+   */
+  breach: EntityId | null;
 }
 
 /**
@@ -46,8 +57,9 @@ export function createPathFinder(grid: NavGrid): PathFinder {
   const closed = new Uint32Array(n);
   const heap = new MinHeap(n);
   let generation = 0;
-  /** Who the running search is for. */
+  /** Who the running search is for, and whether it may plan through enemy walls. */
   let passer: Passer = null;
+  let breaching = false;
 
   /** Neighbour offsets: 4 straight, then 4 diagonal steps. */
   const OFFSETS = [
@@ -67,12 +79,19 @@ export function createPathFinder(grid: NavGrid): PathFinder {
     return STRAIGHT * (dx + dz) + (DIAGONAL - 2 * STRAIGHT) * Math.min(dx, dz);
   };
 
-  const walkableAt = (col: number, row: number) =>
-    col >= 0 &&
-    row >= 0 &&
-    col < grid.cols &&
-    row < grid.rows &&
-    isWalkableCell(grid, row * grid.cols + col, passer);
+  const walkableAt = (col: number, row: number) => {
+    if (col < 0 || row < 0 || col >= grid.cols || row >= grid.rows) return false;
+    const i = row * grid.cols + col;
+    return (
+      isWalkableCell(grid, i, passer) || (breaching && breachableCell(grid, i, passer) !== null)
+    );
+  };
+
+  /** The extra cost of entering a cell that has to be broken through first. */
+  const wallCost = (i: number) =>
+    breaching && !isWalkableCell(grid, i, passer)
+      ? (breachableCell(grid, i, passer)?.cost ?? 0)
+      : 0;
 
   /** Pushes every open neighbour of `current` that this route reaches more cheaply. */
   const expand = (current: number, goal: number) => {
@@ -85,7 +104,7 @@ export function createPathFinder(grid: NavGrid): PathFinder {
       if (diagonal && !(walkableAt(col + dx, row) && walkableAt(col, row + dz))) continue;
       const next = (row + dz) * grid.cols + col + dx;
       if (closed[next] === generation) continue;
-      const cost = (g[current] as number) + (diagonal ? DIAGONAL : STRAIGHT);
+      const cost = (g[current] as number) + (diagonal ? DIAGONAL : STRAIGHT) + wallCost(next);
       if (seen[next] === generation && cost >= (g[next] as number)) continue;
       seen[next] = generation;
       g[next] = cost;
@@ -132,18 +151,24 @@ export function createPathFinder(grid: NavGrid): PathFinder {
     findPath(from, to, options = {}) {
       const { maxExpansions = DEFAULT_MAX_EXPANSIONS } = options;
       passer = options.passer ?? null;
+      breaching = options.breach ?? false;
       // Units standing inside an obstacle (a site placed on top of them) first step out.
       const start = nearestWalkableCell(grid, from.x, from.z, passer);
       const goalCell = cellIndexAt(grid, to.x, to.z);
       const goal = isWalkableCell(grid, goalCell, passer)
         ? goalCell
         : nearestWalkableCell(grid, to.x, to.z, passer);
-      if (start < 0 || goal < 0) return { waypoints: [], reachedGoal: false, expanded: 0 };
+      if (start < 0 || goal < 0) {
+        return { waypoints: [], reachedGoal: false, expanded: 0, breach: null };
+      }
 
       const { end, found, expanded } = search(start, goal, maxExpansions);
       const cells: number[] = [];
       for (let c = end; c !== -1; c = parent[c] as number) cells.push(c);
       cells.reverse();
+      const crossing = breaching ? cells.find((c) => !isWalkableCell(grid, c, passer)) : undefined;
+      const breach =
+        crossing === undefined ? null : (breachableCell(grid, crossing, passer)?.id ?? null);
 
       const points = cells.map((c) => cellCenter(grid, c));
       // The exact goal replaces its cell center when the goal point itself is walkable.
@@ -154,7 +179,7 @@ export function createPathFinder(grid: NavGrid): PathFinder {
       if (cellIndexAt(grid, from.x, from.z) === start) points[0] = { x: from.x, z: from.z };
       else points.unshift({ x: from.x, z: from.z });
       const waypoints = smoothPath(grid, points, passer).slice(1);
-      return { waypoints, reachedGoal, expanded };
+      return { waypoints, reachedGoal, expanded, breach };
     },
   };
 }

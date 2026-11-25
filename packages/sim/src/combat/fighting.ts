@@ -140,6 +140,19 @@ export function updateFighters(
     } else if (task.kind !== 'idle' && task.kind !== 'attackMove') {
       target = null;
     }
+    // A wall in the way comes first, unless an enemy unit is right there to be fought.
+    const wall = find(combat.breachId);
+    if (!wall) combat.breachId = null;
+    else if (!target?.unit || !hasLineOfSight(ctx.nav, unit, target.unit, unit.ownerId)) {
+      target = wall;
+      const attacker =
+        (tick + unit.id) % COMBAT_RULES.scanEvery === 0
+          ? findTarget(unit, grid, combatOf(unit.type).sightRange ?? 0)
+          : null;
+      if (attacker && hasLineOfSight(ctx.nav, unit, attacker, unit.ownerId)) {
+        target = { unit: attacker };
+      }
+    }
 
     const kind = unit.task.kind;
     const returning = kind === 'idle' && combat.anchor !== null && !wasEngaged && unit.movement;
@@ -177,6 +190,7 @@ export function updateFighters(
 
     // No target this tick.
     combat.targetId = null;
+    combat.breachId = null;
     combat.strikeAt = null;
     if (unit.task.kind === 'attackMove') {
       const goal = { x: unit.task.x, z: unit.task.z };

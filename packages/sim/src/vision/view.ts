@@ -44,7 +44,7 @@ export interface PlayerView {
  */
 function seenFromOutside(unit: UnitInstance): UnitInstance {
   const task = unit.task.kind === 'move' || unit.task.kind === 'attackMove' ? IDLE : unit.task;
-  const combat = unit.combat && { ...unit.combat, anchor: null, home: null };
+  const combat = unit.combat && { ...unit.combat, breachId: null, anchor: null, home: null };
   return { ...unit, task, movement: null, combat };
 }
 
