@@ -15,6 +15,7 @@ import { RIPE_FIELD, type FieldState } from './fields.js';
 import { createUnit, type UnitInstance } from './units.js';
 import { hireWorkers } from '../units/workers.js';
 import { spawnPoint } from './spawn.js';
+import { spawnCamps } from '../combat/camps.js';
 
 export type BuildingStatus = 'construction' | 'complete';
 
@@ -149,6 +150,10 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
   // Production buildings of an owned starting settlement come with their workers
   // (housing permitting, like any other).
   nextEntityId = hireWorkers(buildings, units, nextEntityId);
+  // Monster camps guard their spots from the start.
+  const camps = spawnCamps(world.map.camps ?? [], nextEntityId);
+  units.push(...camps.units);
+  nextEntityId = camps.nextEntityId;
 
   const resources = options.resources ?? STARTING_RESOURCES;
   const stockHolders = [...(owner !== null ? [owner] : []), ...(options.players ?? [])];

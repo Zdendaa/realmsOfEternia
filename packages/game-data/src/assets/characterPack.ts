@@ -126,7 +126,16 @@ export type SoldierAnimation =
   | 'death';
 
 /** Weapons and gear soldiers hold or wear (files in `CHARACTER_PACK.weapons`; the spear is built in code). */
-export type WeaponId = 'sword' | 'shield' | 'spear' | 'bow' | 'quiver';
+export type WeaponId =
+  | 'sword'
+  | 'shield'
+  | 'spear'
+  | 'bow'
+  | 'quiver'
+  | 'skeletonBlade'
+  | 'skeletonAxe'
+  | 'skeletonShield'
+  | 'crossbow';
 
 export interface SoldierModel {
   /** Model file relative to `CHARACTER_PACK.dir`. */
@@ -152,6 +161,7 @@ export interface SoldierModel {
 const MELEE = `${MEDIUM}Rig_Medium_CombatMelee.glb`;
 const RANGED = `${MEDIUM}Rig_Medium_CombatRanged.glb`;
 const GENERAL = `${MEDIUM}Rig_Medium_General.glb`;
+const SPECIAL = `${MEDIUM}Rig_Medium_Special.glb`;
 const WALK = { file: `${MEDIUM}Rig_Medium_MovementBasic.glb`, clip: 'Walking_B' };
 const DEATH = { file: GENERAL, clip: 'Death_A' };
 
@@ -222,6 +232,11 @@ export const CHARACTER_PACK = {
     shield: 'accessories/shield_badge_color.glb',
     bow: 'accessories/bow_withString.glb',
     quiver: 'accessories/quiver.glb',
+    // KayKit Skeletons 1.1 accessories.
+    skeletonBlade: 'accessories/Skeleton_Blade.glb',
+    skeletonAxe: 'accessories/Skeleton_Axe.glb',
+    skeletonShield: 'accessories/Skeleton_Shield_Small_A.glb',
+    crossbow: 'accessories/Skeleton_Crossbow.glb',
   } as Readonly<Partial<Record<WeaponId, string>>>,
   /** The arrow drawn in flight. */
   arrow: 'accessories/arrow_bow.glb',
@@ -299,4 +314,63 @@ export const CHARACTER_PACK = {
       ],
     },
   } satisfies Record<'swordsman' | 'spearman' | 'archer', SoldierModel>,
+  /**
+   * KayKit Character Pack: Skeletons 1.1 (CC0, Kay Lousberg), on the same Rig_Medium (same
+   * 23 bones and rest pose as the Adventurers, checked when importing), so every clip
+   * plays on them. Monsters keep their own colors (no team cells).
+   */
+  monsters: {
+    skeletonMinion: {
+      model: 'skeletons/Skeleton_Minion.glb',
+      hiddenMeshes: [],
+      scale: SOLDIER_SCALE,
+      height: 2.2,
+      animations: {
+        idle: { file: SPECIAL, clip: 'Skeletons_Idle' },
+        walk: { file: SPECIAL, clip: 'Skeletons_Walking' },
+        attack: { file: MELEE, clip: 'Melee_1H_Attack_Slice_Diagonal' },
+        ready: { file: SPECIAL, clip: 'Skeletons_Taunt' },
+        death: { file: SPECIAL, clip: 'Skeletons_Death' },
+      },
+      attackHitAt: 0.45,
+      tint: { grid: [8, 4], team: [] },
+      weapons: [{ weapon: 'skeletonBlade', bone: 'handslot.r' }],
+    },
+    skeletonWarrior: {
+      model: 'skeletons/Skeleton_Warrior.glb',
+      hiddenMeshes: [],
+      scale: SOLDIER_SCALE,
+      height: 2.4,
+      animations: {
+        idle: { file: SPECIAL, clip: 'Skeletons_Idle' },
+        walk: { file: SPECIAL, clip: 'Skeletons_Walking' },
+        attack: { file: MELEE, clip: 'Melee_1H_Attack_Chop' },
+        ready: { file: MELEE, clip: 'Melee_Blocking' },
+        death: { file: SPECIAL, clip: 'Skeletons_Death' },
+      },
+      attackHitAt: 0.45,
+      tint: { grid: [8, 4], team: [] },
+      weapons: [
+        { weapon: 'skeletonAxe', bone: 'handslot.r' },
+        { weapon: 'skeletonShield', bone: 'handslot.l' },
+      ],
+    },
+    skeletonArcher: {
+      model: 'skeletons/Skeleton_Rogue.glb',
+      hiddenMeshes: [],
+      scale: SOLDIER_SCALE,
+      height: 2.3,
+      animations: {
+        idle: { file: SPECIAL, clip: 'Skeletons_Idle' },
+        walk: { file: SPECIAL, clip: 'Skeletons_Walking' },
+        attack: { file: RANGED, clip: 'Ranged_2H_Shoot' },
+        ready: { file: RANGED, clip: 'Ranged_2H_Aiming' },
+        death: { file: SPECIAL, clip: 'Skeletons_Death' },
+      },
+      // The bolt leaves as the shoot clip kicks back.
+      attackHitAt: 0.2,
+      tint: { grid: [8, 4], team: [] },
+      weapons: [{ weapon: 'crossbow', bone: 'handslot.r' }],
+    },
+  } satisfies Record<'skeletonMinion' | 'skeletonWarrior' | 'skeletonArcher', SoldierModel>,
 } as const;

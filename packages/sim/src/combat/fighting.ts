@@ -163,7 +163,10 @@ export function updateFighters(
       const foe = findTarget(unit, grid, sight);
       const building = foe ? null : findBuildingTarget(unit, buildings, sight);
       target = foe ? { unit: foe } : building ? { building } : null;
-      if (target && kind === 'idle' && !combat.anchor) combat.anchor = { x: unit.x, z: unit.z };
+      if (target && kind === 'idle' && !combat.anchor) {
+        // Guards are leashed to their home spot; others to where they engaged.
+        combat.anchor = combat.home ?? { x: unit.x, z: unit.z };
+      }
     }
 
     if (target) {
@@ -231,7 +234,7 @@ function strike(
   const damage = damageAgainst(attack, target.unit ? combatOf(target.unit.type) : BUILDING_COMBAT);
   if (reachTo(unit, target) > attack.range + COMBAT_RULES.strikeTolerance) return; // a miss
   const id = foeId(target);
-  if (attack.kind === 'melee') hits.add(id, damage);
+  if (attack.kind === 'melee') hits.add(id, damage, unit.ownerId);
   else {
     const at = target.unit ?? target.building;
     projectiles.push(fireProjectile(unit, id, at, tick, attack.projectileSpeed ?? 1, damage));

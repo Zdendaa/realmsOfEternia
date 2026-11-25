@@ -1,6 +1,7 @@
 import { applyCommand, type CommandResult } from '../commands/applyCommand.js';
 import type { IssuedCommand } from '../commands/types.js';
 import { applyBuildingHits } from '../combat/buildings.js';
+import { payBounties } from '../combat/bounty.js';
 import { applyHits, Hits, removeCorpses } from '../combat/damage.js';
 import { updateFighters } from '../combat/fighting.js';
 import { landProjectiles, type Projectile } from '../combat/projectiles.js';
@@ -58,7 +59,8 @@ export function stepGame(
   updateSerfs(ctx, current.tick, current.buildings, units, economy);
   updateWorkers(current.tick, current.buildings, units, economy);
   updateFighters(ctx, current.tick, units, current.buildings, hits, released);
-  applyHits(units, hits, current.tick);
+  const deaths = applyHits(units, hits, current.tick);
+  payBounties(economy, deaths, (player) => current.stocks[player] !== undefined);
   if (ctx.nav.version !== navVersion) invalidateBlockedRoutes(ctx, units);
   planPaths(ctx, units);
   advanceUnits(units);

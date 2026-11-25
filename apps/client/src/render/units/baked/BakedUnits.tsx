@@ -34,15 +34,18 @@ import { createVillagerInstances } from './villagerInstances';
 
 /** Unit kinds drawn as villagers. */
 type VillagerKind = Extract<UnitKind, 'serf' | 'worker'>;
-/** Unit kinds drawn as soldiers. */
-type SoldierKind = keyof typeof CHARACTER_PACK.soldiers;
+/** Unit kinds drawn through the soldier renderer: the army and the monsters. */
+type SoldierKind = keyof typeof CHARACTER_PACK.soldiers | keyof typeof CHARACTER_PACK.monsters;
 
 /** The character model of each villager kind. */
 const VILLAGERS: Record<VillagerKind, CharacterModel> = {
   serf: CHARACTER_PACK.serf,
   worker: CHARACTER_PACK.worker,
 };
-const SOLDIERS: Record<SoldierKind, SoldierModel> = CHARACTER_PACK.soldiers;
+const SOLDIERS: Record<SoldierKind, SoldierModel> = {
+  ...CHARACTER_PACK.soldiers,
+  ...CHARACTER_PACK.monsters,
+};
 const SOLDIER_KINDS = Object.keys(SOLDIERS) as SoldierKind[];
 
 /** What every baked character has: a model and named clips. */
@@ -257,8 +260,8 @@ function BakedSoldiers({ kind }: { kind: SoldierKind }) {
 
 /**
  * Units as KayKit characters with baked skeletal animation (see `bakeCharacter`):
- * serfs (the Ranger), workers (the Rogue) and the soldiers (Knight, Barbarian, hooded
- * Rogue), each one instanced mesh, so one draw call (plus one for shadows) per kind for
+ * serfs (the Ranger), workers (the Rogue), the soldiers (Knight, Barbarian, hooded
+ * Rogue) and the skeletons, each one instanced mesh, so one draw call (plus one for shadows) per kind for
  * any number of units.
  */
 export function BakedUnits() {

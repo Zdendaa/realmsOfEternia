@@ -48,7 +48,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 | 6.3 | Barracks and archery range: training queue, costs, housing, training panel                                      | ✅     |
 | 6.4 | Commands and readability: attack cursor, F / X, health bars, unit stats panel, selection grouping               | ✅     |
 | 6.5 | Building damage and destruction: building health, attacking sites, ruins                                        | ✅     |
-| 6.6 | Skeleton camps: monsters player, camps on the map, guard and leash, bounty                                      |        |
+| 6.6 | Skeleton camps: monsters player, camps on the map, guard and leash, bounty                                      | ✅     |
 | 6.7 | Scripted wave: a skeleton group attacks the village                                                             |        |
 
 ### 6.1 Combat core
@@ -85,6 +85,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 
 - game-data: skeleton characters, `monsters` player, camps in `MapDefinition` (guarding the gold deposit), skeleton stats, bounty.
 - sim: guard and leash behavior, bounty paid to the killer's owner.
+- Done 2026-11-25: three skeleton kinds (minion, warrior with axe and shield, crossbowman = Skeleton_Rogue); camps on both deposits of the prototype map (gold 7 guards, iron 4). Guards are ordinary idle fighters with a permanent `home` as their leash anchor. Bounty in gold to the owner of the killing blow (`Hits` tracks the last hitter). 6 tests (spawning and homes, staying put, defending and bounty, leash and return, bounty to the right player, determinism). Checked in the browser: both camps spawned, close-up of the gold camp, an attack-move of 10 soldiers clearing it for 9 gold. The build grew to 17 MB (skeleton models and accessories).
 
 ### 6.7 Scripted wave
 

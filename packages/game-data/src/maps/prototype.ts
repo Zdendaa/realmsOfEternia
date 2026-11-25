@@ -21,6 +21,27 @@ export const PROTOTYPE_MAP = {
     { kind: 'gold', x: -42, z: -18, radius: 3, amount: 400 },
     { kind: 'iron', x: 18, z: 42, radius: 3, amount: 600 },
   ],
+  // Skeleton camps on the deposits: the mines can only be built once they are cleared.
+  // Gold is guarded harder than iron.
+  camps: [
+    {
+      x: -42,
+      z: -18,
+      units: [
+        { unit: 'skeletonWarrior', count: 2 },
+        { unit: 'skeletonMinion', count: 3 },
+        { unit: 'skeletonArcher', count: 2 },
+      ],
+    },
+    {
+      x: 18,
+      z: 42,
+      units: [
+        { unit: 'skeletonWarrior', count: 1 },
+        { unit: 'skeletonMinion', count: 3 },
+      ],
+    },
+  ],
   decorations: [
     {
       kind: 'tree',

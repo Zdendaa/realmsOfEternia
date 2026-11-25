@@ -27,12 +27,15 @@ const BAR_GAP = 0.35;
 const BUILDING_BAR_SCALE = 3;
 const BUILDING_BAR_HEIGHT = 6.5;
 
+/** Soldier and monster models by unit kind (villagers use the serf's size). */
+const FIGHTER_MODELS: Partial<Record<UnitKind, { height: number; scale: number }>> = {
+  ...CHARACTER_PACK.soldiers,
+  ...CHARACTER_PACK.monsters,
+};
+
 /** Standing height (world units) of each kind, for placing its bar above the head. */
 function heightOf(kind: UnitKind): number {
-  const soldier = (
-    CHARACTER_PACK.soldiers as Partial<Record<UnitKind, { height: number; scale: number }>>
-  )[kind];
-  const model = soldier ?? CHARACTER_PACK.serf;
+  const model = FIGHTER_MODELS[kind] ?? CHARACTER_PACK.serf;
   return model.height * model.scale;
 }
 
@@ -103,53 +106,64 @@ function createHealthBars() {
   let selectionRef: unknown = null;
   let selected = new Set<EntityId>();
 
+  /** Writes one bar; returns false when the mesh is full. */
+  let count = 0;
+  const write = (fill: number, own: boolean) => {
+    mesh.setMatrixAt(count, matrix);
+    values[count * 2] = Math.max(0, fill);
+    values[count * 2 + 1] = own ? 1 : 0;
+    count++;
+    return count < CAPACITY;
+  };
+
+  /** Hurt and selected units (every living one with `all`). */
+  function writeUnits(all: boolean) {
+    const units = useGameStore.getState().state.units;
+    if (unitsRef !== units) {
+      unitsRef = units;
+      health = new Map(units.map((u) => [u.id, u.health]));
+    }
+    const selection = useSelectionStore.getState().units;
+    if (selectionRef !== selection) {
+      selectionRef = selection;
+      selected = new Set(selection);
+    }
+    for (const unit of renderedUnitList) {
+      if (unit.deathElapsed !== null || unit.inside) continue;
+      const max = combatOf(unit.type).health;
+      const left = health.get(unit.id) ?? max;
+      if (!all && left >= max && !selected.has(unit.id)) continue;
+      matrix.makeTranslation(unit.x, unit.y + heightOf(unit.type) + BAR_GAP, unit.z);
+      if (!write(left / max, unit.ownerId === LOCAL_PLAYER)) return;
+    }
+  }
+
+  /** Damaged buildings and construction sites (every owned one with `all`). */
+  function writeBuildings(all: boolean) {
+    const { state, heights } = useGameStore.getState();
+    for (const building of state.buildings) {
+      const damage = state.buildingDamage[building.id] ?? 0;
+      if (damage === 0 && !(all && building.ownerId !== null)) continue;
+      const max = buildingMaxHealth(building, state.construction[building.id]);
+      const { w, d } = BUILDINGS[building.type].footprint;
+      const lift = Math.min(BUILDING_BAR_HEIGHT, Math.max(w, d));
+      matrix.makeScale(BUILDING_BAR_SCALE, 1, 1);
+      matrix.setPosition(
+        building.x,
+        heights.getHeightAt(building.x, building.z) + lift,
+        building.z,
+      );
+      if (!write((max - damage) / max, building.ownerId === LOCAL_PLAYER)) return;
+    }
+  }
+
   return {
     mesh,
     /** Writes this frame's bars; `all`: show them for every living unit. */
     update(all: boolean) {
-      const units = useGameStore.getState().state.units;
-      if (unitsRef !== units) {
-        unitsRef = units;
-        health = new Map(units.map((u) => [u.id, u.health]));
-      }
-      const selection = useSelectionStore.getState().units;
-      if (selectionRef !== selection) {
-        selectionRef = selection;
-        selected = new Set(selection);
-      }
-      let count = 0;
-      for (const unit of renderedUnitList) {
-        if (count >= CAPACITY) break;
-        if (unit.deathElapsed !== null || unit.inside) continue;
-        const max = combatOf(unit.type).health;
-        const left = health.get(unit.id) ?? max;
-        if (!all && left >= max && !selected.has(unit.id)) continue;
-        matrix.makeTranslation(unit.x, unit.y + heightOf(unit.type) + BAR_GAP, unit.z);
-        mesh.setMatrixAt(count, matrix);
-        values[count * 2] = Math.max(0, left / max);
-        values[count * 2 + 1] = unit.ownerId === LOCAL_PLAYER ? 1 : 0;
-        count++;
-      }
-      // Damaged buildings and construction sites (or all of them while showing every bar).
-      const { state, heights } = useGameStore.getState();
-      for (const building of state.buildings) {
-        if (count >= CAPACITY) break;
-        const damage = state.buildingDamage[building.id] ?? 0;
-        if (damage === 0 && !(all && building.ownerId !== null)) continue;
-        const max = buildingMaxHealth(building, state.construction[building.id]);
-        const { w, d } = BUILDINGS[building.type].footprint;
-        const lift = Math.min(BUILDING_BAR_HEIGHT, Math.max(w, d));
-        matrix.makeScale(BUILDING_BAR_SCALE, 1, 1);
-        matrix.setPosition(
-          building.x,
-          heights.getHeightAt(building.x, building.z) + lift,
-          building.z,
-        );
-        mesh.setMatrixAt(count, matrix);
-        values[count * 2] = Math.max(0, (max - damage) / max);
-        values[count * 2 + 1] = building.ownerId === LOCAL_PLAYER ? 1 : 0;
-        count++;
-      }
+      count = 0;
+      writeUnits(all);
+      if (count < CAPACITY) writeBuildings(all);
       mesh.count = count;
       mesh.visible = count > 0;
       if (count > 0) {

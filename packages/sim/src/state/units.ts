@@ -122,6 +122,11 @@ export interface UnitCombat {
    * its leash is measured from; null otherwise.
    */
   anchor: Vec2 | null;
+  /**
+   * Where a guard (a camp's monster) belongs: every fight it starts on its own is leashed
+   * to this spot, and it walks back here afterwards. Null for everyone else.
+   */
+  home: Vec2 | null;
 }
 
 export interface UnitInstance {
@@ -165,7 +170,9 @@ export function createUnit(
     activity: 'idle',
     carrying: null,
     health: combatOf(type).health,
-    combat: fights ? { targetId: null, readyAt: 0, strikeAt: null, anchor: null } : null,
+    combat: fights
+      ? { targetId: null, readyAt: 0, strikeAt: null, anchor: null, home: null }
+      : null,
     diedAt: null,
   };
 }

@@ -81,6 +81,17 @@ export interface DepositDefinition {
   amount: number;
 }
 
+/**
+ * Neutral monsters guarding a spot from the start of the match. Unit kinds are game-data
+ * ids (checked when the match starts); the guards stand around (x, z) and return there
+ * after a fight.
+ */
+export interface CampDefinition {
+  x: number;
+  z: number;
+  units: readonly { unit: string; count: number }[];
+}
+
 export interface WaterSettings {
   lakes: readonly LakeDefinition[];
 }
@@ -100,6 +111,8 @@ export interface MapDefinition {
   water?: WaterSettings;
   /** Ore deposits (gold, iron). */
   deposits?: readonly DepositDefinition[];
+  /** Monster camps (skeletons). */
+  camps?: readonly CampDefinition[];
   decorations: readonly DecorationRule[];
 }
 

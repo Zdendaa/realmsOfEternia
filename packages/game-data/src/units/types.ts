@@ -27,4 +27,6 @@ export interface UnitDefinition {
   combat: CombatStats;
   /** Seconds a training building needs for one (soldiers); absent for villagers. */
   trainTime?: number;
+  /** Paid to the player who kills one (monsters). */
+  bounty?: ResourceCost;
 }

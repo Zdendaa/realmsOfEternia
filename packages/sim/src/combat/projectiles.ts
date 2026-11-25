@@ -60,7 +60,7 @@ export function landProjectiles(
   if (!projectiles.some((p) => p.impactAt <= tick)) return projectiles;
   const flying: Projectile[] = [];
   for (const p of projectiles) {
-    if (p.impactAt <= tick) hits.add(p.targetId, p.damage);
+    if (p.impactAt <= tick) hits.add(p.targetId, p.damage, p.ownerId);
     else flying.push(p);
   }
   return flying;
