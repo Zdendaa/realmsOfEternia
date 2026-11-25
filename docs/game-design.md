@@ -55,6 +55,11 @@ Each faction eventually gets its own architecture, buildings, units, technologie
 - Camera panning, zoom, rotation and map boundaries.
 - Terrain with grass, forests, hills, rocks and water.
 - Dynamic lighting and shadows; a day/night cycle may come later.
+- **Fog of war** (as in The Settlers and Warcraft), three states per spot of the map:
+  - **Unexplored:** black. Nothing is known.
+  - **Explored:** grey fog. The terrain and the buildings as they were last seen are shown; units are not.
+  - **Visible:** in the current sight of the player's own units and buildings. Everything is shown as it is.
+- **Sight range** is set per unit and building type in game-data.
 
 ### 4.2 Buildings and settlement
 
@@ -165,6 +170,8 @@ Planned for Phase 8 (Building upgrades and technologies), after military and for
 
 **Multiplayer is server-authoritative.** Clients never decide resources, damage, construction validity or any other important game state.
 
+**Fog of war in multiplayer (anti-cheat):** the server never sends a client the state of enemy units and buildings that client can't see. Hiding them only in rendering isn't enough: a modified client could show everything it receives.
+
 ## 5. User interface
 
 Eventually the UI includes:
@@ -189,6 +196,7 @@ Work proceeds one milestone at a time.
 | 4     | Villagers                          | ✅ Completed |
 | 5     | Economy                            | ✅ Completed |
 | 6     | Military and combat                | ✅ Completed |
+| 6c    | Fog of war                         | Next         |
 | 7     | Fortifications                     | Planned      |
 | 8     | Building upgrades and technologies | Planned      |
 | 9     | AI                                 | Planned      |
@@ -218,6 +226,10 @@ Resource storage, gathering, transportation, production chains, worker assignmen
 ### Phase 6 – Military and combat ✅
 
 Infantry and archers trained in a barracks and an archery range, unit commands, deterministic combat with counters, destructible buildings, neutral skeleton camps and a first scripted wave (see [phase-6-plan.md](phase-6-plan.md)). Cavalry, siege weapons and heroes follow as **Phase 6b**. Comes right after the economy (including its depth part, Phase 5b): armies give the economy a purpose, and everything after it needs enemies.
+
+### Phase 6c – Fog of war
+
+Explored, visible and unexplored areas, sight ranges per unit and building, last-seen buildings in the fog, and visibility designed so the multiplayer server can withhold hidden enemy state. Its own milestone right after Phase 6, before fortifications: walls and towers are about seeing the enemy coming. It also brings a first win/lose condition. Phase 6b (cavalry, siege, heroes) comes later.
 
 ### Phase 7 – Fortifications
 
