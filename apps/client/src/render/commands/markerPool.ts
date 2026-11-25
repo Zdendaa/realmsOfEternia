@@ -1,4 +1,3 @@
-import { BUILDINGS } from '@roe/game-data';
 import {
   CanvasTexture,
   Color,
@@ -13,6 +12,7 @@ import {
   Vector3,
   type IUniform,
 } from 'three';
+import { footprintOf } from '@roe/sim';
 import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import hammerIconUrl from '../../ui/cursors/build.svg';
 import { ownerColor } from '../units/unitColors';
@@ -145,7 +145,7 @@ export function createMarkerPool(): MarkerPool {
       return;
     }
     const { site, groundY } = event;
-    const { w, d } = BUILDINGS[site.type].footprint;
+    const { w, d } = footprintOf(site.type, site.rotation);
     quaternion.setFromAxisAngle(up, site.rotation);
     position.set(site.x, groundY + 0.1, site.z);
     spawnGround(now, MARKER_KIND.site, w + 2 * SITE_MARGIN, d + 2 * SITE_MARGIN);

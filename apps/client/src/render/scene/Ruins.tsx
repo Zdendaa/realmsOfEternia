@@ -1,7 +1,7 @@
 import { useGLTF } from '@react-three/drei';
-import { BUILDINGS, HEXAGON_PACK } from '@roe/game-data';
+import { HEXAGON_PACK, isWall } from '@roe/game-data';
 import { distanceToFootprint, SIMULATION_TICK_RATE, type HeightField } from '@roe/shared';
-import { toPlacedFootprint, type BuildingInstance, type Ruin } from '@roe/sim';
+import { footprintOf, toPlacedFootprint, type BuildingInstance, type Ruin } from '@roe/sim';
 import { useMemo } from 'react';
 import { useGameStore } from '../../state/gameStore';
 import { publicUrl } from './settlement/modelAssets';
@@ -30,11 +30,16 @@ const RUIN_SMOKE: SmokeStyle = {
   endSize: 1.0,
 };
 
-/** Uniform scale that fits the rubble model to `RUIN_FILL` of the footprint. */
-function ruinScale(ruin: Ruin): number {
-  const { w, d } = BUILDINGS[ruin.type].footprint;
+/**
+ * Fits the rubble to `RUIN_FILL` of the footprint with one scale; a wall's rubble is
+ * stretched along its long, thin footprint instead.
+ */
+function ruinFit(ruin: Ruin): Pick<ModelInstance, 'scale' | 'stretch'> {
+  const { w, d } = footprintOf(ruin.type, ruin.rotation);
   const { size } = HEXAGON_PACK.ruin;
-  return Math.min((w * RUIN_FILL) / size.w, (d * RUIN_FILL) / size.d);
+  const x = (w * RUIN_FILL) / size.w;
+  const z = (d * RUIN_FILL) / size.d;
+  return isWall(ruin.type) ? { scale: 1, stretch: { x, y: z, z } } : { scale: Math.min(x, z) };
 }
 
 /**
@@ -62,19 +67,22 @@ export function Ruins({
         y: heights.getHeightAt(r.x, r.z),
         z: r.z,
         rotation: r.rotation,
-        scale: ruinScale(r),
+        ...ruinFit(r),
       })),
     [visible, heights],
   );
   const sources = useMemo(
     () =>
-      visible.map((r): SmokeEmitter & { destroyedAt: number } => ({
-        id: r.id,
-        x: r.x,
-        y: heights.getHeightAt(r.x, r.z) + SMOKE_HEIGHT,
-        z: r.z,
-        destroyedAt: r.destroyedAt,
-      })),
+      // A breached wall would be a line of fires: only buildings smoke.
+      visible
+        .filter((r) => !isWall(r.type))
+        .map((r): SmokeEmitter & { destroyedAt: number } => ({
+          id: r.id,
+          x: r.x,
+          y: heights.getHeightAt(r.x, r.z) + SMOKE_HEIGHT,
+          z: r.z,
+          destroyedAt: r.destroyedAt,
+        })),
     [visible, heights],
   );
   const emitters = () => {

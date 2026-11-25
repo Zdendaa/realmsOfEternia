@@ -1,4 +1,4 @@
-import { BUILDINGS, type BuildingDefinition } from '@roe/game-data';
+import { BUILDINGS, isWall, type BuildingDefinition } from '@roe/game-data';
 import { footprintBounds, type HeightField, type Lake, type MapDefinition } from '@roe/shared';
 import { toPlacedFootprint, type BuildingInstance } from '@roe/sim';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -48,7 +48,8 @@ export function Terrain({ map, heights, buildings, wornPatches, lakes }: Terrain
     if (lastHeights.current === heights) return;
     lastHeights.current = heights;
     for (const building of buildings) {
-      if (appliedIds.has(building.id)) continue;
+      // Walls neither flatten the ground nor wear a yard into it.
+      if (appliedIds.has(building.id) || isWall(building.type)) continue;
       appliedIds.add(building.id);
       const placed = toPlacedFootprint(building);
       patches.push(

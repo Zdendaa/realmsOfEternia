@@ -38,6 +38,7 @@ export type {
   ProductionDefinition,
   ResourceAmount,
   SpinningPart,
+  WallModel,
 } from './buildings/types.js';
 export { PROPS, type PropDefinition, type PropId } from './props/definitions.js';
 export { STARTING_RESOURCES, STORAGE_BUILDINGS } from './economy/startingResources.js';

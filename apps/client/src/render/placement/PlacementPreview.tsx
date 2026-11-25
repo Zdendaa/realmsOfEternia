@@ -2,6 +2,7 @@ import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import {
   BUILDINGS,
+  isWall,
   modelPathOf,
   tileOffsets,
   type BuildingDefinition,
@@ -34,6 +35,7 @@ import { modelFilesOf } from '../scene/settlement/modelFiles';
 import { singleTeamMaterial, type TintUniform } from '../scene/settlement/teamColorMaterial';
 import { ownerColor } from '../units/unitColors';
 import { pickGround } from './groundPick';
+import { WallTool } from './WallTool';
 
 const VALID = '#7fe07a';
 const INVALID = '#ff6b5a';
@@ -245,6 +247,8 @@ export function PlacementPreview() {
   usePlacementInput();
 
   if (!selected) return null;
+  // Walls are drawn as lines, with their own input and preview.
+  if (isWall(selected)) return <WallTool key={selected} building={selected} />;
   return (
     <Suspense fallback={null}>
       <Ghost key={selected} building={selected} quarterTurns={quarterTurns} />

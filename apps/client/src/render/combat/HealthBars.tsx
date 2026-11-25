@@ -1,6 +1,6 @@
 import { useFrame } from '@react-three/fiber';
-import { BUILDINGS, CHARACTER_PACK, combatOf, type UnitKind } from '@roe/game-data';
-import { buildingMaxHealth } from '@roe/sim';
+import { CHARACTER_PACK, combatOf, isWall, type UnitKind } from '@roe/game-data';
+import { buildingMaxHealth, footprintOf } from '@roe/sim';
 import type { EntityId } from '@roe/shared';
 import { useEffect, useMemo, useRef } from 'react';
 import {
@@ -27,6 +27,7 @@ const BAR_GAP = 0.35;
 /** Building bars are this much wider, and float this high (world units) above the ground. */
 const BUILDING_BAR_SCALE = 3;
 const BUILDING_BAR_HEIGHT = 6.5;
+const WALL_BAR_HEIGHT = 2.8;
 
 /** Soldier and monster models by unit kind (villagers use the serf's size). */
 const FIGHTER_MODELS: Partial<Record<UnitKind, { height: number; scale: number }>> = {
@@ -147,9 +148,11 @@ function createHealthBars() {
       const damage = state.buildingDamage[building.id] ?? 0;
       if (damage === 0 && !(all && building.ownerId !== null)) continue;
       const max = buildingMaxHealth(building, state.construction[building.id]);
-      const { w, d } = BUILDINGS[building.type].footprint;
-      const lift = Math.min(BUILDING_BAR_HEIGHT, Math.max(w, d));
-      matrix.makeScale(BUILDING_BAR_SCALE, 1, 1);
+      const { w, d } = footprintOf(building.type, building.rotation);
+      // Wall segments are short and stand side by side: a narrow bar just above them.
+      const wall = isWall(building.type);
+      const lift = wall ? WALL_BAR_HEIGHT : Math.min(BUILDING_BAR_HEIGHT, Math.max(w, d));
+      matrix.makeScale(wall ? 1 : BUILDING_BAR_SCALE, 1, 1);
       matrix.setPosition(
         building.x,
         heights.getHeightAt(building.x, building.z) + lift,

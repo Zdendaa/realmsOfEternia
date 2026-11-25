@@ -1,6 +1,6 @@
 import { BUILDINGS, type BuildingDefinition } from '@roe/game-data';
 import type { HeightField } from '@roe/shared';
-import type { BuildingInstance } from '@roe/sim';
+import { footprintOf, type BuildingInstance } from '@roe/sim';
 import { Box3, Ray, Vector3 } from 'three';
 
 const localRay = new Ray();
@@ -9,7 +9,8 @@ const hit = new Vector3();
 
 /** Rough clickable height of a building: flat fields are low, everything else box-like. */
 function pickHeight(building: BuildingInstance): number {
-  const { footprint, modelTiling }: BuildingDefinition = BUILDINGS[building.type];
+  const { footprint, modelTiling, wallModel }: BuildingDefinition = BUILDINGS[building.type];
+  if (wallModel) return wallModel.height;
   return modelTiling ? 0.6 : Math.max(footprint.w, footprint.d) * 0.8;
 }
 
@@ -25,7 +26,7 @@ export function pickBuilding(
   let best: BuildingInstance | null = null;
   let bestDistance = Infinity;
   for (const building of buildings) {
-    const { w, d } = BUILDINGS[building.type].footprint;
+    const { w, d } = footprintOf(building.type, building.rotation);
     const y = heights.getHeightAt(building.x, building.z);
     const cos = Math.cos(-building.rotation);
     const sin = Math.sin(-building.rotation);

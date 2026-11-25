@@ -153,7 +153,7 @@ body,
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  width: 92px;
+  width: 82px;
   padding: 5px 7px;
   border: 1px solid var(--hud-border);
   border-radius: 6px;
@@ -328,7 +328,7 @@ body,
 
   /* Narrow screens: as many columns as fit. */
   .construction-list {
-    grid-template-columns: repeat(auto-fit, 92px);
+    grid-template-columns: repeat(auto-fit, 82px);
   }
 }
 
@@ -643,4 +643,21 @@ body,
   left: 50%;
   transform: translateX(-50%);
   font-size: 13px;
+}
+
+/* Wall tool: total cost in one line, and the cut-off warning. */
+.wall-total {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.wall-blocked {
+  color: #f0b27a;
+}
+
+.placement-hint.is-warning {
+  color: #ffd166;
+  font-weight: 600;
 }

@@ -1,6 +1,7 @@
 import {
   BUILDINGS,
   depositOf,
+  isWall,
   RESOURCES,
   type BuildingDefinition,
   type BuildingId,
@@ -10,6 +11,7 @@ import { EMPTY_STOCK, missingResources, type CommandIssue } from '@roe/sim';
 import { useEffect, type CSSProperties } from 'react';
 import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
 import { usePlacementStore } from '../state/placementStore';
+import { WallHint } from './WallHint';
 import { CostList } from './CostList';
 import { PLACEMENT_MESSAGES } from './placementMessages';
 
@@ -66,7 +68,8 @@ export function ConstructionMenu() {
 
   return (
     <section className="hud-panel construction-menu" aria-label="Construction">
-      {selected && (
+      {selected && isWall(selected) && <WallHint building={selected} />}
+      {selected && !isWall(selected) && (
         <p className={`placement-hint ${firstIssue ? 'is-invalid' : ''}`} role="status">
           {firstIssue
             ? issueMessage(firstIssue, selected, stock)

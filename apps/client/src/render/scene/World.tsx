@@ -1,4 +1,4 @@
-import { BUILDINGS, type BuildingDefinition } from '@roe/game-data';
+import { BUILDINGS, isWall, type BuildingDefinition } from '@roe/game-data';
 import { distanceToFootprint, footprintBounds, type HeightField } from '@roe/shared';
 import { isStartingBuilding, toPlacedFootprint, type BuildingInstance, type Ruin } from '@roe/sim';
 import { Suspense, useMemo } from 'react';
@@ -22,6 +22,7 @@ import { Stumps } from './Stumps';
 import { Terrain } from './Terrain';
 import { Trees } from './Trees';
 import { Water } from './Water';
+import { Walls } from '../walls/Walls';
 
 interface WorldProps {
   world: ClientWorld;
@@ -58,7 +59,7 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
   const placedBuildings = useMemo(
     () =>
       known
-        .filter((b) => b.status === 'complete')
+        .filter((b) => b.status === 'complete' && !isWall(b.type))
         .map((b): OwnedBuilding => ({
           ...toPlacedFootprint(b),
           definition: BUILDINGS[b.type],
@@ -94,10 +95,13 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
   const sites = useMemo(
     () =>
       known
-        .filter((b) => b.status === 'construction')
+        .filter((b) => b.status === 'construction' && !isWall(b.type))
         .map((b): SiteView => ({ building: b, y: heights.getHeightAt(b.x, b.z) })),
     [known, heights],
   );
+
+  // Walls are drawn by their own instanced renderer, finished or not.
+  const walls = useMemo(() => known.filter((b) => isWall(b.type)), [known]);
 
   // Buildings placed by players: cosmetic layers (grass, props) are cleared under them.
   const playerFootprints = useMemo(
@@ -157,6 +161,7 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
       </Suspense>
       <ChimneySmoke buildings={animated} />
       <ConstructionSites sites={sites} />
+      <Walls walls={walls} heights={heights} />
     </>
   );
 }

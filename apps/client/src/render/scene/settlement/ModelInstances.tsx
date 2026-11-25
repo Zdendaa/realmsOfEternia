@@ -13,6 +13,10 @@ export interface ModelInstance {
   z: number;
   rotation: number;
   scale: number;
+  /** Per-axis factors on top of `scale`, along the rotated axes (walls). */
+  stretch?: { x: number; y: number; z: number };
+  /** Applied to the model before placing it (turning and centering a wall model). */
+  local?: Matrix4;
   /** Owner whose color the roof takes (Hexagon models); null or absent keeps it. */
   owner?: PlayerId | null;
 }
@@ -31,6 +35,7 @@ const position = new Vector3();
 const quaternion = new Quaternion();
 const euler = new Euler();
 const scale = new Vector3();
+const stretch = new Vector3();
 
 /**
  * Draws every instance of one GLB model. Each mesh part of the model becomes one
@@ -65,7 +70,9 @@ export function ModelInstances({ modelPath, instances, skipMeshes }: ModelInstan
           position.set(instance.x, instance.y, instance.z);
           quaternion.setFromEuler(euler.set(0, instance.rotation, 0));
           scale.setScalar(instance.scale);
+          if (instance.stretch) scale.multiply(stretch.copy(instance.stretch));
           placementMatrix.compose(position, quaternion, scale);
+          if (instance.local) placementMatrix.multiply(instance.local);
           partMatrix.multiplyMatrices(placementMatrix, part.matrix).toArray(out, i * 16);
         });
         return out;

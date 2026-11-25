@@ -94,6 +94,28 @@ export interface SpinningPart {
   turnsPerSecond: number;
 }
 
+/**
+ * How a wall's model is fitted to its segments (client). The model is first turned and
+ * moved so that it runs along local X and is centered, then stretched per axis: to the
+ * segment's length, and to `height` and `depth` in world units.
+ */
+export interface WallModel {
+  /** Model extents in pack units after turning: along the wall, up, across. */
+  size: { length: number; height: number; depth: number };
+  /** Rotation around Y that makes the model run along X (radians). */
+  turn: number;
+  /** Where the model's middle sits in its own space (pack units), moved to the origin. */
+  center: { x: number; z: number };
+  /** Drawn height and thickness in world units. */
+  height: number;
+  depth: number;
+  /** The post at wall ends, corners and junctions. */
+  post:
+    | { kind: 'model'; modelPath: string; scale: number; stretchY: number }
+    /** A primitive stand-in: a tapered wooden log. */
+    | { kind: 'log'; radius: number; height: number; color: string };
+}
+
 export interface BuildingDefinition {
   id: string;
   name: string;
@@ -177,6 +199,8 @@ export interface BuildingDefinition {
    * √2 longer), it may touch other walls and cross paths, and it doesn't flatten terrain.
    */
   wall?: boolean;
+  /** Set on walls: how the model is fitted to a segment. */
+  wallModel?: WallModel;
   /** Set for production buildings (see `ProductionDefinition`). */
   production?: ProductionDefinition;
   /**

@@ -7,7 +7,7 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 | #   | Scope                                                                                                                                       | Status |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | 7.1 | Walls in the sim: wall types in game-data, `placeWall`, segments, nav blocking, health, construction, cut-off check, tests                  | ✅     |
-| 7.2 | Drawing walls: mouse drag, live preview (green / red, total cost, cut-off warning), posts, instancing, damage and ruins. **Browser review** |        |
+| 7.2 | Drawing walls: mouse drag, live preview (green / red, total cost, cut-off warning), posts, instancing, damage and ruins. **Browser review** | ✅     |
 | 7.3 | Gates: a wall segment becomes a gate; the owner's units pass, others don't                                                                  |        |
 | 7.4 | Breaching: enemies with no route attack the wall in the way; a wave breaks into a walled village                                            |        |
 | 7.5 | Wooden tower: shoots by itself, arrows from the top, range ring when selected. **Browser review**                                           |        |
@@ -18,6 +18,11 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 
 - As planned. Details decided while building: walls don't flatten the terrain; a line with some blocked segments builds the valid ones (the red ones are skipped); segments already standing are skipped and not charged; fallen segments don't count as "buildings lost". 21 new sim tests, including serfs finishing whole rings with corners and diagonals.
 - Walls aren't in the construction menu until 7.2.
+
+### 7.2 notes (done 2026-11-25, awaiting browser review)
+
+- As planned. Posts stand at ends, corners, junctions and material changes. Stone posts are `building_tower_base` (yellow variant, recolored); palisade posts are a primitive log (temporary). Walls are scaled per axis in game-data: stone 2.2 high and 1 deep, palisade 1.9 and 0.45. The construction menu's buttons got narrower so 15 fit in two rows.
+- Checked in headless Chrome, dev build: real mouse drags (preview, blocked segments and reason, continuing from a wall end, right-click cancel, cut-off warning while dragging and after release), both tiers half built and built, selection, damage, rubble and a breach by dev-spawned enemies. Test shortcuts: the stock was filled, and one ring was marked complete for the damage check. Production build: one drag drew a segment and paid for it.
 
 ## Decisions
 

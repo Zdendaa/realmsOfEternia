@@ -1,4 +1,4 @@
-import { BUILDINGS } from '@roe/game-data';
+import { footprintOf } from '@roe/sim';
 import { useEffect, useMemo } from 'react';
 import { DoubleSide, MeshBasicMaterial, Path, Shape, ShapeGeometry } from 'three';
 import { useHoverCursor } from '../../input/useHoverCursor';
@@ -46,11 +46,12 @@ function BuildingMarker({ buildingId }: { buildingId: number }) {
     [],
   );
   const type = building?.type;
+  const rotation = building?.rotation ?? 0;
   const geometry = useMemo(() => {
     if (!type) return null;
-    const { w, d } = BUILDINGS[type].footprint;
+    const { w, d } = footprintOf(type, rotation);
     return frameGeometry(w + FRAME_GAP * 2, d + FRAME_GAP * 2);
-  }, [type]);
+  }, [type, rotation]);
 
   useEffect(() => () => material.dispose(), [material]);
   useEffect(() => () => geometry?.dispose(), [geometry]);

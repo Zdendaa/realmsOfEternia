@@ -1,10 +1,17 @@
-import type { PlacementIssue } from '@roe/sim';
+import type { PlacementIssue, WallIssue } from '@roe/sim';
 
 /**
  * Player-facing explanation for each failed placement rule. The construction menu
  * names the missing resources itself (`notEnoughResources`).
  */
-export const PLACEMENT_MESSAGES: Record<PlacementIssue | 'notEnoughResources', string> = {
+export const PLACEMENT_MESSAGES: Record<
+  PlacementIssue | WallIssue | 'notEnoughResources' | 'gameOver',
+  string
+> = {
+  badWall: 'Not a wall line',
+  wallTooLong: 'The wall is too long',
+  wallExists: 'A wall already stands there',
+  gameOver: 'The game is over',
   unknownBuilding: 'Unknown building',
   notBuildable: 'This building cannot be built',
   offGrid: 'Not on the building grid',
