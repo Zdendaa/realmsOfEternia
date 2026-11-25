@@ -21,6 +21,19 @@ export const PROTOTYPE_MAP = {
     { kind: 'gold', x: -42, z: -18, radius: 3, amount: 400 },
     { kind: 'iron', x: 18, z: 42, radius: 3, amount: 600 },
   ],
+  // After eight minutes a skeleton horde marches down the north road to the Town Hall.
+  waves: [
+    {
+      at: 480,
+      x: 9,
+      z: -80,
+      units: [
+        { unit: 'skeletonWarrior', count: 2 },
+        { unit: 'skeletonMinion', count: 5 },
+        { unit: 'skeletonArcher', count: 2 },
+      ],
+    },
+  ],
   // Skeleton camps on the deposits: the mines can only be built once they are cleared.
   // Gold is guarded harder than iron.
   camps: [

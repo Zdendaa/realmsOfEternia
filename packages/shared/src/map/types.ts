@@ -92,6 +92,17 @@ export interface CampDefinition {
   units: readonly { unit: string; count: number }[];
 }
 
+/**
+ * A scripted attack: at `at` seconds into the match, these monsters appear around
+ * (x, z) and attack-move to the nearest player's Town Hall.
+ */
+export interface WaveDefinition {
+  at: number;
+  x: number;
+  z: number;
+  units: readonly { unit: string; count: number }[];
+}
+
 export interface WaterSettings {
   lakes: readonly LakeDefinition[];
 }
@@ -113,6 +124,8 @@ export interface MapDefinition {
   deposits?: readonly DepositDefinition[];
   /** Monster camps (skeletons). */
   camps?: readonly CampDefinition[];
+  /** Scripted monster attacks, in time order. */
+  waves?: readonly WaveDefinition[];
   decorations: readonly DecorationRule[];
 }
 

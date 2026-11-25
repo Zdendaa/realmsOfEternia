@@ -101,6 +101,10 @@ export interface GameState {
   readonly buildingDamage: Readonly<Record<EntityId, number>>;
   /** Destroyed buildings, oldest first. Changes when a building falls. */
   readonly ruins: readonly Ruin[];
+  /** How many of the map's scripted waves have been sent (they go in time order). */
+  readonly wavesSent: number;
+  /** Tick the latest wave set out on, or null before the first. */
+  readonly lastWaveAt: number | null;
   readonly nextEntityId: EntityId;
 }
 
@@ -173,6 +177,8 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     training: {},
     buildingDamage: {},
     ruins: [],
+    wavesSent: 0,
+    lastWaveAt: null,
     nextEntityId,
   };
 }

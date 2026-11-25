@@ -1,5 +1,6 @@
 import { BUILDINGS, GATHER_RULES, isBuildingId, trainsOf, UNITS } from '@roe/game-data';
 import { areEnemies } from '../combat/hostility.js';
+import { sendWave } from '../combat/waves.js';
 import {
   entrancePoint,
   isInPlayableArea,
@@ -73,7 +74,9 @@ export type CommandIssue =
   /** The building's training queue is full. */
   | 'queueFull'
   /** Nothing queued at that place. */
-  | 'notQueued';
+  | 'notQueued'
+  /** The map has no scripted waves. */
+  | 'noWave';
 
 export interface CommandCheck {
   ok: boolean;
@@ -245,6 +248,9 @@ export function validateCommand(
       return checkCancelTraining(state, issuer, command);
     case 'debugSpawn':
       return checkDebugSpawn(ctx, command);
+    case 'debugWave':
+      if (!ctx.dev) return fail('devOnly');
+      return (ctx.world.map.waves?.length ?? 0) > 0 ? OK : fail('noWave');
   }
 }
 
@@ -362,6 +368,25 @@ function cancelTraining(
   return { ...refunded, training };
 }
 
+/**
+ * Dev wave: the map's next wave comes now (cycling through them), counted as sent so it
+ * doesn't come again on its own.
+ */
+function debugWave(ctx: SimContext, state: GameState): GameState {
+  const waves = ctx.world.map.waves ?? [];
+  const wave = waves[state.wavesSent % waves.length];
+  if (!wave) return state;
+  const units = [...state.units];
+  const nextEntityId = sendWave(wave, state.buildings, units, state.nextEntityId);
+  return {
+    ...state,
+    units,
+    nextEntityId,
+    wavesSent: state.wavesSent + 1,
+    lastWaveAt: state.tick,
+  };
+}
+
 /** Dev spawn: `count` fresh units spread around the point, appended in id order. */
 function debugSpawn(state: GameState, issuer: PlayerId, command: DebugSpawnCommand): GameState {
   const owner = command.owner === undefined ? issuer : command.owner;
@@ -471,5 +496,7 @@ export function applyCommand(
       return { ok: true, state: cancelTraining(state, issuer, command) };
     case 'debugSpawn':
       return { ok: true, state: debugSpawn(state, issuer, command) };
+    case 'debugWave':
+      return { ok: true, state: debugWave(ctx, state) };
   }
 }

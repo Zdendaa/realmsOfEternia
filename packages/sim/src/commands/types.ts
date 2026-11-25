@@ -99,6 +99,11 @@ export interface DebugSpawnCommand {
   owner?: PlayerId | null;
 }
 
+/** Development only: the next scripted wave of the map comes now (then the following one). */
+export interface DebugWaveCommand {
+  type: 'debugWave';
+}
+
 export type Command =
   | PlaceBuildingCommand
   | RecruitSerfCommand
@@ -110,7 +115,8 @@ export type Command =
   | StopCommand
   | TrainUnitCommand
   | CancelTrainingCommand
-  | DebugSpawnCommand;
+  | DebugSpawnCommand
+  | DebugWaveCommand;
 
 /** A command together with the player who issued it, attached by the receiver. */
 export interface IssuedCommand {
@@ -198,6 +204,8 @@ export function parseCommand(input: unknown): Command | null {
       if (!isEntityId(buildingId) || !isNodeId(index)) return null;
       return { type: 'cancelTraining', buildingId, index };
     }
+    case 'debugWave':
+      return { type: 'debugWave' };
     case 'debugSpawn': {
       const { unit, count, x, z, owner } = data;
       if (!isUnitKind(unit) || !isFiniteNumber(x) || !isFiniteNumber(z)) return null;

@@ -2,6 +2,7 @@ import { applyCommand, type CommandResult } from '../commands/applyCommand.js';
 import type { IssuedCommand } from '../commands/types.js';
 import { applyBuildingHits } from '../combat/buildings.js';
 import { payBounties } from '../combat/bounty.js';
+import { sendDueWaves } from '../combat/waves.js';
 import { applyHits, Hits, removeCorpses } from '../combat/damage.js';
 import { updateFighters } from '../combat/fighting.js';
 import { landProjectiles, type Projectile } from '../combat/projectiles.js';
@@ -29,7 +30,7 @@ export interface StepResult {
  * workers: harvesting, farming; fighters: targets, chases, strikes) → the tick's damage
  * and deaths (units; then buildings, which fall into ruins with their workers) → route invalidation → path planning → walking → separation → construction
  * work → workers for production buildings that have none (housing permitting) → trained
- * units leaving their building → removal
+ * units leaving their building → scripted waves that are due → removal
  * of corpses that have lain long enough. `ctx` is synced along the
  * way and left matching the returned state. The given state is never mutated.
  */
@@ -88,7 +89,16 @@ export function stepGame(
   const hired = hireWorkers(buildings, units, current.nextEntityId);
   // Trained units leave their building (housing permitting, after this tick's workers).
   const trained = progressTraining(buildings, current.training, units, current.tick, hired);
-  const nextEntityId = trained.nextEntityId;
+  // Scripted monster waves that are due march in.
+  const waves = sendDueWaves(
+    ctx.world.map.waves ?? [],
+    current.wavesSent,
+    current.tick,
+    buildings,
+    units,
+    trained.nextEntityId,
+  );
+  const nextEntityId = waves.nextEntityId;
   const remaining = removeCorpses(units, current.tick);
   const projectiles = released.length > 0 ? [...flying, ...released] : flying;
 
@@ -103,6 +113,8 @@ export function stepGame(
     fields: standing.fields,
     buildingDamage: standing.buildingDamage,
     ruins: standing.ruins,
+    wavesSent: waves.wavesSent,
+    lastWaveAt: waves.sentNow ? current.tick : current.lastWaveAt,
     projectiles,
     training: trained.training,
     nextEntityId,

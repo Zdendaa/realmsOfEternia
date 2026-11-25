@@ -49,7 +49,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 | 6.4 | Commands and readability: attack cursor, F / X, health bars, unit stats panel, selection grouping               | ✅     |
 | 6.5 | Building damage and destruction: building health, attacking sites, ruins                                        | ✅     |
 | 6.6 | Skeleton camps: monsters player, camps on the map, guard and leash, bounty                                      | ✅     |
-| 6.7 | Scripted wave: a skeleton group attacks the village                                                             |        |
+| 6.7 | Scripted wave: a skeleton group attacks the village                                                             | ✅     |
 
 ### 6.1 Combat core
 
@@ -91,6 +91,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 
 - game-data: map-defined waves (tick, units, target).
 - sim: a wave spawns at the map edge and attack-moves to the Town Hall.
+- Done 2026-11-25: one wave on the prototype map, 8 minutes in, nine skeletons from the north road (9, -80) to the nearest player Town Hall. `GameState.wavesSent` and `lastWaveAt` (for the client banner); a dev-only `debugWave` command and a "Send next wave now" button. The undefended village loses its northern buildings first: the wave comes from the north and the serfs at the south door are out of its sight. 5 tests (timing and units, an undefended village, a defended one, the dev command, determinism). Checked in the browser by fast-forwarding the simulation: countdown, banner, the horde on the north road, its attack on the lumbermill; the dev button; the production build loading all 70 model files. **Phase 6 is complete.**
 
 ## Not in scope
 

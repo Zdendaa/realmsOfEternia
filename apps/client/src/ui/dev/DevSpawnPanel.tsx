@@ -48,6 +48,16 @@ export function DevSpawnPanel() {
           </button>
         </div>
       ))}
+      <button
+        type="button"
+        className="dev-wave"
+        onClick={() => {
+          const check = dispatch({ type: 'debugWave' });
+          setMessage(check.ok ? null : check.issues.join(', '));
+        }}
+      >
+        Send next wave now
+      </button>
       {message && <p className="dev-message">{message}</p>}
     </section>
   );

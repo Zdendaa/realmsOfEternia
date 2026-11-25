@@ -565,3 +565,25 @@ body,
   margin: 2px 0 0;
   color: #e88;
 }
+
+.dev-wave {
+  margin-top: 4px;
+  font: inherit;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+/* Scripted wave warning, under the resource bar. */
+.wave-alert {
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.wave-alert.is-attack {
+  border-color: #e0483a;
+  color: #ffd2c8;
+  font-weight: 600;
+}

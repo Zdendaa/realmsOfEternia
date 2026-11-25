@@ -14,6 +14,7 @@ export {
   type AttackMoveCommand,
   type Command,
   type DebugSpawnCommand,
+  type DebugWaveCommand,
   type GatherCommand,
   type IssuedCommand,
   type MoveUnitsCommand,
@@ -32,6 +33,7 @@ export {
 export { approachPoint, buildingMaxHealth } from './combat/buildings.js';
 export { combatTicks } from './combat/fighting.js';
 export { areEnemies, MONSTER_PLAYER } from './combat/hostility.js';
+export { waveTick } from './combat/waves.js';
 export type { Projectile } from './combat/projectiles.js';
 export { workSlots } from './construction/workSlots.js';
 export { hasFreeHousing, populationOf, type Population } from './economy/population.js';
