@@ -21,6 +21,7 @@ export {
   type PlaceBuildingCommand,
   type PlaceWallCommand,
   type MakeGateCommand,
+  DEBUG_RESOURCES,
   type UpgradeTowerCommand,
   type CancelUpgradeCommand,
   type RecruitSerfCommand,

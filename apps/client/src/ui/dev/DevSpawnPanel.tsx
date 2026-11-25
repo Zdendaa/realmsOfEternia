@@ -1,5 +1,6 @@
 import { UNITS, type UnitKind } from '@roe/game-data';
 import type { PlayerId } from '@roe/shared';
+import { DEBUG_RESOURCES } from '@roe/sim';
 import { useState } from 'react';
 import { cameraFocus } from '../../render/camera/cameraFocus';
 import { useGameStore } from '../../state/gameStore';
@@ -14,9 +15,8 @@ const SIDE_OFFSET = 8;
 
 /**
  * Development only (mounted when `import.meta.env.DEV`): spawns soldiers at the camera
- * focus through the dev-only `debugSpawn` command, so combat can be tried before
- * training and enemies exist. Production builds leave it out, and the server rejects
- * the command.
+ * focus, sends the next wave and fills the stock, through dev-only commands. Production
+ * builds leave it out, and the server rejects the commands.
  */
 export function DevSpawnPanel() {
   const dispatch = useGameStore((s) => s.dispatch);
@@ -60,6 +60,16 @@ export function DevSpawnPanel() {
         }}
       >
         Send next wave now
+      </button>
+      <button
+        type="button"
+        className="dev-wave"
+        onClick={() => {
+          const check = dispatch({ type: 'debugResources' });
+          setMessage(check.ok ? null : check.issues.join(', '));
+        }}
+      >
+        Add {DEBUG_RESOURCES} of every resource
       </button>
       <label className="dev-reveal">
         <input type="checkbox" checked={revealMap} onChange={toggleRevealMap} />

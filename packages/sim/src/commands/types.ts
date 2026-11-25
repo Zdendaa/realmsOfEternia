@@ -139,6 +139,11 @@ export interface DebugWaveCommand {
   type: 'debugWave';
 }
 
+/** Development only: adds `DEBUG_RESOURCES` of every resource to the issuer's stock. */
+export interface DebugResourcesCommand {
+  type: 'debugResources';
+}
+
 export type Command =
   | PlaceBuildingCommand
   | PlaceWallCommand
@@ -155,7 +160,8 @@ export type Command =
   | TrainUnitCommand
   | CancelTrainingCommand
   | DebugSpawnCommand
-  | DebugWaveCommand;
+  | DebugWaveCommand
+  | DebugResourcesCommand;
 
 /** A command together with the player who issued it, attached by the receiver. */
 export interface IssuedCommand {
@@ -165,6 +171,9 @@ export interface IssuedCommand {
 
 /** Most units one command may address. */
 export const MAX_COMMAND_UNITS = 256;
+
+/** How much of each resource one `debugResources` adds. */
+export const DEBUG_RESOURCES = 50;
 
 /** Most units one dev spawn may create. */
 export const MAX_DEBUG_SPAWN = 100;
@@ -272,6 +281,8 @@ export function parseCommand(input: unknown): Command | null {
     }
     case 'debugWave':
       return { type: 'debugWave' };
+    case 'debugResources':
+      return { type: 'debugResources' };
     case 'debugSpawn': {
       const { unit, count, x, z, owner } = data;
       if (!isUnitKind(unit) || !isFiniteNumber(x) || !isFiniteNumber(z)) return null;

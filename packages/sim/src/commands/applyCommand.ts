@@ -2,6 +2,7 @@ import {
   BUILDINGS,
   GATHER_RULES,
   gateFor,
+  RESOURCE_IDS,
   isBuildingId,
   trainsOf,
   UNITS,
@@ -39,6 +40,7 @@ import {
   moveTo,
   replaceUnits,
 } from '../units/orders.js';
+import { DEBUG_RESOURCES } from './types.js';
 import type {
   AssignBuildersCommand,
   AttackCommand,
@@ -383,7 +385,7 @@ export function validateCommand(
   command: Command,
 ): CommandCheck {
   // Once a player has won or lost, only the dev tools still work for them.
-  if (state.outcome[issuer] && command.type !== 'debugSpawn' && command.type !== 'debugWave') {
+  if (state.outcome[issuer] && !command.type.startsWith('debug')) {
     return fail('gameOver');
   }
   switch (command.type) {
@@ -417,6 +419,8 @@ export function validateCommand(
       return checkCancelTraining(state, issuer, command);
     case 'debugSpawn':
       return checkDebugSpawn(ctx, command);
+    case 'debugResources':
+      return ctx.dev ? OK : fail('devOnly');
     case 'debugWave':
       if (!ctx.dev) return fail('devOnly');
       return (ctx.world.map.waves?.length ?? 0) > 0 ? OK : fail('noWave');
@@ -579,6 +583,11 @@ function cancelTraining(
   return { ...refunded, training };
 }
 
+function debugResources(state: GameState, issuer: PlayerId): GameState {
+  const extra = Object.fromEntries(RESOURCE_IDS.map((id) => [id, DEBUG_RESOURCES]));
+  return withStock(state, issuer, refund(stockOf(state, issuer), extra));
+}
+
 /**
  * Dev wave: the map's next wave comes now (cycling through them), counted as sent so it
  * doesn't come again on its own.
@@ -717,5 +726,7 @@ export function applyCommand(
       return { ok: true, state: debugSpawn(state, issuer, command) };
     case 'debugWave':
       return { ok: true, state: debugWave(ctx, state) };
+    case 'debugResources':
+      return { ok: true, state: debugResources(state, issuer) };
   }
 }
