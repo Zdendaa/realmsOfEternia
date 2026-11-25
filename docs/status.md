@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-25._
 
-**Current state:** Phase 6 (military and combat) is done, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Next: Phase 6b (cavalry, siege weapons, heroes) or Phase 7 (fortifications). Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy and can send the next wave at once.
+**Current state:** Phase 6 (military and combat) is done, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Next: Phase 6c (fog of war and win/lose, see [phase-6c-plan.md](phase-6c-plan.md)), then Phase 7 (fortifications); Phase 6b (cavalry, siege weapons, heroes) later. Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy and can send the next wave at once.
 
 ## Phases
 
@@ -45,6 +45,7 @@ _Last updated: 2026-11-25._
 | 6.6   | Skeleton camps on the deposits: guards, leash, bounties                           | ✅ Done |
 | 6.7   | Scripted skeleton wave down the north road at 8 minutes                           | ✅ Done |
 | 6     | Military and combat: see [phase-6-plan.md](phase-6-plan.md)                       | ✅ Done |
+| 6c    | Fog of war and win/lose: see [phase-6c-plan.md](phase-6c-plan.md)                 | ⏳ Next |
 
 ## What works today
 
