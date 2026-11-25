@@ -595,3 +595,52 @@ body,
   color: #ffd2c8;
   font-weight: 600;
 }
+
+/* End of the game: Victory / Defeat. */
+.outcome-backdrop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  background: rgb(0 0 0 / 45%);
+}
+
+.outcome-panel {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 320px;
+  padding: 20px 24px;
+}
+
+.outcome-panel h2 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.outcome-panel.is-won h2 {
+  color: #e6c36f;
+}
+
+.outcome-panel.is-lost h2 {
+  color: #ff8a7a;
+}
+
+.outcome-lead {
+  margin: 0;
+}
+
+.outcome-stats {
+  font-size: 14px;
+}
+
+.outcome-badge {
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+}

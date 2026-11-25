@@ -5,6 +5,7 @@ import { Hud } from './ui/Hud';
 import { ResourceBar } from './ui/ResourceBar';
 import { SelectionBox } from './ui/SelectionBox';
 import { SelectionPanel } from './ui/SelectionPanel';
+import { OutcomeOverlay } from './ui/OutcomeOverlay';
 import { WaveAlert } from './ui/WaveAlert';
 
 export function App() {
@@ -17,6 +18,7 @@ export function App() {
       <SelectionPanel />
       <SelectionBox />
       <WaveAlert />
+      <OutcomeOverlay />
       {import.meta.env.DEV && <DevSpawnPanel />}
     </div>
   );

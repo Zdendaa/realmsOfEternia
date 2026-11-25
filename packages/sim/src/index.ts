@@ -130,3 +130,4 @@ export {
   type Vision,
 } from './vision/vision.js';
 export { viewOf, type PlayerView } from './vision/view.js';
+export { decideOutcomes, EMPTY_STATS, type Outcome, type PlayerStats } from './rules/outcome.js';

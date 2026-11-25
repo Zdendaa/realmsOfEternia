@@ -126,6 +126,12 @@ export interface MapDefinition {
   camps?: readonly CampDefinition[];
   /** Scripted monster attacks, in time order. */
   waves?: readonly WaveDefinition[];
+  /**
+   * How a player wins (besides keeping their Town Hall, which every map requires):
+   * `clearMonsters` = every wave has been sent and no monster (camps, waves) is left.
+   * Absent: no victory, only defeat.
+   */
+  objective?: 'clearMonsters';
   decorations: readonly DecorationRule[];
 }
 

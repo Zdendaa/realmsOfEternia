@@ -16,6 +16,7 @@ import { separateUnits } from '../units/separation.js';
 import { updateSerfs } from '../units/serfBehavior.js';
 import { hireWorkers, updateWorkers } from '../units/workers.js';
 import { updateVision } from '../vision/vision.js';
+import { addStats, decideOutcomes } from '../rules/outcome.js';
 
 export interface StepResult {
   state: GameState;
@@ -103,6 +104,18 @@ export function stepGame(
   const remaining = removeCorpses(units, current.tick);
   const projectiles = released.length > 0 ? [...flying, ...released] : flying;
 
+  // End-screen numbers, counted as things happen.
+  let stats = current.stats;
+  for (const owner of trained.trained) stats = addStats(stats, owner, { soldiersTrained: 1 });
+  for (const { victim, killer } of deaths) {
+    if (killer !== null && killer !== victim.ownerId) {
+      stats = addStats(stats, killer, { enemiesKilled: 1 });
+    }
+  }
+  for (const ruin of standing.ruins.slice(current.ruins.length)) {
+    if (ruin.ownerId !== null) stats = addStats(stats, ruin.ownerId, { buildingsLost: 1 });
+  }
+
   const next: GameState = {
     ...current,
     tick: current.tick + 1,
@@ -116,11 +129,14 @@ export function stepGame(
     ruins: standing.ruins,
     wavesSent: waves.wavesSent,
     lastWaveAt: waves.sentNow ? current.tick : current.lastWaveAt,
+    stats,
     projectiles,
     training: trained.training,
     nextEntityId,
   };
-  syncContext(ctx, next);
-  for (const vision of ctx.visions.values()) updateVision(vision, next);
-  return { state: next, results };
+  // Win or lose: decided once per player, after everything else this tick.
+  const decided = { ...next, outcome: decideOutcomes(ctx.world, current, next) };
+  syncContext(ctx, decided);
+  for (const vision of ctx.visions.values()) updateVision(vision, decided);
+  return { state: decided, results };
 }

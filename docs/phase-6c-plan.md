@@ -24,7 +24,7 @@ Fog of war as in The Settlers and Warcraft: every spot of the map is **unexplore
 | 6c.1 | Vision in the sim: grid, incremental stamping, explored, last-seen buildings, `sight`    | ✅     |
 | 6c.2 | Fog rendering: fog pass, smooth transitions, hiding units / bars / arrows, ghosts        | ✅     |
 | 6c.3 | Rules and filtering: attacks need sight, `viewOf` with anti-cheat tests, server visions  | ✅     |
-| 6c.4 | Win/lose: `outcome`, map objective, commands blocked after the end, overlay with numbers |        |
+| 6c.4 | Win/lose: `outcome`, map objective, commands blocked after the end, overlay with numbers | ✅     |
 
 ### 6c.1 Vision in the sim
 
@@ -45,6 +45,7 @@ Fog of war as in The Settlers and Warcraft: every spot of the map is **unexplore
 ### 6c.4 Win/lose
 
 - game-data: map `objective`. sim: `rules/outcome.ts`, `GameState.outcome`, `gameOver` issue. client: `ui/OutcomeOverlay.tsx`.
+- Done 2026-11-25: as planned, with these details. A player who is still playing has no `outcome` entry (instead of a `playing` value). Only players with a Town Hall can win, and a `clearMonsters` map without camps or waves can't be won (it would otherwise be won on the first tick). The HUD is left as it is after the end (see the known limitations in [status.md](status.md)). 7 tests. Checked in a dev build in the browser: a forced defeat (20 dev-spawned enemy spearmen) and a forced victory (40 dev-spawned swordsmen clear both camps; no victory until the wave is sent with the dev command and beaten), the end screen and its numbers, "Continue watching" and the badge while the ticks go on, placement, recruit and move refused with `gameOver`, training refused in the panel, "New game" reloading into an undecided game. The training and "New game" checks used a state shortcut (monsters removed, the wave marked as sent, a barracks and stock added). The production build showed no end screen or badge in about 45 s of play from the start.
 
 ## Not in scope
 

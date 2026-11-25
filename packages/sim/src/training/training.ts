@@ -64,9 +64,15 @@ export function progressTraining(
   units: UnitInstance[],
   tick: number,
   nextEntityId: EntityId,
-): { training: Readonly<Record<EntityId, TrainingQueue>>; nextEntityId: EntityId } {
+): {
+  training: Readonly<Record<EntityId, TrainingQueue>>;
+  nextEntityId: EntityId;
+  /** The owner of each unit that came out this tick. */
+  trained: PlayerId[];
+} {
+  const trained: PlayerId[] = [];
   const ids = Object.keys(training);
-  if (ids.length === 0) return { training, nextEntityId };
+  if (ids.length === 0) return { training, nextEntityId, trained };
   const byId = new Map(buildings.map((b) => [b.id, b]));
   const freeHousing = new Map<PlayerId, number>();
   const free = (owner: PlayerId) => {
@@ -99,10 +105,11 @@ export function progressTraining(
     if (free(owner) <= 0) continue;
     freeHousing.set(owner, free(owner) - 1);
     units.push(createUnit(next, kind, owner, spawnPoint(building, next)));
+    trained.push(owner);
     next++;
     update(id, dequeue(current, 0, tick));
   }
-  return { training: result.records ?? training, nextEntityId: next };
+  return { training: result.records ?? training, nextEntityId: next, trained };
 }
 
 /** Ticks of training left for the unit in training, and the total (for progress bars). */

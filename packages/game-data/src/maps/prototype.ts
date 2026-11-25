@@ -21,6 +21,8 @@ export const PROTOTYPE_MAP = {
     { kind: 'gold', x: -42, z: -18, radius: 3, amount: 400 },
     { kind: 'iron', x: 18, z: 42, radius: 3, amount: 600 },
   ],
+  // Victory: clear both camps and beat the wave.
+  objective: 'clearMonsters',
   // After eight minutes a skeleton horde marches down the north road to the Town Hall.
   waves: [
     {

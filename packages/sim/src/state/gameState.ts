@@ -10,6 +10,7 @@ import {
 import type { EntityId, PlacedFootprint, PlayerId } from '@roe/shared';
 import type { Projectile } from '../combat/projectiles.js';
 import type { TrainingQueue } from '../training/training.js';
+import type { Outcome, PlayerStats } from '../rules/outcome.js';
 import type { SimWorld } from '../world/createWorld.js';
 import { RIPE_FIELD, type FieldState } from './fields.js';
 import { createUnit, type UnitInstance } from './units.js';
@@ -105,6 +106,10 @@ export interface GameState {
   readonly wavesSent: number;
   /** Tick the latest wave set out on, or null before the first. */
   readonly lastWaveAt: number | null;
+  /** How the game ended, by player; absent while it goes on. Never changes once set. */
+  readonly outcome: Readonly<Record<PlayerId, Outcome>>;
+  /** Per-player numbers for the end screen (soldiers trained, enemies killed, buildings lost). */
+  readonly stats: Readonly<Record<PlayerId, PlayerStats>>;
   readonly nextEntityId: EntityId;
 }
 
@@ -179,6 +184,8 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     ruins: [],
     wavesSent: 0,
     lastWaveAt: null,
+    outcome: {},
+    stats: {},
     nextEntityId,
   };
 }

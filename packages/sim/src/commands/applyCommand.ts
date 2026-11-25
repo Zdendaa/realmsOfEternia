@@ -79,7 +79,9 @@ export type CommandIssue =
   /** The map has no scripted waves. */
   | 'noWave'
   /** The attack target isn't in the issuer's sight (fog of war). */
-  | 'notVisible';
+  | 'notVisible'
+  /** The game is over for the issuer (won or lost): no more orders. */
+  | 'gameOver';
 
 export interface CommandCheck {
   ok: boolean;
@@ -237,6 +239,10 @@ export function validateCommand(
   issuer: PlayerId,
   command: Command,
 ): CommandCheck {
+  // Once a player has won or lost, only the dev tools still work for them.
+  if (state.outcome[issuer] && command.type !== 'debugSpawn' && command.type !== 'debugWave') {
+    return fail('gameOver');
+  }
   switch (command.type) {
     case 'placeBuilding':
       return checkPlace(ctx, state, issuer, command);
