@@ -1,6 +1,6 @@
 import { BUILDINGS } from '@roe/game-data';
 import type { Vec2 } from '@roe/shared';
-import type { BuildingInstance } from '../state/gameState.js';
+import { footprintOf, type BuildingInstance } from '../state/gameState.js';
 
 /** Builders stand this far outside the site's footprint. */
 const SLOT_MARGIN = 0.9;
@@ -11,8 +11,9 @@ const SLOT_MARGIN = 0.9;
  */
 export function workSlots(site: Pick<BuildingInstance, 'type' | 'x' | 'z' | 'rotation'>): Vec2[] {
   const definition = BUILDINGS[site.type];
-  const hw = definition.footprint.w / 2 + SLOT_MARGIN;
-  const hd = definition.footprint.d / 2 + SLOT_MARGIN;
+  const footprint = footprintOf(site.type, site.rotation);
+  const hw = footprint.w / 2 + SLOT_MARGIN;
+  const hd = footprint.d / 2 + SLOT_MARGIN;
   const perimeter = 4 * (hw + hd);
   const count = definition.maxBuilders;
   const cos = Math.cos(site.rotation);

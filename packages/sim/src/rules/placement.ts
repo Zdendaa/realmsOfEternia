@@ -1,4 +1,4 @@
-import { BUILDINGS, depositOf, isBuildingId } from '@roe/game-data';
+import { BUILDINGS, depositOf, isBuildingId, isWall } from '@roe/game-data';
 import {
   distanceToFootprint,
   footprintBounds,
@@ -88,7 +88,8 @@ export function checkPlacement(
   const definition = BUILDINGS[command.building];
   const issues: PlacementIssue[] = [];
 
-  if (!definition.buildable) issues.push('notBuildable');
+  // Walls are drawn as lines (`placeWall`), never placed one by one.
+  if (!definition.buildable || isWall(command.building)) issues.push('notBuildable');
   if (!isOnGrid(command.x) || !isOnGrid(command.z)) issues.push('offGrid');
   if (
     !Number.isInteger(command.quarterTurns) ||
@@ -106,6 +107,29 @@ export function checkPlacement(
     rotation: quarterTurnsToRadians(Math.round(command.quarterTurns) % 4),
     footprint: definition.footprint,
   };
+  issues.push(...checkGround(world, state, area, heights, { wall: false }));
+
+  // needsDeposit: mines stand on a deposit of their ore.
+  const deposit = depositOf(command.building);
+  if (deposit && !depositAt(world, deposit, command.x, command.z)) issues.push('deposit');
+
+  return { ok: issues.length === 0, issues };
+}
+
+/**
+ * The checks every piece of ground has to pass: in bounds, dry, level enough, clear of
+ * other buildings, paths, trees and rocks. Walls (`wall`) may cross paths, need no gap
+ * to buildings (they only must not overlap them) and may touch other walls (the caller
+ * rejects duplicates).
+ */
+export function checkGround(
+  world: SimWorld,
+  state: GameState,
+  area: PlacedFootprint,
+  heights: HeightField,
+  { wall }: { wall: boolean },
+): PlacementIssue[] {
+  const issues: PlacementIssue[] = [];
   const samples = sampleFootprint(area, 1);
 
   if (samples.some((p) => !isInPlayableArea(world.map, p.x, p.z))) issues.push('outOfBounds');
@@ -116,17 +140,18 @@ export function checkPlacement(
   const range = footprintHeightRange(heights, area, 1);
   if (range.max - range.min > PLACEMENT_RULES.maxHeightDifference) issues.push('slope');
 
-  if (
-    state.buildings.some((b) =>
-      footprintsOverlap(area, toPlacedFootprint(b), PLACEMENT_RULES.buildingGap),
-    )
-  ) {
-    issues.push('building');
-  }
+  const blockedByBuilding = state.buildings.some((b) => {
+    const otherIsWall = isWall(b.type);
+    if (wall && otherIsWall) return false;
+    const gap = wall || otherIsWall ? 0 : PLACEMENT_RULES.buildingGap;
+    return footprintsOverlap(area, toPlacedFootprint(b), gap);
+  });
+  if (blockedByBuilding) issues.push('building');
 
   const pathReach = world.pathWidth / 2 + PLACEMENT_RULES.pathGap;
   const nearPath = world.pathIndex.query(footprintBounds(area, pathReach));
-  if (nearPath.some((p) => distanceToFootprint(area, p.x, p.z) < pathReach)) issues.push('path');
+  if (!wall && nearPath.some((p) => distanceToFootprint(area, p.x, p.z) < pathReach))
+    issues.push('path');
 
   const maxRadius = Math.max(PLACEMENT_RULES.treeRadius, PLACEMENT_RULES.rockRadius) * 2;
   const nearObstacles = world.obstacleIndex.query(footprintBounds(area, maxRadius));
@@ -141,9 +166,5 @@ export function checkPlacement(
     if (blocked) issues.push(kind);
   }
 
-  // needsDeposit: mines stand on a deposit of their ore.
-  const deposit = depositOf(command.building);
-  if (deposit && !depositAt(world, deposit, command.x, command.z)) issues.push('deposit');
-
-  return { ok: issues.length === 0, issues };
+  return issues;
 }

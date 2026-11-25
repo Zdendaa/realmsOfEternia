@@ -17,6 +17,7 @@ export {
   housingOf,
   isBuildingId,
   isWalkableBuilding,
+  isWall,
   modelPathOf,
   buildingHealthOf,
   buildingSightOf,
@@ -25,6 +26,7 @@ export {
   trainsOf,
   type BuildingId,
 } from './buildings/definitions.js';
+export { WALL_RULES } from './buildings/walls.js';
 export { tileOffsets } from './buildings/tiling.js';
 export type {
   BuildingDefinition,

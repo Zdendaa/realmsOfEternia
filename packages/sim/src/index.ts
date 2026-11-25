@@ -19,6 +19,7 @@ export {
   type IssuedCommand,
   type MoveUnitsCommand,
   type PlaceBuildingCommand,
+  type PlaceWallCommand,
   type RecruitSerfCommand,
   type CancelTrainingCommand,
   type StopCommand,
@@ -68,6 +69,7 @@ export {
   createInitialState,
   isStartingBuilding,
   toPlacedFootprint,
+  footprintOf,
   type BuildingInstance,
   type BuildingStatus,
   type ConstructionProgress,
@@ -131,3 +133,14 @@ export {
 } from './vision/vision.js';
 export { viewOf, type PlayerView } from './vision/view.js';
 export { decideOutcomes, EMPTY_STATS, type Outcome, type PlayerStats } from './rules/outcome.js';
+export {
+  planWall,
+  snapWallLine,
+  wallCost,
+  wallSegments,
+  type PlannedSegment,
+  type WallIssue,
+  type WallPlan,
+  type WallSegment,
+} from './rules/walls.js';
+export { findCutOff, type CutOff } from './rules/enclosure.js';

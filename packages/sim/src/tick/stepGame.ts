@@ -1,3 +1,4 @@
+import { isWall } from '@roe/game-data';
 import { applyCommand, type CommandResult } from '../commands/applyCommand.js';
 import type { IssuedCommand } from '../commands/types.js';
 import { applyBuildingHits } from '../combat/buildings.js';
@@ -113,7 +114,9 @@ export function stepGame(
     }
   }
   for (const ruin of standing.ruins.slice(current.ruins.length)) {
-    if (ruin.ownerId !== null) stats = addStats(stats, ruin.ownerId, { buildingsLost: 1 });
+    // Wall segments don't count: one breach would read as a string of lost buildings.
+    if (ruin.ownerId !== null && !isWall(ruin.type))
+      stats = addStats(stats, ruin.ownerId, { buildingsLost: 1 });
   }
 
   const next: GameState = {

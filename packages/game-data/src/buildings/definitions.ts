@@ -2,6 +2,7 @@ import { HEXAGON_PACK } from '../assets/hexagonPack.js';
 import { MEDIEVAL_PACK } from '../assets/medievalPack.js';
 import type { UnitKind } from '../units/definitions.js';
 import type { BuildingDefinition } from './types.js';
+import { WALL_RULES } from './walls.js';
 
 const model = (file: string) => `${MEDIEVAL_PACK.modelDir}${file}.gltf.glb`;
 const S = MEDIEVAL_PACK.worldScale;
@@ -319,9 +320,44 @@ export const BUILDINGS = {
     maxBuilders: 4,
     trains: ['archer'],
   },
+  palisade: {
+    id: 'palisade',
+    name: 'Palisade',
+    description: 'Wooden wall: cheap and quick to build, but weak.',
+    modelPath: hexagonModel('fence_wood_straight'),
+    scale: H,
+    footprint: { w: WALL_RULES.segmentLength, d: 1 },
+    wall: true,
+    rotationOffset: 0,
+    buildable: false,
+    cost: { wood: 1 },
+    buildTime: 4,
+    maxBuilders: 2,
+    health: 250,
+    sight: 3,
+  },
+  stoneWall: {
+    id: 'stoneWall',
+    name: 'Stone Wall',
+    description: 'Strong wall of stone: slow to build and hard to break.',
+    modelPath: hexagonModel('wall_straight'),
+    scale: H,
+    footprint: { w: WALL_RULES.segmentLength, d: 1 },
+    wall: true,
+    rotationOffset: 0,
+    buildable: false,
+    cost: { stone: 2 },
+    buildTime: 10,
+    maxBuilders: 2,
+    health: 900,
+    sight: 3,
+  },
 } as const satisfies Record<string, BuildingDefinition>;
 
 export type BuildingId = keyof typeof BUILDINGS;
+
+export const isWall = (type: BuildingId): boolean =>
+  (BUILDINGS[type] as BuildingDefinition).wall === true;
 
 /** The production settings of a building type, if it is a production building. */
 export const productionOf = (type: BuildingId): BuildingDefinition['production'] =>

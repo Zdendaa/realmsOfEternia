@@ -171,6 +171,12 @@ export interface BuildingDefinition {
    * blocks placing other buildings.
    */
   walkable?: boolean;
+  /**
+   * A wall segment: placed only by drawing a line (`placeWall`, see `WALL_RULES`), never
+   * on its own. Its footprint width is the length of a straight segment (diagonal ones are
+   * √2 longer), it may touch other walls and cross paths, and it doesn't flatten terrain.
+   */
+  wall?: boolean;
   /** Set for production buildings (see `ProductionDefinition`). */
   production?: ProductionDefinition;
   /**

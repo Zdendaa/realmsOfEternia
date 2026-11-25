@@ -1,6 +1,7 @@
+import { isWall } from '@roe/game-data';
 import { flattenHeightField, type HeightField } from '@roe/shared';
 import type { SimWorld } from '../world/createWorld.js';
-import { toPlacedFootprint, type GameState } from './gameState.js';
+import { toPlacedFootprint, type BuildingInstance, type GameState } from './gameState.js';
 
 /**
  * Terrain as it is in a given state: natural terrain flattened under every building and
@@ -12,7 +13,10 @@ export function createStateHeights(
   state: Pick<GameState, 'buildings' | 'ruins'>,
 ): HeightField {
   return flattenHeightField(world.terrain, [
-    ...state.ruins.map(toPlacedFootprint),
-    ...state.buildings.map(toPlacedFootprint),
+    ...state.ruins.filter(flattens).map(toPlacedFootprint),
+    ...state.buildings.filter(flattens).map(toPlacedFootprint),
   ]);
 }
+
+/** Walls follow the ground: flattening short segments would turn slopes into stairs. */
+export const flattens = (building: Pick<BuildingInstance, 'type'>) => !isWall(building.type);

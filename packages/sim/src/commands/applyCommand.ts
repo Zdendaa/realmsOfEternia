@@ -14,6 +14,7 @@ import { hasFreeHousing, populationOf } from '../economy/population.js';
 import { canAfford, pay, refund, stockOf, withStock } from '../economy/stock.js';
 import { dequeue, enqueue, TRAINING_QUEUE_LIMIT, withoutKey } from '../training/training.js';
 import { checkPlacement, quarterTurnsToRadians, type PlacementIssue } from '../rules/placement.js';
+import { planWall, wallCost, type WallIssue } from '../rules/walls.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import { nodeById, nodesNear, remainingAmount } from '../state/resourceNodes.js';
 import { spawnPoint } from '../state/spawn.js';
@@ -36,6 +37,7 @@ import type {
   GatherCommand,
   MoveUnitsCommand,
   PlaceBuildingCommand,
+  PlaceWallCommand,
   RecruitSerfCommand,
   StopCommand,
   CancelTrainingCommand,
@@ -44,6 +46,7 @@ import type {
 
 export type CommandIssue =
   | PlacementIssue
+  | WallIssue
   /** The referenced building doesn't exist. */
   | 'noBuilding'
   /** The issuer doesn't own the building. */
@@ -232,6 +235,24 @@ function checkPlace(
   return issues.length === 0 ? OK : fail(...issues);
 }
 
+/** The line must give at least one segment to build, and the stock pay for all of them. */
+function checkWall(
+  ctx: SimContext,
+  state: GameState,
+  issuer: PlayerId,
+  command: PlaceWallCommand,
+): CommandCheck {
+  const { building, from, to } = command;
+  const plan = planWall(ctx.world, state, building, from, to, ctx.heights);
+  if (plan.issue) return fail(plan.issue);
+  if (!plan.segments.some((s) => s.status === 'ok')) {
+    return fail(...new Set(plan.segments.flatMap((s) => s.issues)));
+  }
+  return canAfford(stockOf(state, issuer), wallCost(building, plan))
+    ? OK
+    : fail('notEnoughResources');
+}
+
 /** Checks whether `issuer` may execute `command` in `state`. `ctx` must be synced to `state`. */
 export function validateCommand(
   ctx: SimContext,
@@ -246,6 +267,8 @@ export function validateCommand(
   switch (command.type) {
     case 'placeBuilding':
       return checkPlace(ctx, state, issuer, command);
+    case 'placeWall':
+      return checkWall(ctx, state, issuer, command);
     case 'recruitSerf':
       return checkRecruit(state, issuer, command);
     case 'moveUnits':
@@ -296,6 +319,44 @@ function placeBuilding(state: GameState, issuer: PlayerId, command: PlaceBuildin
       },
     },
     nextEntityId: state.nextEntityId + 1,
+  };
+}
+
+/** One construction site per buildable segment, in line order, paid together. */
+function placeWall(
+  ctx: SimContext,
+  state: GameState,
+  issuer: PlayerId,
+  command: PlaceWallCommand,
+): GameState {
+  const { building, from, to } = command;
+  const definition = BUILDINGS[building];
+  const plan = planWall(ctx.world, state, building, from, to, ctx.heights);
+  const sites = plan.segments
+    .filter((s) => s.status === 'ok')
+    .map((segment, i): BuildingInstance => ({
+      id: state.nextEntityId + i,
+      type: building,
+      x: segment.x,
+      z: segment.z,
+      rotation: segment.rotation,
+      ownerId: issuer,
+      status: 'construction',
+    }));
+  const construction = { ...state.construction };
+  for (const site of sites) {
+    construction[site.id] = {
+      workDone: 0,
+      workRequired: definition.buildTime * SIMULATION_TICK_RATE,
+      delivered: {},
+    };
+  }
+  const cost = wallCost(building, plan);
+  return {
+    ...withStock(state, issuer, pay(stockOf(state, issuer), cost)),
+    buildings: [...state.buildings, ...sites],
+    construction,
+    nextEntityId: state.nextEntityId + sites.length,
   };
 }
 
@@ -494,6 +555,8 @@ export function applyCommand(
   switch (command.type) {
     case 'placeBuilding':
       return { ok: true, state: placeBuilding(state, issuer, command) };
+    case 'placeWall':
+      return { ok: true, state: placeWall(ctx, state, issuer, command) };
     case 'recruitSerf':
       return { ok: true, state: recruitSerf(state, issuer, command) };
     case 'moveUnits':

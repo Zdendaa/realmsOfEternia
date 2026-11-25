@@ -11,7 +11,7 @@ import {
 } from '../nav/navGrid.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import type { NodeAmounts } from '../state/resourceNodes.js';
-import { createStateHeights } from '../state/stateHeights.js';
+import { createStateHeights, flattens } from '../state/stateHeights.js';
 import type { SimWorld } from '../world/createWorld.js';
 
 /**
@@ -67,6 +67,9 @@ export interface SimContextOptions {
 /** Footprints that block walking: every building except walkable ones (fields). */
 const blockingFootprints = (buildings: readonly BuildingInstance[]): PlacedFootprint[] =>
   buildings.filter((b) => !isWalkableBuilding(b.type)).map(toPlacedFootprint);
+
+const sameIds = (a: readonly BuildingInstance[], b: readonly BuildingInstance[]) =>
+  a.length === b.length && a.every((building, i) => b[i]?.id === building.id);
 
 const depletedIds = (nodes: NodeAmounts) =>
   Object.entries(nodes)
@@ -150,7 +153,11 @@ export function syncContext(ctx: SimContext, state: GameState): boolean {
     } else {
       stampBuildings(ctx.nav, blockingFootprints(state.buildings));
     }
-    ctx.heights = createStateHeights(ctx.world, state);
+    // Walls don't shape the terrain: keep the same height field (renderers rebuild the
+    // ground when it changes) while only walls were added or fell.
+    if (!sameIds(previous.filter(flattens), state.buildings.filter(flattens))) {
+      ctx.heights = createStateHeights(ctx.world, state);
+    }
   }
   ctx.buildings = state.buildings;
   return footprintsChanged;

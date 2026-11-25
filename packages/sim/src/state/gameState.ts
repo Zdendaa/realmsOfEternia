@@ -1,13 +1,14 @@
 import {
   BUILDINGS,
   isBuildingId,
+  isWall,
   productionOf,
   STARTING_RESOURCES,
   type BuildingId,
   type ResourceAmounts,
   type ResourceId,
 } from '@roe/game-data';
-import type { EntityId, PlacedFootprint, PlayerId } from '@roe/shared';
+import type { EntityId, Footprint, PlacedFootprint, PlayerId } from '@roe/shared';
 import type { Projectile } from '../combat/projectiles.js';
 import type { TrainingQueue } from '../training/training.js';
 import type { Outcome, PlayerStats } from '../rules/outcome.js';
@@ -201,6 +202,21 @@ export function toPlacedFootprint(
     x: building.x,
     z: building.z,
     rotation: building.rotation,
-    footprint: BUILDINGS[building.type].footprint,
+    footprint: footprintOf(building.type, building.rotation),
   };
+}
+
+/** True for a rotation that is an odd eighth turn (a diagonal wall segment). */
+const isDiagonal = (rotation: number) => Math.round(rotation / (Math.PI / 4)) % 2 !== 0;
+
+/**
+ * The ground a building of `type` covers at `rotation`: its definition's footprint,
+ * except that a diagonal wall segment is √2 longer than a straight one (it spans the
+ * same distance along both axes).
+ */
+export function footprintOf(type: BuildingId, rotation: number): Footprint {
+  const { footprint } = BUILDINGS[type];
+  return isWall(type) && isDiagonal(rotation)
+    ? { w: footprint.w * Math.SQRT2, d: footprint.d }
+    : footprint;
 }

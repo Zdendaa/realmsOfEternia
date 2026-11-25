@@ -1,5 +1,5 @@
 import { isBuildingId, isUnitKind, type BuildingId, type UnitKind } from '@roe/game-data';
-import type { EntityId, PlayerId } from '@roe/shared';
+import type { EntityId, PlayerId, Vec2 } from '@roe/shared';
 
 /**
  * Commands are what a client sends. They never contain the issuing player: the server
@@ -14,6 +14,18 @@ export interface PlaceBuildingCommand {
   z: number;
   /** Rotation in 90° steps (0–3). Integers keep validation exact. */
   quarterTurns: number;
+}
+
+/**
+ * Draw a wall from `from` to `to`: grid points on one of the 8 directions, a whole number
+ * of segments apart (`snapWallLine`). Every segment that passes the ground rules becomes
+ * a construction site; the others and those already standing are skipped.
+ */
+export interface PlaceWallCommand {
+  type: 'placeWall';
+  building: BuildingId;
+  from: Vec2;
+  to: Vec2;
 }
 
 /** Recruit one serf at a Town Hall. */
@@ -106,6 +118,7 @@ export interface DebugWaveCommand {
 
 export type Command =
   | PlaceBuildingCommand
+  | PlaceWallCommand
   | RecruitSerfCommand
   | MoveUnitsCommand
   | AssignBuildersCommand
@@ -137,6 +150,13 @@ const isEntityId = (v: unknown): v is EntityId =>
 const isNodeId = (v: unknown): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 
+/** A point with finite coordinates (only those are copied), or null. */
+function parsePoint(value: unknown): Vec2 | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const { x, z } = value as Record<string, unknown>;
+  return isFiniteNumber(x) && isFiniteNumber(z) ? { x, z } : null;
+}
+
 /** A non-empty list of distinct entity ids, or null. */
 function parseUnitIds(value: unknown): EntityId[] | null {
   if (!Array.isArray(value) || value.length === 0 || value.length > MAX_COMMAND_UNITS) return null;
@@ -158,6 +178,14 @@ export function parseCommand(input: unknown): Command | null {
       if (!isBuildingId(building) || !isFiniteNumber(x) || !isFiniteNumber(z)) return null;
       if (!isFiniteNumber(quarterTurns)) return null;
       return { type: 'placeBuilding', building, x, z, quarterTurns };
+    }
+    case 'placeWall': {
+      const { building } = data;
+      const from = parsePoint(data.from);
+      const to = parsePoint(data.to);
+      return isBuildingId(building) && from && to
+        ? { type: 'placeWall', building, from, to }
+        : null;
     }
     case 'recruitSerf':
       return isEntityId(data.buildingId)
