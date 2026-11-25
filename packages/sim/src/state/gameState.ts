@@ -9,6 +9,7 @@ import {
 } from '@roe/game-data';
 import type { EntityId, PlacedFootprint, PlayerId } from '@roe/shared';
 import type { Projectile } from '../combat/projectiles.js';
+import type { TrainingQueue } from '../training/training.js';
 import type { SimWorld } from '../world/createWorld.js';
 import { RIPE_FIELD, type FieldState } from './fields.js';
 import { createUnit, type UnitInstance } from './units.js';
@@ -71,6 +72,11 @@ export interface GameState {
   readonly fields: Readonly<Record<EntityId, FieldState>>;
   /** Arrows in flight. Changes when one is released or lands. */
   readonly projectiles: readonly Projectile[];
+  /**
+   * Training queues by building id (barracks, archery range); absent = nothing queued.
+   * Changes when a unit is queued, cancelled or finished.
+   */
+  readonly training: Readonly<Record<EntityId, TrainingQueue>>;
   readonly nextEntityId: EntityId;
 }
 
@@ -136,6 +142,7 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     resourceNodes: {},
     fields,
     projectiles: [],
+    training: {},
     nextEntityId,
   };
 }

@@ -19,8 +19,16 @@ export {
   type MoveUnitsCommand,
   type PlaceBuildingCommand,
   type RecruitSerfCommand,
+  type CancelTrainingCommand,
   type StopCommand,
+  type TrainUnitCommand,
 } from './commands/types.js';
+export {
+  TRAINING_QUEUE_LIMIT,
+  trainingProgress,
+  trainTicks,
+  type TrainingQueue,
+} from './training/training.js';
 export { combatTicks } from './combat/fighting.js';
 export { areEnemies, MONSTER_PLAYER } from './combat/hostility.js';
 export type { Projectile } from './combat/projectiles.js';

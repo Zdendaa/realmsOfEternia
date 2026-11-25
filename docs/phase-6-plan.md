@@ -45,7 +45,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 | --- | --------------------------------------------------------------------------------------------------------------- | ------ |
 | 6.1 | Combat core in the sim: health, armor, counters, melee, arrows, death, auto-engage, attack / attack-move / stop | ✅     |
 | 6.2 | Soldier visuals: models, weapons, player color, combat animations, arrows, corpses, dev spawn                   | ✅     |
-| 6.3 | Barracks and archery range: training queue, costs, housing, training panel                                      |        |
+| 6.3 | Barracks and archery range: training queue, costs, housing, training panel                                      | ✅     |
 | 6.4 | Commands and readability: attack cursor, F / X, health bars, unit stats panel, selection grouping               |        |
 | 6.5 | Building damage and destruction: building health, attacking sites, ruins                                        |        |
 | 6.6 | Skeleton camps: monsters player, camps on the map, guard and leash, bounty                                      |        |
@@ -68,6 +68,7 @@ The Ranger stays the serf: archers use the hooded Rogue so they aren't mistaken 
 - game-data: `barracks` and `archeryRange` with `trains: UnitKind[]`.
 - sim: `GameState.training` (queue up to 5, progress in ticks), `trainUnit` / `cancelTraining` (cost paid when queued, refunded on cancel, a free housing slot needed to finish).
 - client: training panel (buttons with cost and time, disabled reasons, queue with progress and cancel).
+- Done 2026-11-25: the Hexagon barracks (6 × 7) and archery range (7 × 7) are the yellow variants packed to GLB, roofs in the player color, entrances at +Z (checked in the browser). Training is `training/training.ts` (`{ queue, readyAt }` per building); trained units need free housing to leave ("Waiting for housing"); no rally point. 9 tests (payment and timing, queue order, progress, validation, construction sites, cancel and refund, waiting for housing, parsing, trained soldiers fighting). Checked in the browser: menu (two rows), both models, the panel (buttons, queue, progress), units leaving the door.
 
 ### 6.4 Commands and readability
 

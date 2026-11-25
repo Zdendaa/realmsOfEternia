@@ -1,5 +1,6 @@
 import { HEXAGON_PACK } from '../assets/hexagonPack.js';
 import { MEDIEVAL_PACK } from '../assets/medievalPack.js';
+import type { UnitKind } from '../units/definitions.js';
 import type { BuildingDefinition } from './types.js';
 
 const model = (file: string) => `${MEDIEVAL_PACK.modelDir}${file}.gltf.glb`;
@@ -285,6 +286,36 @@ export const BUILDINGS = {
     buildTime: 50,
     maxBuilders: 4,
   },
+  barracks: {
+    id: 'barracks',
+    name: 'Barracks',
+    description: 'Trains swordsmen and spearmen.',
+    modelPath: hexagonModel('building_barracks'),
+    scale: H,
+    footprint: { w: 6, d: 7 },
+    yard: true,
+    rotationOffset: 0,
+    buildable: true,
+    cost: { wood: 8, stone: 6 },
+    buildTime: 50,
+    maxBuilders: 4,
+    trains: ['swordsman', 'spearman'],
+  },
+  archeryRange: {
+    id: 'archeryRange',
+    name: 'Archery Range',
+    description: 'Trains archers.',
+    modelPath: hexagonModel('building_archeryrange'),
+    scale: H,
+    footprint: { w: 7, d: 7 },
+    yard: true,
+    rotationOffset: 0,
+    buildable: true,
+    cost: { wood: 8, stone: 3 },
+    buildTime: 45,
+    maxBuilders: 4,
+    trains: ['archer'],
+  },
 } as const satisfies Record<string, BuildingDefinition>;
 
 export type BuildingId = keyof typeof BUILDINGS;
@@ -292,6 +323,10 @@ export type BuildingId = keyof typeof BUILDINGS;
 /** The production settings of a building type, if it is a production building. */
 export const productionOf = (type: BuildingId): BuildingDefinition['production'] =>
   (BUILDINGS[type] as BuildingDefinition).production;
+
+/** The units a building type trains (empty for most buildings). */
+export const trainsOf = (type: BuildingId): readonly UnitKind[] =>
+  (BUILDINGS[type] as BuildingDefinition).trains ?? [];
 
 /** The deposit kind a building must stand on (mines), if any. */
 export const depositOf = (type: BuildingId) => {

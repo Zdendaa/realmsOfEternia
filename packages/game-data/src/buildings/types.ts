@@ -1,5 +1,6 @@
 import type { DecorationKind, DepositKind, Footprint } from '@roe/shared';
 import type { ResourceCost, ResourceId } from '../resources/definitions.js';
+import type { UnitKind } from '../units/definitions.js';
 import type { ProfessionId } from '../units/professions.js';
 
 /**
@@ -172,4 +173,9 @@ export interface BuildingDefinition {
   walkable?: boolean;
   /** Set for production buildings (see `ProductionDefinition`). */
   production?: ProductionDefinition;
+  /**
+   * Units this building trains once complete (barracks, archery range), queued and paid
+   * one at a time (see `UnitDefinition.trainTime`).
+   */
+  trains?: readonly UnitKind[];
 }

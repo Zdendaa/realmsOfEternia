@@ -65,6 +65,20 @@ export interface AttackMoveCommand {
   z: number;
 }
 
+/** Queue one unit at a training building (barracks, archery range); paid now. */
+export interface TrainUnitCommand {
+  type: 'trainUnit';
+  buildingId: EntityId;
+  unit: UnitKind;
+}
+
+/** Remove the unit at `index` from a building's training queue; its cost is refunded. */
+export interface CancelTrainingCommand {
+  type: 'cancelTraining';
+  buildingId: EntityId;
+  index: number;
+}
+
 /** The given units drop what they are doing (orders, targets, routes) and stand. */
 export interface StopCommand {
   type: 'stop';
@@ -94,6 +108,8 @@ export type Command =
   | AttackCommand
   | AttackMoveCommand
   | StopCommand
+  | TrainUnitCommand
+  | CancelTrainingCommand
   | DebugSpawnCommand;
 
 /** A command together with the player who issued it, attached by the receiver. */
@@ -171,6 +187,16 @@ export function parseCommand(input: unknown): Command | null {
     case 'stop': {
       const unitIds = parseUnitIds(data.unitIds);
       return unitIds ? { type: 'stop', unitIds } : null;
+    }
+    case 'trainUnit': {
+      const { buildingId, unit } = data;
+      if (!isEntityId(buildingId) || !isUnitKind(unit)) return null;
+      return { type: 'trainUnit', buildingId, unit };
+    }
+    case 'cancelTraining': {
+      const { buildingId, index } = data;
+      if (!isEntityId(buildingId) || !isNodeId(index)) return null;
+      return { type: 'cancelTraining', buildingId, index };
     }
     case 'debugSpawn': {
       const { unit, count, x, z, owner } = data;

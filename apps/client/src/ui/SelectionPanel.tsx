@@ -3,6 +3,7 @@ import {
   productionOf,
   RESOURCE_NODES,
   RESOURCES,
+  trainsOf,
   UNITS,
   type ProductionDefinition,
   type ResourceId,
@@ -25,6 +26,7 @@ import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
 import { useSelectionStore } from '../state/selectionStore';
 import { CostList } from './CostList';
 import { RESOURCE_ICONS } from './icons/resourceIcons';
+import { TrainingPanel } from './TrainingPanel';
 
 const ISSUE_MESSAGES: Partial<Record<CommandIssue, string>> = {
   unitLimit: `You already have ${UNITS.serf.maxPerPlayer} serfs.`,
@@ -320,6 +322,9 @@ function BuildingSelection() {
       )}
       {own && building.type === 'townHall' && building.status === 'complete' && (
         <TownHallActions key={building.id} buildingId={building.id} />
+      )}
+      {own && building.status === 'complete' && trainsOf(building.type).length > 0 && (
+        <TrainingPanel key={building.id} buildingId={building.id} type={building.type} />
       )}
     </section>
   );

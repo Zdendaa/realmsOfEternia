@@ -19,6 +19,7 @@ export {
   isWalkableBuilding,
   modelPathOf,
   productionOf,
+  trainsOf,
   type BuildingId,
 } from './buildings/definitions.js';
 export { tileOffsets } from './buildings/tiling.js';

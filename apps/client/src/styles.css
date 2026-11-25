@@ -404,6 +404,59 @@ body,
   color: #9be08f;
 }
 
+/* Training at a barracks or archery range. */
+.training {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.training .selection-action {
+  min-width: 96px;
+  white-space: nowrap;
+}
+
+.training-time {
+  white-space: nowrap;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.training-queue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.training-queue button {
+  position: relative;
+  overflow: hidden;
+  padding: 3px 8px;
+  border: 1px solid var(--hud-border);
+  border-radius: 5px;
+  background: rgb(255 255 255 / 6%);
+  color: var(--hud-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.training-queue button:hover {
+  border-color: #ff8a7a;
+}
+
+/* The first unit's progress, under its name. */
+.training-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #d9b45a;
+}
+
 .selection-issue {
   margin: 0;
   color: #ff8a7a;

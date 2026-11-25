@@ -1,4 +1,4 @@
-import { BUILDINGS, GATHER_RULES, isBuildingId, UNITS } from '@roe/game-data';
+import { BUILDINGS, GATHER_RULES, isBuildingId, trainsOf, UNITS } from '@roe/game-data';
 import { areEnemies } from '../combat/hostility.js';
 import {
   entrancePoint,
@@ -9,7 +9,8 @@ import {
 } from '@roe/shared';
 import type { SimContext } from '../context/simContext.js';
 import { hasFreeHousing, populationOf } from '../economy/population.js';
-import { canAfford, pay, stockOf, withStock } from '../economy/stock.js';
+import { canAfford, pay, refund, stockOf, withStock } from '../economy/stock.js';
+import { dequeue, enqueue, TRAINING_QUEUE_LIMIT, withoutKey } from '../training/training.js';
 import { checkPlacement, quarterTurnsToRadians, type PlacementIssue } from '../rules/placement.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import { nodeById, nodesNear, remainingAmount } from '../state/resourceNodes.js';
@@ -35,6 +36,8 @@ import type {
   PlaceBuildingCommand,
   RecruitSerfCommand,
   StopCommand,
+  CancelTrainingCommand,
+  TrainUnitCommand,
 } from './types.js';
 
 export type CommandIssue =
@@ -64,7 +67,13 @@ export type CommandIssue =
   /** The attack target isn't an enemy of the issuer. */
   | 'notEnemy'
   /** A development command sent to a simulation that doesn't accept them. */
-  | 'devOnly';
+  | 'devOnly'
+  /** The building doesn't train that unit. */
+  | 'cannotTrain'
+  /** The building's training queue is full. */
+  | 'queueFull'
+  /** Nothing queued at that place. */
+  | 'notQueued';
 
 export interface CommandCheck {
   ok: boolean;
@@ -154,6 +163,36 @@ function checkStop(state: GameState, issuer: PlayerId, command: StopCommand) {
   return ownUnits(state, issuer, command.unitIds).length === 0 ? fail('noUnits') : OK;
 }
 
+/** The issuer's own, complete building that trains: the common checks of both training commands. */
+function checkTrainingBuilding(state: GameState, issuer: PlayerId, buildingId: EntityId) {
+  const building = findBuilding(state, buildingId);
+  if (!building) return fail('noBuilding');
+  if (building.ownerId !== issuer) return fail('notOwner');
+  if (building.status !== 'complete') return fail('underConstruction');
+  return OK;
+}
+
+function checkTrain(state: GameState, issuer: PlayerId, command: TrainUnitCommand) {
+  const base = checkTrainingBuilding(state, issuer, command.buildingId);
+  if (!base.ok) return base;
+  const building = findBuilding(state, command.buildingId) as BuildingInstance;
+  if (!trainsOf(building.type).includes(command.unit)) return fail('cannotTrain');
+  const issues: CommandIssue[] = [];
+  const queued = state.training[building.id]?.queue.length ?? 0;
+  if (queued >= TRAINING_QUEUE_LIMIT) issues.push('queueFull');
+  if (!canAfford(stockOf(state, issuer), UNITS[command.unit].cost)) {
+    issues.push('notEnoughResources');
+  }
+  return issues.length === 0 ? OK : fail(...issues);
+}
+
+function checkCancelTraining(state: GameState, issuer: PlayerId, command: CancelTrainingCommand) {
+  const base = checkTrainingBuilding(state, issuer, command.buildingId);
+  if (!base.ok) return base;
+  const queued = state.training[command.buildingId]?.queue.length ?? 0;
+  return command.index < queued ? OK : fail('notQueued');
+}
+
 function checkDebugSpawn(ctx: SimContext, command: DebugSpawnCommand) {
   if (!ctx.dev) return fail('devOnly');
   return isInPlayableArea(ctx.world.map, command.x, command.z) ? OK : fail('outOfBounds');
@@ -198,6 +237,10 @@ export function validateCommand(
       return checkAttackMove(ctx, state, issuer, command);
     case 'stop':
       return checkStop(state, issuer, command);
+    case 'trainUnit':
+      return checkTrain(state, issuer, command);
+    case 'cancelTraining':
+      return checkCancelTraining(state, issuer, command);
     case 'debugSpawn':
       return checkDebugSpawn(ctx, command);
   }
@@ -293,6 +336,28 @@ function stop(state: GameState, issuer: PlayerId, command: StopCommand): GameSta
     changed.set(unit.id, { ...unit, task: IDLE, movement: null, combat: freshCombat(unit) });
   }
   return { ...state, units: replaceUnits(state.units, changed) };
+}
+
+function trainUnit(state: GameState, issuer: PlayerId, command: TrainUnitCommand): GameState {
+  const paid = withStock(state, issuer, pay(stockOf(state, issuer), UNITS[command.unit].cost));
+  const queue = enqueue(state.training[command.buildingId], command.unit, state.tick);
+  return { ...paid, training: { ...state.training, [command.buildingId]: queue } };
+}
+
+function cancelTraining(
+  state: GameState,
+  issuer: PlayerId,
+  command: CancelTrainingCommand,
+): GameState {
+  const current = state.training[command.buildingId];
+  const kind = current?.queue[command.index];
+  if (!current || kind === undefined) return state;
+  const refunded = withStock(state, issuer, refund(stockOf(state, issuer), UNITS[kind].cost));
+  const rest = dequeue(current, command.index, state.tick);
+  const training = rest
+    ? { ...state.training, [command.buildingId]: rest }
+    : withoutKey(state.training, command.buildingId);
+  return { ...refunded, training };
 }
 
 /** Dev spawn: `count` fresh units spread around the point, appended in id order. */
@@ -398,6 +463,10 @@ export function applyCommand(
       return { ok: true, state: attackMove(state, issuer, command) };
     case 'stop':
       return { ok: true, state: stop(state, issuer, command) };
+    case 'trainUnit':
+      return { ok: true, state: trainUnit(state, issuer, command) };
+    case 'cancelTraining':
+      return { ok: true, state: cancelTraining(state, issuer, command) };
     case 'debugSpawn':
       return { ok: true, state: debugSpawn(state, issuer, command) };
   }

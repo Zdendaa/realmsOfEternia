@@ -25,4 +25,6 @@ export interface UnitDefinition {
   controllable: boolean;
   /** Health, armor and (for fighting units) the attack. */
   combat: CombatStats;
+  /** Seconds a training building needs for one (soldiers); absent for villagers. */
+  trainTime?: number;
 }

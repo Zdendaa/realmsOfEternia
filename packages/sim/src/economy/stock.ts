@@ -34,6 +34,13 @@ export function pay(stock: Readonly<ResourceAmounts>, cost: ResourceCost): Resou
   return next;
 }
 
+/** The stock after getting `cost` back (a cancelled order). */
+export function refund(stock: Readonly<ResourceAmounts>, cost: ResourceCost): ResourceAmounts {
+  const next = { ...stock };
+  for (const id of RESOURCE_IDS) next[id] += cost[id] ?? 0;
+  return next;
+}
+
 /** `state` with the player's stock replaced. */
 export const withStock = (
   state: GameState,

@@ -4,6 +4,7 @@ import { applyHits, Hits, removeCorpses } from '../combat/damage.js';
 import { updateFighters } from '../combat/fighting.js';
 import { landProjectiles, type Projectile } from '../combat/projectiles.js';
 import { progressConstruction } from '../construction/construction.js';
+import { progressTraining } from '../training/training.js';
 import { syncContext, type SimContext } from '../context/simContext.js';
 import { commitEconomy, createEconomyDraft } from '../economy/draft.js';
 import type { GameState } from '../state/gameState.js';
@@ -25,7 +26,8 @@ export interface StepResult {
  * Order: commands → arrows landing → behavior (serfs: tasks, gathering, deliveries;
  * workers: harvesting, farming; fighters: targets, chases, strikes) → the tick's damage
  * and deaths → route invalidation → path planning → walking → separation → construction
- * work → workers for production buildings that have none (housing permitting) → removal
+ * work → workers for production buildings that have none (housing permitting) → trained
+ * units leaving their building → removal
  * of corpses that have lain long enough. `ctx` is synced along the
  * way and left matching the returned state. The given state is never mutated.
  */
@@ -67,7 +69,10 @@ export function stepGame(
   );
 
   // Production buildings without a worker get one while their owner has free housing.
-  const nextEntityId = hireWorkers(buildings, units, current.nextEntityId);
+  const hired = hireWorkers(buildings, units, current.nextEntityId);
+  // Trained units leave their building (housing permitting, after this tick's workers).
+  const trained = progressTraining(buildings, current.training, units, current.tick, hired);
+  const nextEntityId = trained.nextEntityId;
   const remaining = removeCorpses(units, current.tick);
   const projectiles = released.length > 0 ? [...flying, ...released] : flying;
 
@@ -81,6 +86,7 @@ export function stepGame(
     stocks: economic.stocks,
     fields: economic.fields,
     projectiles,
+    training: trained.training,
     nextEntityId,
   };
   syncContext(ctx, next);
