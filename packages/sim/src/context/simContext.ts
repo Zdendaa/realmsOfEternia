@@ -40,8 +40,22 @@ export interface SimContext {
    * Fog of war: one vision per listed player (`SimContextOptions.visions`), updated at the
    * end of every tick. The client keeps its local player's; the server keeps everyone's.
    */
-  readonly visions: ReadonlyMap<PlayerId, Vision>;
+  readonly visions: Map<PlayerId, Vision>;
 }
+
+/** Starts keeping `player`'s vision (a player joining), up to date with `state`. */
+export function ensureVision(ctx: SimContext, player: PlayerId, state: GameState): Vision {
+  let vision = ctx.visions.get(player);
+  if (!vision) {
+    vision = createVision(ctx.world.map, player);
+    updateVision(vision, state);
+    ctx.visions.set(player, vision);
+  }
+  return vision;
+}
+
+/** Stops keeping `player`'s vision (a player leaving). */
+export const dropVision = (ctx: SimContext, player: PlayerId) => ctx.visions.delete(player);
 
 export interface SimContextOptions {
   /** Accept dev-only commands. Only the client's dev build sets it. */

@@ -1,5 +1,6 @@
 import type { Decoration, DecorationKind, EntityId, Vec2 } from '@roe/shared';
 import { areEnemies } from '@roe/sim';
+import { buildingInSight } from '../render/fog/knowledge';
 import { LOCAL_PLAYER } from '../state/gameStore';
 import type { PointerTarget } from './pointerTarget';
 
@@ -41,7 +42,12 @@ export interface SelectionKinds {
 export function commandIntent(target: PointerTarget, fighters = false): CommandIntent {
   const { building, ground } = target;
   if (fighters && target.enemyId !== null) return { kind: 'attack', targetId: target.enemyId };
-  if (fighters && building && areEnemies(LOCAL_PLAYER, building.ownerId)) {
+  if (
+    fighters &&
+    building &&
+    areEnemies(LOCAL_PLAYER, building.ownerId) &&
+    buildingInSight(building)
+  ) {
     return { kind: 'attack', targetId: building.id };
   }
   if (building) {
@@ -64,7 +70,7 @@ export function commandIntent(target: PointerTarget, fighters = false): CommandI
 export function attackMoveIntent(target: PointerTarget): CommandIntent {
   if (target.enemyId !== null) return { kind: 'attack', targetId: target.enemyId };
   const building = target.building;
-  if (building && areEnemies(LOCAL_PLAYER, building.ownerId)) {
+  if (building && areEnemies(LOCAL_PLAYER, building.ownerId) && buildingInSight(building)) {
     return { kind: 'attack', targetId: building.id };
   }
   const ground = target.ground;

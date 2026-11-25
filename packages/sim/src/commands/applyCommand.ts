@@ -1,6 +1,7 @@
 import { BUILDINGS, GATHER_RULES, isBuildingId, trainsOf, UNITS } from '@roe/game-data';
 import { areEnemies } from '../combat/hostility.js';
 import { sendWave } from '../combat/waves.js';
+import { buildingSeen, isVisible } from '../vision/vision.js';
 import {
   entrancePoint,
   isInPlayableArea,
@@ -76,7 +77,9 @@ export type CommandIssue =
   /** Nothing queued at that place. */
   | 'notQueued'
   /** The map has no scripted waves. */
-  | 'noWave';
+  | 'noWave'
+  /** The attack target isn't in the issuer's sight (fog of war). */
+  | 'notVisible';
 
 export interface CommandCheck {
   ok: boolean;
@@ -145,12 +148,21 @@ function checkGather(ctx: SimContext, state: GameState, issuer: PlayerId, comman
   return serfs.length === 0 ? fail('noUnits') : OK;
 }
 
-function checkAttack(state: GameState, issuer: PlayerId, command: AttackCommand) {
+function checkAttack(ctx: SimContext, state: GameState, issuer: PlayerId, command: AttackCommand) {
   // A living unit, or a building (complete or a construction site).
   const unit = state.units.find((u) => u.id === command.targetId);
   const target = unit && isAlive(unit) ? unit : findBuilding(state, command.targetId);
   if (!target) return fail('noTarget');
   if (!areEnemies(issuer, target.ownerId)) return fail('notEnemy');
+  // With fog of war, only what the issuer sees right now can be attacked.
+  const vision = ctx.visions.get(issuer);
+  if (vision) {
+    const seen =
+      unit && isAlive(unit)
+        ? isVisible(vision, unit.x, unit.z)
+        : buildingSeen(vision, target as BuildingInstance);
+    if (!seen) return fail('notVisible');
+  }
   const fighters = ownUnits(state, issuer, command.unitIds).filter((u) => u.combat);
   return fighters.length === 0 ? fail('noUnits') : OK;
 }
@@ -237,7 +249,7 @@ export function validateCommand(
     case 'gather':
       return checkGather(ctx, state, issuer, command);
     case 'attack':
-      return checkAttack(state, issuer, command);
+      return checkAttack(ctx, state, issuer, command);
     case 'attackMove':
       return checkAttackMove(ctx, state, issuer, command);
     case 'stop':

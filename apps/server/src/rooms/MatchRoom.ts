@@ -5,6 +5,8 @@ import {
   createInitialState,
   createSimContext,
   createWorld,
+  dropVision,
+  ensureVision,
   parseCommand,
   stepGame,
   type GameState,
@@ -70,11 +72,15 @@ export class MatchRoom extends Room<{ state: MatchStateInstance }> {
       client.sessionId,
       new PlayerState({ name: `Player ${playerNumber}`, ready: false }),
     );
+    // Fog of war: the server knows what each player sees (filtering what clients receive,
+    // and checking that attacks target something visible). Views are sent with Phase 10.
+    ensureVision(this.ctx, client.sessionId, this.game);
     console.log(`[match ${this.roomId}] ${client.sessionId} joined`);
   }
 
   override onLeave(client: Client): void {
     this.state.players.delete(client.sessionId);
+    dropVision(this.ctx, client.sessionId);
     console.log(`[match ${this.roomId}] ${client.sessionId} left`);
   }
 }

@@ -40,6 +40,8 @@ export { hasFreeHousing, populationOf, type Population } from './economy/populat
 export { canAfford, EMPTY_STOCK, missingResources, stockOf } from './economy/stock.js';
 export {
   createSimContext,
+  dropVision,
+  ensureVision,
   syncContext,
   type SimContext,
   type SimContextOptions,
@@ -127,3 +129,4 @@ export {
   VISION_CELL,
   type Vision,
 } from './vision/vision.js';
+export { viewOf, type PlayerView } from './vision/view.js';

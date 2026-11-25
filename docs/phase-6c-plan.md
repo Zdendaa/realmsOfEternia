@@ -23,7 +23,7 @@ Fog of war as in The Settlers and Warcraft: every spot of the map is **unexplore
 | ---- | ---------------------------------------------------------------------------------------- | ------ |
 | 6c.1 | Vision in the sim: grid, incremental stamping, explored, last-seen buildings, `sight`    | ✅     |
 | 6c.2 | Fog rendering: fog pass, smooth transitions, hiding units / bars / arrows, ghosts        | ✅     |
-| 6c.3 | Rules and filtering: attacks need sight, `viewOf` with anti-cheat tests, server visions  |        |
+| 6c.3 | Rules and filtering: attacks need sight, `viewOf` with anti-cheat tests, server visions  | ✅     |
 | 6c.4 | Win/lose: `outcome`, map objective, commands blocked after the end, overlay with numbers |        |
 
 ### 6c.1 Vision in the sim
@@ -40,6 +40,7 @@ Fog of war as in The Settlers and Warcraft: every spot of the map is **unexplore
 ### 6c.3 Rules and filtering
 
 - sim: `attack` needs a visible target (`notVisible`), `vision/view.ts` (`viewOf`) with anti-cheat tests. Server: one `Vision` per player.
+- Done 2026-11-25: as planned. `checkAttack` asks the issuer\x27s vision when the context keeps one (a building counts when any footprint point is visible). `viewOf(world, state, vision)` also strips other players\x27 units of their route and destination (`movement`, move and attack-move goals, guard homes): a client must not learn where enemies are heading. The server keeps a vision per joined player (`ensureVision` / `dropVision`); views are not sent yet (Phase 10). The client\x27s attack cursor follows the same rule (no sword over ghosts). 6 tests, incl. the anti-cheat check on every tick of a moving battle for both players. Checked in the browser: the sword over an enemy barracks in sight, "blocked" over its ghost.
 
 ### 6c.4 Win/lose
 

@@ -1,5 +1,6 @@
 import type { EntityId } from '@roe/shared';
 import {
+  buildingSeen,
   isExplored,
   isVisible,
   type BuildingInstance,
@@ -22,6 +23,16 @@ export function shownAt(owner: string | null, x: number, z: number): boolean {
   if (owner === LOCAL_PLAYER) return true;
   const vision = localVision();
   return revealed(vision) || isVisible(vision as Vision, x, z);
+}
+
+/**
+ * Whether the local player sees `building` right now (own: always). Ghosts in the fog
+ * can't be attacked, so the attack cursor needs this.
+ */
+export function buildingInSight(building: BuildingInstance): boolean {
+  if (building.ownerId === LOCAL_PLAYER) return true;
+  const vision = localVision();
+  return revealed(vision) || buildingSeen(vision as Vision, building);
 }
 
 /** Whether the local player has ever seen (x, z). */
