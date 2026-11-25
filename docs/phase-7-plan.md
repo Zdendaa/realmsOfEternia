@@ -11,7 +11,7 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 | 7.3 | Gates: a wall segment becomes a gate; the owner's units pass, others don't                                                                  | ✅     |
 | 7.4 | Breaching: enemies with no route attack the wall in the way; a wave breaks into a walled village                                            | ✅     |
 | 7.5 | Wooden tower: shoots by itself, arrows from the top, range ring when selected. **Browser review**                                           | ✅     |
-| 7.6 | Tower upgrades: wood → stone → crossbow, magic or fire; upgrade command, panel button, changed look                                         |        |
+| 7.6 | Tower upgrades: wood → stone → crossbow, magic or fire; upgrade command, panel button, changed look                                         | ✅     |
 | 7.7 | Balance and check: the wave against walls and towers, performance with 300+ segments, docs                                                  |        |
 
 ### 7.1 notes (done 2026-11-25)
@@ -37,7 +37,7 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 - Performance: the first version took 288 ms in the worst tick with 90 shut-out attackers (120 × 120 test map); with the region check, the shared choice and the per-tick cap it is about 50 ms (2 ms on average). In the browser on the prototype map with 40 attackers: 2.3 ms on average, 25 ms worst.
 - 11 sim tests: waves breaking into square, diagonal and double rings, walking around an open side, preferring the gate, ordered targets, defenders, own walls and plain moves, determinism, the benchmark.
 
-### 7.5 notes (done 2026-11-25, awaiting browser review)
+### 7.5 notes (done 2026-11-25, accepted)
 
 - As planned: `building_tower_base` tinted wooden, self-firing, range ring. 7 sim tests. Browser, dev build: placing with the ring, building by serfs, the selection panel and ring, arrows at attackers; two towers behind an open palisade line killed 6 of 10 dev-spawned skeletons within the run, while 14 spearmen destroyed both towers (test shortcuts: stock set, the wall marked complete, attack-move orders written into the state). Production build: one click placed the tower and paid for it.
 
@@ -45,6 +45,14 @@ Approved 2026-11-25, with two additions (decision 9 and 10). Walls drawn with th
 
 - Units shot by a tower now react (go for it, or retreat if it can't be reached). 8 sim tests; in the browser, 5 idle skeletons spawned 8–11 units from a tower went for it and damaged it.
 - Bug from 7.4: a new order didn't clear a unit's breach target, so a soldier told to move or stop kept breaking the wall. Fixed, with tests.
+
+### 7.6 notes (done 2026-11-25, awaiting review)
+
+- Upgrades are timed and need no serfs: turning the tower back into a construction site would have dropped it to 10% health.
+- Looks differ from decision 8: the roofs keep the owner's color, so the specials are told apart by a body tint, the rooftop prop and the projectile (still marked temporary). The stone tower is `building_tower_A`, the specials `building_tower_B`; the crossbow is the Adventurers model.
+- Added: cancelling an upgrade with a full refund; the tinted placement preview.
+- Sim tests cover the upgrade rules and each special effect, and print how each tower does against ten skeleton minions (wooden falls after killing 2; stone, crossbow, magic and fire win, with about 260, 590, 190 and 980 health left). That is one scenario, not a balance test.
+- Browser, dev build: wooden → stone → crossbow through the panel, the progress bar and scaffolding, all tower looks, each shot type, flames and haze (projectiles and effects held mid-air through the state to look at them; resources set and towers finished the same way). Production build, with no shortcuts: a tower placed by a click, built by serfs and upgraded to stone.
 
 ## Decisions
 

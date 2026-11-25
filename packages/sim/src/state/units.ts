@@ -150,6 +150,10 @@ export interface UnitInstance {
   activity: UnitActivity;
   /** What the unit carries, or null. Kept through other orders until delivered. */
   carrying: Cargo | null;
+  /** Slowed by magic: walks at `factor` of its speed until the tick `until`. */
+  slowed: { until: number; factor: number } | null;
+  /** On fire until the tick `until`: `damage` once a second, credited to `by`. */
+  burning: { until: number; damage: number; by: PlayerId | null } | null;
   /** Hit points left (integer); the unit dies at 0. */
   health: number;
   /** Combat state of units that fight; null for villagers. */
@@ -179,6 +183,8 @@ export function createUnit(
     movement: null,
     activity: 'idle',
     carrying: null,
+    slowed: null,
+    burning: null,
     health: combatOf(type).health,
     combat: fights
       ? {

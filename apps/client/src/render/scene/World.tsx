@@ -1,4 +1,4 @@
-import { BUILDINGS, isWall, type BuildingDefinition } from '@roe/game-data';
+import { BUILDINGS, isWall, towerOf, type BuildingDefinition } from '@roe/game-data';
 import { distanceToFootprint, footprintBounds, type HeightField } from '@roe/shared';
 import { isStartingBuilding, toPlacedFootprint, type BuildingInstance, type Ruin } from '@roe/sim';
 import { Suspense, useMemo } from 'react';
@@ -23,6 +23,8 @@ import { Terrain } from './Terrain';
 import { Trees } from './Trees';
 import { Water } from './Water';
 import { Walls } from '../walls/Walls';
+import { TowerToppers } from '../towers/TowerToppers';
+import { UpgradeScaffolds } from '../towers/UpgradeScaffolds';
 
 interface WorldProps {
   world: ClientWorld;
@@ -103,6 +105,12 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
   // Walls are drawn by their own instanced renderer, finished or not.
   const walls = useMemo(() => known.filter((b) => isWall(b.type)), [known]);
 
+  // Finished towers, for what sits on top of them.
+  const towers = useMemo(
+    () => known.filter((b) => b.status === 'complete' && towerOf(b.type)),
+    [known],
+  );
+
   // Buildings placed by players: cosmetic layers (grass, props) are cleared under them.
   const playerFootprints = useMemo(
     () => buildings.filter((b) => !isStartingBuilding(world, b)).map(toPlacedFootprint),
@@ -162,6 +170,8 @@ export function World({ world, heights, buildings, resourceNodes, ruins }: World
       <ChimneySmoke buildings={animated} />
       <ConstructionSites sites={sites} />
       <Walls walls={walls} heights={heights} />
+      <TowerToppers towers={towers} heights={heights} />
+      <UpgradeScaffolds buildings={known} heights={heights} />
     </>
   );
 }

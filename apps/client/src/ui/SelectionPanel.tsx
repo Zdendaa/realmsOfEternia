@@ -31,6 +31,7 @@ import { CostList } from './CostList';
 import { RESOURCE_ICONS } from './icons/resourceIcons';
 import { TrainingPanel } from './TrainingPanel';
 import { UnitPanel } from './UnitPanel';
+import { UpgradePanel } from './UpgradePanel';
 
 const GATE_MESSAGES: Partial<Record<CommandIssue, string>> = {
   damaged: 'A damaged segment cannot be made into a gate.',
@@ -331,8 +332,15 @@ function GateAction({ building }: { building: BuildingInstance }) {
 
 /** How a tower fights (from game-data). */
 function TowerStats({ type }: { type: BuildingInstance['type'] }) {
-  const attack = towerOf(type)?.attack;
-  if (!attack) return null;
+  const tower = towerOf(type);
+  if (!tower) return null;
+  const { attack, splash, slow, burn } = tower;
+  const special = [
+    attack.ignoresArmor && 'Goes through armor',
+    splash && `Bursts over ${splash.radius} units`,
+    burn && `Burns ${burn.damagePerSecond} a second for ${burn.seconds} s`,
+    slow && `Slows to ${Math.round(slow.factor * 100)}% for ${slow.seconds} s`,
+  ].filter(Boolean);
   return (
     <dl className="unit-stats">
       <dt>Damage</dt>
@@ -341,6 +349,12 @@ function TowerStats({ type }: { type: BuildingInstance['type'] }) {
       <dd>{attack.cooldown} s</dd>
       <dt>Range</dt>
       <dd>{attack.range}</dd>
+      {special.length > 0 && (
+        <>
+          <dt>Special</dt>
+          <dd>{special.join(', ')}</dd>
+        </>
+      )}
     </dl>
   );
 }
@@ -374,6 +388,9 @@ function BuildingSelection() {
         </>
       )}
       {towerOf(building.type) && <TowerStats type={building.type} />}
+      {own && towerOf(building.type) && building.status === 'complete' && (
+        <UpgradePanel key={building.id} buildingId={building.id} type={building.type} />
+      )}
       {own && gateFor(building.type) && <GateAction key={building.id} building={building} />}
       {own && building.type === 'townHall' && building.status === 'complete' && (
         <TownHallActions key={building.id} buildingId={building.id} />

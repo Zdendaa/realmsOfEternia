@@ -666,3 +666,18 @@ body,
   color: #ffd166;
   font-weight: 600;
 }
+
+/* Tower upgrades in the selection panel. */
+.upgrade-choice .upgrade-description {
+  margin: 2px 0 6px;
+  font-size: 11px;
+  color: var(--hud-muted);
+}
+
+.upgrade-choice .selection-action {
+  flex: none;
+  width: 118px;
+  padding-inline: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}

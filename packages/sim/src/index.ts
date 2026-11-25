@@ -21,6 +21,8 @@ export {
   type PlaceBuildingCommand,
   type PlaceWallCommand,
   type MakeGateCommand,
+  type UpgradeTowerCommand,
+  type CancelUpgradeCommand,
   type RecruitSerfCommand,
   type CancelTrainingCommand,
   type StopCommand,
@@ -146,3 +148,4 @@ export {
   type WallSegment,
 } from './rules/walls.js';
 export { findCutOff, type CutOff } from './rules/enclosure.js';
+export type { TowerUpgrade, TowerUpgrades } from './combat/upgrades.js';

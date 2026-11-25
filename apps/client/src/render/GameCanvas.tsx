@@ -17,6 +17,7 @@ import { World } from './scene/World';
 import { SelectionMarkers } from './selection/SelectionMarkers';
 import { SelectionRings } from './selection/SelectionRings';
 import { SimulationDriver } from './simulation/SimulationDriver';
+import { StatusEffects } from './towers/StatusEffects';
 import { UnitFrameDriver } from './units/UnitFrameDriver';
 import { Units } from './units/Units';
 
@@ -65,6 +66,7 @@ export function GameCanvas() {
       </Suspense>
       <SelectionRings />
       <HealthBars />
+      <StatusEffects />
       <SelectionMarkers />
       <CommandMarkers />
       <PlacementPreview />

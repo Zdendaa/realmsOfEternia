@@ -11,6 +11,7 @@ import {
 import type { EntityId, Footprint, PlacedFootprint, PlayerId } from '@roe/shared';
 import type { Projectile } from '../combat/projectiles.js';
 import type { TowerCooldowns } from '../combat/towers.js';
+import type { TowerUpgrades } from '../combat/upgrades.js';
 import type { TrainingQueue } from '../training/training.js';
 import type { Outcome, PlayerStats } from '../rules/outcome.js';
 import type { SimWorld } from '../world/createWorld.js';
@@ -94,6 +95,8 @@ export interface GameState {
   readonly projectiles: readonly Projectile[];
   /** When each tower may shoot again. Changes when one shoots or falls. */
   readonly towerCooldowns: TowerCooldowns;
+  /** Towers being upgraded, by building id. Changes when one starts, ends or falls. */
+  readonly upgrades: TowerUpgrades;
   /**
    * Training queues by building id (barracks, archery range); absent = nothing queued.
    * Changes when a unit is queued, cancelled or finished.
@@ -184,6 +187,7 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     fields,
     projectiles: [],
     towerCooldowns: {},
+    upgrades: {},
     training: {},
     buildingDamage: {},
     ruins: [],

@@ -1,10 +1,11 @@
-import { combatOf, COMBAT_RULES, damageAgainst, towerOf } from '@roe/game-data';
+import { COMBAT_RULES, towerOf } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type EntityId } from '@roe/shared';
 import type { BuildingInstance } from '../state/gameState.js';
 import { isAlive, type UnitInstance } from '../state/units.js';
 import { areEnemies } from './hostility.js';
 import { arrowFlight, type Projectile } from './projectiles.js';
 import type { UnitGrid } from './targeting.js';
+import { towerDamage } from './towerImpacts.js';
 
 /** The tick each tower may shoot again, by building id; absent = ready. */
 export type TowerCooldowns = Readonly<Record<EntityId, number>>;
@@ -58,11 +59,13 @@ export function updateTowers(
   grid: () => UnitGrid,
   cooldowns: TowerCooldowns,
   projectiles: Projectile[],
+  /** Towers being upgraded don't shoot. */
+  upgrades: Readonly<Record<EntityId, unknown>> = {},
 ): TowerCooldowns {
   let next: Record<EntityId, number> | null = null;
   for (const tower of buildings) {
     const definition = towerOf(tower.type);
-    if (!definition || tower.status !== 'complete') continue;
+    if (!definition || tower.status !== 'complete' || upgrades[tower.id]) continue;
     if (tick < (cooldowns[tower.id] ?? 0) || (tick + tower.id) % COMBAT_RULES.scanEvery !== 0) {
       continue;
     }
@@ -76,8 +79,10 @@ export function updateTowers(
       attackerId: tower.id,
       ownerId: tower.ownerId,
       targetId: target.id,
-      damage: damageAgainst(attack, combatOf(target.type)),
+      damage: definition.splash ? 0 : towerDamage(attack, target),
       fromHeight: definition.launchHeight,
+      source: tower.type,
+      aim: { x: target.x, z: target.z },
     });
   }
   const result = next ?? cooldowns;

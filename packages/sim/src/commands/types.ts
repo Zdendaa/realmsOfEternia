@@ -38,6 +38,19 @@ export interface MakeGateCommand {
   segmentId: EntityId;
 }
 
+/** Start upgrading one of the issuer's finished towers into `to`; paid now. */
+export interface UpgradeTowerCommand {
+  type: 'upgradeTower';
+  buildingId: EntityId;
+  to: BuildingId;
+}
+
+/** Call off a tower's upgrade; its cost is refunded. */
+export interface CancelUpgradeCommand {
+  type: 'cancelUpgrade';
+  buildingId: EntityId;
+}
+
 /** Recruit one serf at a Town Hall. */
 export interface RecruitSerfCommand {
   type: 'recruitSerf';
@@ -130,6 +143,8 @@ export type Command =
   | PlaceBuildingCommand
   | PlaceWallCommand
   | MakeGateCommand
+  | UpgradeTowerCommand
+  | CancelUpgradeCommand
   | RecruitSerfCommand
   | MoveUnitsCommand
   | AssignBuildersCommand
@@ -200,6 +215,16 @@ export function parseCommand(input: unknown): Command | null {
     }
     case 'makeGate':
       return isEntityId(data.segmentId) ? { type: 'makeGate', segmentId: data.segmentId } : null;
+    case 'upgradeTower': {
+      const { buildingId, to } = data;
+      return isEntityId(buildingId) && isBuildingId(to)
+        ? { type: 'upgradeTower', buildingId, to }
+        : null;
+    }
+    case 'cancelUpgrade':
+      return isEntityId(data.buildingId)
+        ? { type: 'cancelUpgrade', buildingId: data.buildingId }
+        : null;
     case 'recruitSerf':
       return isEntityId(data.buildingId)
         ? { type: 'recruitSerf', buildingId: data.buildingId }

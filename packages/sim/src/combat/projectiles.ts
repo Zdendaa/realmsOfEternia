@@ -1,4 +1,5 @@
 import { SIMULATION_TICK_RATE, type EntityId, type PlayerId, type Vec2 } from '@roe/shared';
+import type { BuildingId } from '@roe/game-data';
 import type { UnitInstance } from '../state/units.js';
 import type { Hits } from './damage.js';
 
@@ -17,6 +18,10 @@ export interface Projectile {
   fromZ: number;
   /** Height above the ground it leaves from; absent: a standing archer's bow (rendering). */
   fromHeight?: number;
+  /** The tower type that shot it: decides its effects on impact and its look. */
+  source?: BuildingId;
+  /** Where the target stood at release (splash shots whose target is gone burst there). */
+  aim?: Vec2;
   firedAt: number;
   impactAt: number;
   /** Damage on impact, worked out at release (bonus and armor included). */
@@ -64,8 +69,10 @@ export function landProjectiles(
   if (!projectiles.some((p) => p.impactAt <= tick)) return projectiles;
   const flying: Projectile[] = [];
   for (const p of projectiles) {
-    if (p.impactAt <= tick) hits.add(p.targetId, p.damage, p.ownerId);
-    else flying.push(p);
+    // Splash shots carry no damage of their own (see `applyTowerImpacts`).
+    if (p.impactAt <= tick) {
+      if (p.damage > 0) hits.add(p.targetId, p.damage, p.ownerId);
+    } else flying.push(p);
   }
   return flying;
 }

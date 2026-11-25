@@ -125,9 +125,29 @@ export interface WallModel {
 /** A tower shoots by itself at enemy units in range (no garrison). */
 export interface TowerDefinition {
   /** Damage, seconds between shots, range from the tower's center, arrow speed. */
-  attack: AttackDefinition;
+  attack: AttackDefinition & {
+    /** The target's armor doesn't reduce the damage. */
+    ignoresArmor?: boolean;
+  };
   /** Height above the ground the shot leaves from (world units). */
   launchHeight: number;
+  /**
+   * The shot bursts: every enemy unit within `radius` of the point of impact takes the
+   * attack's damage.
+   */
+  splash?: { radius: number };
+  /** The unit hit walks at `factor` of its speed for `seconds`. */
+  slow?: { factor: number; seconds: number };
+  /** Everyone caught in the splash burns: damage once a second for `seconds`. */
+  burn?: { damagePerSecond: number; seconds: number };
+  /** How the shot looks (client): an arrow (scaled) or a glowing orb. */
+  shot: { look: 'arrow'; size: number } | { look: 'orb'; size: number; color: string };
+  /** A prop on top that tells tower types apart (client; a temporary stand-in). */
+  topper?: {
+    kind: 'crossbow' | 'orb' | 'brazier';
+    /** Height of its base above the ground (world units). */
+    height: number;
+  };
 }
 
 export interface BuildingDefinition {
@@ -222,6 +242,11 @@ export interface BuildingDefinition {
   wallModel?: WallModel;
   /** Set on towers. */
   tower?: TowerDefinition;
+  /**
+   * Buildings this one can be upgraded into (towers). An upgrade costs the new type's
+   * `cost` and takes its `buildTime`; the footprint must be the same.
+   */
+  upgradesTo?: readonly string[];
   /** Multiplied over the model's colors (client); the team color stays as it is. */
   tint?: string;
   /** Set for production buildings (see `ProductionDefinition`). */

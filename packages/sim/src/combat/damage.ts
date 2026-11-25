@@ -53,6 +53,8 @@ export function applyHits(
     unit.movement = null;
     unit.activity = 'dying';
     unit.carrying = null;
+    unit.slowed = null;
+    unit.burning = null;
     if (unit.combat) unit.combat = { ...unit.combat, targetId: null, strikeAt: null, anchor: null };
     deaths.push({ victim: unit, killer: hits.killerOf(unit.id) });
   }

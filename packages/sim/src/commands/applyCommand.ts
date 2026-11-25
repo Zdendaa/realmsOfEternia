@@ -5,11 +5,13 @@ import {
   isBuildingId,
   trainsOf,
   UNITS,
+  upgradesOf,
   type BuildingId,
   type ResourceAmounts,
 } from '@roe/game-data';
 import { areEnemies } from '../combat/hostility.js';
 import { sendWave } from '../combat/waves.js';
+import { startUpgrade } from '../combat/upgrades.js';
 import { buildingSeen, isVisible } from '../vision/vision.js';
 import {
   entrancePoint,
@@ -48,6 +50,8 @@ import type {
   PlaceBuildingCommand,
   PlaceWallCommand,
   MakeGateCommand,
+  UpgradeTowerCommand,
+  CancelUpgradeCommand,
   RecruitSerfCommand,
   StopCommand,
   CancelTrainingCommand,
@@ -61,6 +65,12 @@ export type CommandIssue =
   | 'notWallSegment'
   /** A damaged segment can't be rebuilt as a gate (that would repair it). */
   | 'damaged'
+  /** The building can't be upgraded into that. */
+  | 'noUpgrade'
+  /** The tower is already being upgraded. */
+  | 'upgrading'
+  /** The tower isn't being upgraded. */
+  | 'notUpgrading'
   /** The referenced building doesn't exist. */
   | 'noBuilding'
   /** The issuer doesn't own the building. */
@@ -273,6 +283,41 @@ function checkWall(
   return paid.segments.some((s) => s.status === 'ok') ? OK : fail('notEnoughResources');
 }
 
+function checkUpgrade(state: GameState, issuer: PlayerId, command: UpgradeTowerCommand) {
+  const base = checkTrainingBuilding(state, issuer, command.buildingId);
+  if (!base.ok) return base;
+  const tower = findBuilding(state, command.buildingId) as BuildingInstance;
+  if (!upgradesOf(tower.type).includes(command.to)) return fail('noUpgrade');
+  if (state.upgrades[tower.id]) return fail('upgrading');
+  return canAfford(stockOf(state, issuer), BUILDINGS[command.to].cost)
+    ? OK
+    : fail('notEnoughResources');
+}
+
+function checkCancelUpgrade(state: GameState, issuer: PlayerId, command: CancelUpgradeCommand) {
+  const base = checkTrainingBuilding(state, issuer, command.buildingId);
+  if (!base.ok) return base;
+  return state.upgrades[command.buildingId] ? OK : fail('notUpgrading');
+}
+
+function upgradeTower(state: GameState, issuer: PlayerId, command: UpgradeTowerCommand): GameState {
+  const paid = withStock(state, issuer, pay(stockOf(state, issuer), BUILDINGS[command.to].cost));
+  const upgrade = startUpgrade(command.to, state.tick);
+  return { ...paid, upgrades: { ...state.upgrades, [command.buildingId]: upgrade } };
+}
+
+function cancelUpgrade(
+  state: GameState,
+  issuer: PlayerId,
+  command: CancelUpgradeCommand,
+): GameState {
+  const upgrade = state.upgrades[command.buildingId];
+  if (!upgrade) return state;
+  const cost = BUILDINGS[upgrade.to].cost;
+  const paid = withStock(state, issuer, refund(stockOf(state, issuer), cost));
+  return { ...paid, upgrades: withoutKey(state.upgrades, command.buildingId) };
+}
+
 /** What turning `segment` into `gate` takes from the stock (a site's cost comes back). */
 function stockAfterGate(
   state: GameState,
@@ -346,6 +391,10 @@ export function validateCommand(
       return checkPlace(ctx, state, issuer, command);
     case 'placeWall':
       return checkWall(ctx, state, issuer, command);
+    case 'upgradeTower':
+      return checkUpgrade(state, issuer, command);
+    case 'cancelUpgrade':
+      return checkCancelUpgrade(state, issuer, command);
     case 'makeGate':
       return checkMakeGate(state, issuer, command);
     case 'recruitSerf':
@@ -640,6 +689,10 @@ export function applyCommand(
       return { ok: true, state: placeBuilding(state, issuer, command) };
     case 'placeWall':
       return { ok: true, state: placeWall(ctx, state, issuer, command) };
+    case 'upgradeTower':
+      return { ok: true, state: upgradeTower(state, issuer, command) };
+    case 'cancelUpgrade':
+      return { ok: true, state: cancelUpgrade(state, issuer, command) };
     case 'makeGate':
       return { ok: true, state: makeGate(state, issuer, command) };
     case 'recruitSerf':

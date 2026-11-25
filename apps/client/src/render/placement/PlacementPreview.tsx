@@ -35,6 +35,7 @@ import { modelFilesOf } from '../scene/settlement/modelFiles';
 import { singleTeamMaterial, type TintUniform } from '../scene/settlement/teamColorMaterial';
 import { ownerColor } from '../units/unitColors';
 import { createRangeRing } from '../combat/rangeRing';
+import { tintedMaterial } from '../scene/settlement/tintedMaterial';
 import { pickGround } from './groundPick';
 import { WallTool } from './WallTool';
 
@@ -89,10 +90,11 @@ function createGhostMaterials() {
 type GhostMaterials = ReturnType<typeof createGhostMaterials>;
 
 /** Swaps an object's materials for their ghost versions. */
-function ghostify(root: Object3D, materials: GhostMaterials) {
+function ghostify(root: Object3D, materials: GhostMaterials, tint?: string) {
   root.traverse((object) => {
     if (object instanceof Mesh) {
-      object.material = materials.model(object.material as Material);
+      // A tinted building (the wooden tower) previews in its own color.
+      object.material = materials.model(tintedMaterial(object.material as Material, tint));
       object.castShadow = false;
     }
   });
@@ -111,7 +113,7 @@ function addGhostTiles(
     tile.rotation.y = definition.rotationOffset;
     tile.scale.setScalar(definition.scale);
     lowerCrop(tile, definition);
-    ghostify(tile, materials);
+    ghostify(tile, materials, definition.tint);
     variant.add(tile);
   }
 }

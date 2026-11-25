@@ -1,9 +1,18 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { CHARACTER_PACK } from '@roe/game-data';
+import { CHARACTER_PACK, towerOf } from '@roe/game-data';
 import type { Projectile } from '@roe/sim';
 import { useLayoutEffect, useMemo, useRef } from 'react';
-import { Matrix4, Mesh, Quaternion, Vector3, type InstancedMesh } from 'three';
+import {
+  Color,
+  IcosahedronGeometry,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  Quaternion,
+  Vector3,
+  type InstancedMesh,
+} from 'three';
 import { useGameStore } from '../../state/gameStore';
 import { publicUrl } from '../scene/settlement/modelAssets';
 import { simClock } from '../simulation/simClock';
@@ -24,11 +33,16 @@ const ARC = 0.12;
 /** Arrow model units → world units (the archers' scale). */
 const ARROW_SCALE = CHARACTER_PACK.soldiers.archer.scale;
 
+/** Most magic and fire orbs drawn at once. */
+const ORB_CAPACITY = 128;
+
 const matrix = new Matrix4();
+const color = new Color();
+const arrowScale = new Vector3();
+const orbScale = new Vector3();
 const position = new Vector3();
 const direction = new Vector3();
 const quaternion = new Quaternion();
-const scale = new Vector3(ARROW_SCALE, ARROW_SCALE, ARROW_SCALE);
 /** The model's arrow points along +Z. */
 const FORWARD = new Vector3(0, 0, 1);
 
@@ -37,7 +51,8 @@ const lastTarget = new Map<string, Vector3>();
 const keyOf = (p: Projectile) => `${p.attackerId}:${p.firedAt}`;
 
 /**
- * Arrows in flight (`GameState.projectiles`), one instanced mesh. Each flies a shallow
+ * Shots in flight (`GameState.projectiles`): arrows (and crossbow bolts, drawn larger)
+ * in one instanced mesh, the magic and fire towers' orbs in another. Each flies a shallow
  * arc from its release point to its target's current (interpolated) position, by the
  * share of its flight time that has passed, and points along its path. The simulation
  * decides hits; this only draws.
@@ -55,16 +70,30 @@ export function Projectiles() {
   }, [scene]);
   const ref = useRef<InstancedMesh>(null);
 
+  const orbRef = useRef<InstancedMesh>(null);
+  const orb = useMemo(
+    () => ({
+      geometry: new IcosahedronGeometry(1, 1),
+      material: new MeshBasicMaterial({ toneMapped: false }),
+    }),
+    [],
+  );
+
   useLayoutEffect(() => {
     if (ref.current) ref.current.count = 0;
+    // The color attribute must exist before the shader is compiled.
+    orbRef.current?.setColorAt(0, color);
+    if (orbRef.current) orbRef.current.count = 0;
   }, []);
 
   useFrame(() => {
     const mesh = ref.current;
-    if (!mesh) return;
+    const orbs = orbRef.current;
+    if (!mesh || !orbs) return;
     const { state, ctx } = useGameStore.getState();
     const now = state.tick - 1 + simClock.alpha;
     let count = 0;
+    let orbCount = 0;
     const live = new Set<string>();
     for (const p of state.projectiles) {
       if (count >= CAPACITY) break;
@@ -101,8 +130,23 @@ export function Projectiles() {
       // Along the path: the derivative of the arc.
       direction.set(dx, dy + arc * 4 * (1 - 2 * t), dz).normalize();
       quaternion.setFromUnitVectors(FORWARD, direction);
-      matrix.compose(position, quaternion, scale);
-      mesh.setMatrixAt(count++, matrix);
+      const shot = p.source === undefined ? undefined : towerOf(p.source)?.shot;
+      if (shot?.look === 'orb') {
+        if (orbCount >= ORB_CAPACITY) continue;
+        matrix.compose(position, quaternion, orbScale.setScalar(shot.size));
+        orbs.setMatrixAt(orbCount, matrix);
+        orbs.setColorAt(orbCount++, color.set(shot.color));
+      } else {
+        arrowScale.setScalar(ARROW_SCALE * (shot?.size ?? 1));
+        matrix.compose(position, quaternion, arrowScale);
+        mesh.setMatrixAt(count++, matrix);
+      }
+    }
+    orbs.count = orbCount;
+    orbs.visible = orbCount > 0;
+    if (orbCount > 0) {
+      orbs.instanceMatrix.needsUpdate = true;
+      if (orbs.instanceColor) orbs.instanceColor.needsUpdate = true;
     }
     if (lastTarget.size > live.size) {
       for (const key of lastTarget.keys()) if (!live.has(key)) lastTarget.delete(key);
@@ -113,11 +157,18 @@ export function Projectiles() {
   });
 
   return (
-    <instancedMesh
-      ref={ref}
-      args={[model.geometry, model.material, CAPACITY]}
-      castShadow
-      frustumCulled={false}
-    />
+    <>
+      <instancedMesh
+        ref={ref}
+        args={[model.geometry, model.material, CAPACITY]}
+        castShadow
+        frustumCulled={false}
+      />
+      <instancedMesh
+        ref={orbRef}
+        args={[orb.geometry, orb.material, ORB_CAPACITY]}
+        frustumCulled={false}
+      />
+    </>
   );
 }

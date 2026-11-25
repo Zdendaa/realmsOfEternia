@@ -19,6 +19,7 @@ export {
   isWalkableBuilding,
   isWall,
   towerOf,
+  upgradesOf,
   isGate,
   gateFor,
   wallTierOf,

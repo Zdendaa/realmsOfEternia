@@ -22,6 +22,7 @@ export interface PlayerView {
   readonly construction: GameState['construction'];
   readonly training: GameState['training'];
   readonly fields: GameState['fields'];
+  readonly upgrades: GameState['upgrades'];
   /** Damage of the player's buildings and of other buildings in sight. */
   readonly buildingDamage: GameState['buildingDamage'];
   /** The player's own stock only. */
@@ -83,6 +84,7 @@ export function viewOf(world: SimWorld, state: GameState, vision: Vision): Playe
     construction: pick(state.construction, (id) => ownIds.has(id)),
     training: pick(state.training, (id) => ownIds.has(id)),
     fields: pick(state.fields, (id) => ownIds.has(id)),
+    upgrades: pick(state.upgrades, (id) => ownIds.has(id)),
     buildingDamage: pick(state.buildingDamage, (id) => ownIds.has(id) || visibleBuildings.has(id)),
     stocks: stock ? { [player]: stock } : {},
     projectiles: state.projectiles.filter(

@@ -1,4 +1,5 @@
 import { isWall } from '@roe/game-data';
+import type { EntityId } from '@roe/shared';
 import { applyCommand, type CommandResult } from '../commands/applyCommand.js';
 import type { IssuedCommand } from '../commands/types.js';
 import { applyBuildingHits } from '../combat/buildings.js';
@@ -12,6 +13,7 @@ import { progressTraining } from '../training/training.js';
 import { syncContext, type SimContext } from '../context/simContext.js';
 import { commitEconomy, createEconomyDraft } from '../economy/draft.js';
 import type { GameState } from '../state/gameState.js';
+import type { UnitInstance } from '../state/units.js';
 import { advanceUnits, invalidateBlockedRoutes, planPaths } from '../units/movement.js';
 import { separateUnits } from '../units/separation.js';
 import { updateSerfs } from '../units/serfBehavior.js';
@@ -20,6 +22,8 @@ import { updateVision } from '../vision/vision.js';
 import { addStats, decideOutcomes } from '../rules/outcome.js';
 import { createUnitGrid, type UnitGrid } from '../combat/targeting.js';
 import { updateTowers } from '../combat/towers.js';
+import { applyTowerImpacts, updateEffects } from '../combat/towerImpacts.js';
+import { progressUpgrades } from '../combat/upgrades.js';
 
 export interface StepResult {
   state: GameState;
@@ -61,6 +65,20 @@ export function stepGame(
   const economy = createEconomyDraft(ctx.world, current);
   const hits = new Hits();
   const flying = landProjectiles(current.projectiles, current.tick, hits);
+  // What the landing tower shots do beyond damage, then fires and slows already on.
+  const landed = current.projectiles.filter((p) => p.impactAt <= current.tick);
+  if (landed.length > 0) {
+    let byId: Map<EntityId, UnitInstance> | null = null;
+    let impactGrid: UnitGrid | null = null;
+    applyTowerImpacts(
+      landed,
+      () => (byId ??= new Map(units.map((u) => [u.id, u]))),
+      () => (impactGrid ??= createUnitGrid(units)),
+      hits,
+      current.tick,
+    );
+  }
+  updateEffects(units, hits, current.tick);
   const released: Projectile[] = [];
   updateSerfs(ctx, current.tick, current.buildings, units, economy);
   updateWorkers(current.tick, current.buildings, units, economy);
@@ -74,12 +92,13 @@ export function stepGame(
     () => (unitGrid ??= createUnitGrid(units)),
     current.towerCooldowns,
     released,
+    current.upgrades,
   );
   const deaths = applyHits(units, hits, current.tick);
   payBounties(economy, deaths, (player) => current.stocks[player] !== undefined);
   if (ctx.nav.version !== navVersion) invalidateBlockedRoutes(ctx, units);
   planPaths(ctx, units);
-  advanceUnits(units);
+  advanceUnits(units, current.tick);
   separateUnits(ctx, units);
   const economic = commitEconomy(economy);
   // Buildings hit hard enough fall (with their workers) and leave ruins.
@@ -95,10 +114,12 @@ export function stepGame(
     hits,
     current.tick,
   );
-  const { buildings, construction } = progressConstruction(
+  const built = progressConstruction(
     { buildings: standing.buildings, construction: standing.construction },
     units,
   );
+  const { construction } = built;
+  const { buildings, upgrades } = progressUpgrades(built.buildings, current.upgrades, current.tick);
 
   // Production buildings without a worker get one while their owner has free housing.
   const hired = hireWorkers(buildings, units, current.nextEntityId);
@@ -147,6 +168,7 @@ export function stepGame(
     stats,
     projectiles,
     towerCooldowns,
+    upgrades,
     training: trained.training,
     nextEntityId,
   };

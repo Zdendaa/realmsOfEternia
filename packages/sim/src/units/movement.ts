@@ -78,11 +78,12 @@ export function invalidateBlockedRoutes(ctx: SimContext, units: UnitInstance[]):
 }
 
 /** Advances every unit with a route by one tick of walking. */
-export function advanceUnits(units: UnitInstance[]): void {
+export function advanceUnits(units: UnitInstance[], tick: number): void {
   for (const unit of units) {
     const m = unit.movement;
     if (!m?.waypoints) continue;
-    unit.movement = walk(unit, m, UNITS[unit.type].speed * TICK_SECONDS);
+    const slow = unit.slowed && tick < unit.slowed.until ? unit.slowed.factor : 1;
+    unit.movement = walk(unit, m, UNITS[unit.type].speed * slow * TICK_SECONDS);
   }
 }
 
