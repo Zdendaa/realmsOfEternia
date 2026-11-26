@@ -34,8 +34,11 @@ import { createVillagerInstances } from './villagerInstances';
 
 /** Unit kinds drawn as villagers. */
 type VillagerKind = Extract<UnitKind, 'serf' | 'worker'>;
-/** Unit kinds drawn through the soldier renderer: the army and the monsters. */
-type SoldierKind = keyof typeof CHARACTER_PACK.soldiers | keyof typeof CHARACTER_PACK.monsters;
+/** Unit kinds drawn through the soldier renderer: the army, the heroes and the monsters. */
+type SoldierKind =
+  | keyof typeof CHARACTER_PACK.soldiers
+  | keyof typeof CHARACTER_PACK.heroes
+  | keyof typeof CHARACTER_PACK.monsters;
 
 /** The character model of each villager kind. */
 const VILLAGERS: Record<VillagerKind, CharacterModel> = {
@@ -44,6 +47,7 @@ const VILLAGERS: Record<VillagerKind, CharacterModel> = {
 };
 const SOLDIERS: Record<SoldierKind, SoldierModel> = {
   ...CHARACTER_PACK.soldiers,
+  ...CHARACTER_PACK.heroes,
   ...CHARACTER_PACK.monsters,
 };
 const SOLDIER_KINDS = Object.keys(SOLDIERS) as SoldierKind[];

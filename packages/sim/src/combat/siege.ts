@@ -138,7 +138,7 @@ export function applySplashImpacts(
     })) {
       if (!isAlive(unit) || !areEnemies(p.ownerId, unit.ownerId)) continue;
       if ((unit.x - x) ** 2 + (unit.z - z) ** 2 > radius * radius) continue;
-      hits.add(unit.id, damageAgainst(attack, combatOf(unit.type)), p.ownerId);
+      hits.add(unit.id, damageAgainst(attack, combatOf(unit.type)), p.ownerId, p.attackerId);
     }
     for (const building of buildings) {
       if (!areEnemies(p.ownerId, building.ownerId)) continue;

@@ -16,6 +16,7 @@ import { PlacementPreview } from './placement/PlacementPreview';
 import { ATMOSPHERE } from './scene/atmosphere';
 import { World } from './scene/World';
 import { SelectionMarkers } from './selection/SelectionMarkers';
+import { HeroRings } from './selection/HeroRings';
 import { SelectionRings } from './selection/SelectionRings';
 import { SimulationDriver } from './simulation/SimulationDriver';
 import { StatusEffects } from './towers/StatusEffects';
@@ -70,6 +71,7 @@ export function GameCanvas() {
         <Projectiles />
         <RockShots />
       </Suspense>
+      <HeroRings />
       <SelectionRings />
       <HealthBars />
       <StatusEffects />

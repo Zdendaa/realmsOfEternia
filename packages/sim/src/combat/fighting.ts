@@ -18,6 +18,7 @@ import {
   type UnitMovement,
 } from '../state/units.js';
 import type { BuildingInstance } from '../state/gameState.js';
+import { unitAttack } from '../heroes/heroes.js';
 import { moveTo } from '../units/orders.js';
 import { approachPoint, buildingReach, findBuildingTarget } from './buildings.js';
 import type { Hits } from './damage.js';
@@ -134,7 +135,7 @@ export function updateFighters(
 
   for (const unit of units) {
     if (!isFighter(unit)) continue;
-    const attack = attackOf(unit.type) as AttackDefinition;
+    const attack = unitAttack(unit) as AttackDefinition;
     const combat = { ...(unit.combat as UnitCombat) };
     unit.combat = combat;
     const task = unit.task;
@@ -348,9 +349,13 @@ function strike(
       aim: { x: at.x, z: at.z },
       fromHeight: attack.launchHeight,
     });
-  } else if (attack.kind === 'melee') hits.add(id, damage, unit.ownerId);
+  } else if (attack.kind === 'melee') hits.add(id, damage, unit.ownerId, unit.id);
   else {
     const at = target.unit ?? target.building;
-    projectiles.push(fireProjectile(unit, id, at, tick, attack.projectileSpeed ?? 1, damage));
+    const shot = fireProjectile(unit, id, at, tick, attack.projectileSpeed ?? 1, damage);
+    // Shots with their own look (a staff's bolt) name their shooter for the renderer.
+    projectiles.push(
+      attack.shot ? { ...shot, shooter: unit.type, fromHeight: attack.launchHeight } : shot,
+    );
   }
 }

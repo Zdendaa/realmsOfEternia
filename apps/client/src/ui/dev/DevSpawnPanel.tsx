@@ -4,6 +4,7 @@ import { DEBUG_RESOURCES } from '@roe/sim';
 import { useState } from 'react';
 import { cameraFocus } from '../../render/camera/cameraFocus';
 import { useGameStore } from '../../state/gameStore';
+import { useSelectionStore } from '../../state/selectionStore';
 import { useSettingsStore } from '../../state/settingsStore';
 
 /** The opponent the dev panel spawns for (any id other than the local player is hostile). */
@@ -15,7 +16,12 @@ const SPAWNS: readonly { unit: UnitKind; count: number }[] = [
   { unit: 'archer', count: 5 },
   { unit: 'ram', count: 2 },
   { unit: 'catapult', count: 2 },
+  // One of each per player: "Mine" is refused while you have the map's hero.
+  { unit: 'commander', count: 1 },
+  { unit: 'archmage', count: 1 },
 ];
+/** Experience one press gives the selected heroes. */
+const EXPERIENCE = 150;
 /** Own units appear left of the camera focus, enemies to its right, facing each other. */
 const SIDE_OFFSET = 8;
 
@@ -78,6 +84,17 @@ export function DevSpawnPanel() {
           Enemy
         </button>
       </div>
+      <button
+        type="button"
+        className="dev-wave"
+        onClick={() => {
+          const unitIds = [...useSelectionStore.getState().units];
+          const check = dispatch({ type: 'debugExperience', unitIds, amount: EXPERIENCE });
+          setMessage(check.ok ? null : 'Select your hero first');
+        }}
+      >
+        Selected heroes +{EXPERIENCE} experience
+      </button>
       <button
         type="button"
         className="dev-wave"

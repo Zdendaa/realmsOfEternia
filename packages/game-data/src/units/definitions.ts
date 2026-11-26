@@ -9,6 +9,7 @@ const VILLAGER_COMBAT = { health: 40, armor: 0, armorClass: 'villager' } as cons
 export const UNITS = {
   serf: {
     id: 'serf',
+    experience: 3,
     sight: 7,
     name: 'Serf',
     description: 'Builds construction sites. Recruited at the Town Hall.',
@@ -23,6 +24,7 @@ export const UNITS = {
   },
   worker: {
     id: 'worker',
+    experience: 3,
     sight: 7,
     name: 'Worker',
     description: 'Works in a production building. Arrives when the building is finished.',
@@ -37,6 +39,7 @@ export const UNITS = {
   },
   swordsman: {
     id: 'swordsman',
+    experience: 20,
     sight: 10,
     name: 'Swordsman',
     description: 'Armored infantry with sword and shield. Strong against infantry.',
@@ -63,6 +66,7 @@ export const UNITS = {
   },
   spearman: {
     id: 'spearman',
+    experience: 18,
     sight: 10,
     name: 'Spearman',
     description: 'Infantry with a long spear. Breaks buildings; later the answer to cavalry.',
@@ -89,6 +93,7 @@ export const UNITS = {
   },
   archer: {
     id: 'archer',
+    experience: 18,
     sight: 12,
     name: 'Archer',
     description: 'Shoots arrows from a distance. Weak up close and against armor.',
@@ -117,6 +122,7 @@ export const UNITS = {
   // Siege engines (built at the Siege Workshop). Large and slow; infantry's blows hit them double.
   ram: {
     id: 'ram',
+    experience: 30,
     sight: 10,
     name: 'Battering Ram',
     description:
@@ -148,6 +154,7 @@ export const UNITS = {
   },
   catapult: {
     id: 'catapult',
+    experience: 35,
     // It sees farther than it shoots, so it needs no spotter.
     sight: 18,
     name: 'Catapult',
@@ -180,9 +187,94 @@ export const UNITS = {
       },
     },
   },
+  // Heroes: given by the map (`startingHeroes`), never trained. Their numbers here are
+  // level 1's; each level adds to health and damage (`HEROES`).
+  commander: {
+    id: 'commander',
+    experience: 60,
+    sight: 12,
+    name: 'Commander',
+    description: 'A hero in plate with a two-handed sword: tough, and leads from the front.',
+    cost: {},
+    speed: 2.4,
+    radius: 0.5,
+    maxPerPlayer: 1,
+    controllable: true,
+    combat: {
+      health: 300,
+      armor: 4,
+      armorClass: 'infantry',
+      sightRange: 9,
+      attack: {
+        kind: 'melee',
+        damage: 18,
+        cooldown: 1.3,
+        windup: 0.55,
+        range: 0.8,
+        bonus: { infantry: 1.25, siege: 2 },
+      },
+    },
+  },
+  archmage: {
+    id: 'archmage',
+    experience: 60,
+    sight: 12,
+    name: 'Archmage',
+    description: 'A hero with a staff: bolts from a distance and powerful spells. Fragile.',
+    cost: {},
+    speed: 2.2,
+    radius: 0.45,
+    maxPerPlayer: 1,
+    controllable: true,
+    combat: {
+      health: 170,
+      armor: 1,
+      armorClass: 'ranged',
+      sightRange: 10,
+      attack: {
+        kind: 'ranged',
+        damage: 14,
+        cooldown: 1.8,
+        windup: 0.6,
+        range: 9,
+        projectileSpeed: 14,
+        bonus: { building: 0.5 },
+        shot: { look: 'orb', color: '#6fb6ff', size: 0.16 },
+        launchHeight: 1.6,
+      },
+    },
+  },
+  pathfinder: {
+    id: 'pathfinder',
+    experience: 60,
+    sight: 14,
+    name: 'Pathfinder',
+    description: 'A hero with a crossbow: a far-sighted scout who sets charges.',
+    cost: {},
+    speed: 2.5,
+    radius: 0.45,
+    maxPerPlayer: 1,
+    controllable: true,
+    combat: {
+      health: 200,
+      armor: 2,
+      armorClass: 'ranged',
+      sightRange: 11,
+      attack: {
+        kind: 'ranged',
+        damage: 16,
+        cooldown: 1.7,
+        windup: 0.4,
+        range: 10,
+        projectileSpeed: 22,
+        bonus: { building: 0.5 },
+      },
+    },
+  },
   // Neutral monsters (camps, waves): never trained, never commanded by a player.
   skeletonMinion: {
     id: 'skeletonMinion',
+    experience: 10,
     sight: 8,
     name: 'Skeleton',
     description: 'A shambling skeleton with a rusty blade. Weak alone, dangerous in numbers.',
@@ -209,6 +301,7 @@ export const UNITS = {
   },
   skeletonWarrior: {
     id: 'skeletonWarrior',
+    experience: 22,
     sight: 8,
     name: 'Skeleton Warrior',
     description: 'A helmeted skeleton with axe and shield.',
@@ -235,6 +328,7 @@ export const UNITS = {
   },
   skeletonArcher: {
     id: 'skeletonArcher',
+    experience: 12,
     sight: 10,
     name: 'Skeleton Crossbowman',
     description: 'A hooded skeleton with a crossbow.',

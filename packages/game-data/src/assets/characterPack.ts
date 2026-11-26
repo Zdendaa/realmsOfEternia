@@ -135,7 +135,11 @@ export type WeaponId =
   | 'skeletonBlade'
   | 'skeletonAxe'
   | 'skeletonShield'
-  | 'crossbow';
+  | 'crossbow'
+  /** Heroes' gear: the two-handed sword, the staff and the Pathfinder's crossbow. */
+  | 'greatsword'
+  | 'staff'
+  | 'heroCrossbow';
 
 export interface SoldierModel {
   /** Model file relative to `CHARACTER_PACK.dir`. */
@@ -167,6 +171,8 @@ const DEATH = { file: GENERAL, clip: 'Death_A' };
 
 /** Soldiers stand a bit taller than villagers (1.15×), so they read at RTS zoom. */
 const SOLDIER_SCALE = 0.71;
+/** Heroes stand out by size: 1.2× a soldier. */
+const HERO_SCALE = SOLDIER_SCALE * 1.2;
 
 /**
  * KayKit Adventurers 2.0 (FREE) characters with KayKit Character Animations 1.1, both
@@ -237,6 +243,9 @@ export const CHARACTER_PACK = {
     skeletonAxe: 'accessories/Skeleton_Axe.glb',
     skeletonShield: 'accessories/Skeleton_Shield_Small_A.glb',
     crossbow: 'accessories/Skeleton_Crossbow.glb',
+    greatsword: 'accessories/sword_2handed.glb',
+    staff: 'accessories/staff.glb',
+    heroCrossbow: 'accessories/crossbow_2handed.glb',
   } as Readonly<Partial<Record<WeaponId, string>>>,
   /** The arrow drawn in flight. */
   arrow: 'accessories/arrow_bow.glb',
@@ -317,6 +326,63 @@ export const CHARACTER_PACK = {
       ],
     },
   } satisfies Record<'swordsman' | 'spearman' | 'archer', SoldierModel>,
+  /**
+   * Heroes: Adventurers at 1.2× a soldier's size with their own gear, over a golden
+   * ring (client). Cloth that the soldiers tint takes the owner's color here too.
+   */
+  heroes: {
+    // The Knight with a two-handed sword.
+    commander: {
+      model: 'adventurers/Knight.glb',
+      hiddenMeshes: [],
+      scale: HERO_SCALE,
+      height: 2.4,
+      animations: {
+        idle: { file: MELEE, clip: 'Melee_2H_Idle' },
+        walk: WALK,
+        attack: { file: MELEE, clip: 'Melee_2H_Attack_Chop' },
+        ready: { file: MELEE, clip: 'Melee_2H_Idle' },
+        death: DEATH,
+      },
+      attackHitAt: 0.7,
+      tint: { grid: [8, 4], team: [[0, 1]] },
+      weapons: [{ weapon: 'greatsword', bone: 'handslot.r' }],
+    },
+    // The Mage with a staff; no other unit uses this model.
+    archmage: {
+      model: 'adventurers/Mage.glb',
+      hiddenMeshes: [],
+      scale: HERO_SCALE,
+      height: 2.6,
+      animations: {
+        idle: { file: GENERAL, clip: 'Idle_A' },
+        walk: WALK,
+        attack: { file: RANGED, clip: 'Ranged_Magic_Shoot' },
+        ready: { file: GENERAL, clip: 'Idle_A' },
+        death: DEATH,
+      },
+      attackHitAt: 0.35,
+      tint: { grid: [8, 4], team: [] },
+      weapons: [{ weapon: 'staff', bone: 'handslot.r' }],
+    },
+    // The Ranger (as drawn for serfs, but with cape and quiver) with a crossbow.
+    pathfinder: {
+      model: 'adventurers/Ranger.glb',
+      hiddenMeshes: [],
+      scale: HERO_SCALE,
+      height: 2.3,
+      animations: {
+        idle: { file: GENERAL, clip: 'Idle_A' },
+        walk: WALK,
+        attack: { file: RANGED, clip: 'Ranged_2H_Shoot' },
+        ready: { file: RANGED, clip: 'Ranged_2H_Aiming' },
+        death: DEATH,
+      },
+      attackHitAt: 0.2,
+      tint: { grid: [8, 4], team: [[0, 1]] },
+      weapons: [{ weapon: 'heroCrossbow', bone: 'handslot.r' }],
+    },
+  } satisfies Record<'commander' | 'archmage' | 'pathfinder', SoldierModel>,
   /**
    * KayKit Character Pack: Skeletons 1.1 (CC0, Kay Lousberg), on the same Rig_Medium (same
    * 23 bones and rest pose as the Adventurers, checked when importing), so every clip

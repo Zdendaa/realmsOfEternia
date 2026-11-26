@@ -1,5 +1,6 @@
 import { COMBAT_RULES } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type EntityId, type PlayerId } from '@roe/shared';
+import type { Death } from '../heroes/heroes.js';
 import { IDLE, isAlive, type UnitInstance } from '../state/units.js';
 
 /**
@@ -10,10 +11,23 @@ export class Hits {
   private readonly damage = new Map<EntityId, number>();
   /** The owner of the last hit on each target this tick (state order: deterministic). */
   private readonly lastOwner = new Map<EntityId, PlayerId | null>();
+  /** The unit or tower that dealt it (null: a fire). */
+  private readonly lastBy = new Map<EntityId, EntityId | null>();
 
-  add(targetId: EntityId, amount: number, owner: PlayerId | null = null): void {
+  add(
+    targetId: EntityId,
+    amount: number,
+    owner: PlayerId | null = null,
+    by: EntityId | null = null,
+  ): void {
     this.damage.set(targetId, (this.damage.get(targetId) ?? 0) + amount);
     this.lastOwner.set(targetId, owner);
+    this.lastBy.set(targetId, by);
+  }
+
+  /** The unit (or tower) behind the last hit on `targetId` this tick. */
+  killerIdOf(targetId: EntityId): EntityId | null {
+    return this.lastBy.get(targetId) ?? null;
   }
 
   /** Who dealt the last hit on `targetId` this tick (it gets the credit for a kill). */
@@ -36,12 +50,8 @@ export class Hits {
  * Mutates the working copies. Returns who died this tick and who killed them (the owner
  * of the last hit), for bounties.
  */
-export function applyHits(
-  units: UnitInstance[],
-  hits: Hits,
-  tick: number,
-): { victim: UnitInstance; killer: PlayerId | null }[] {
-  const deaths: { victim: UnitInstance; killer: PlayerId | null }[] = [];
+export function applyHits(units: UnitInstance[], hits: Hits, tick: number): Death[] {
+  const deaths: Death[] = [];
   if (hits.size === 0) return deaths;
   for (const unit of units) {
     const damage = hits.of(unit.id);
@@ -56,7 +66,11 @@ export function applyHits(
     unit.slowed = null;
     unit.burning = null;
     if (unit.combat) unit.combat = { ...unit.combat, targetId: null, strikeAt: null, anchor: null };
-    deaths.push({ victim: unit, killer: hits.killerOf(unit.id) });
+    deaths.push({
+      victim: unit,
+      killer: hits.killerOf(unit.id),
+      killerId: hits.killerIdOf(unit.id),
+    });
   }
   return deaths;
 }

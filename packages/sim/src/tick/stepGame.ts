@@ -8,6 +8,7 @@ import { sendDueWaves } from '../combat/waves.js';
 import { applyHits, Hits, removeCorpses } from '../combat/damage.js';
 import { updateFighters } from '../combat/fighting.js';
 import { landProjectiles, type Projectile } from '../combat/projectiles.js';
+import { grantExperience } from '../heroes/heroes.js';
 import { progressConstruction } from '../construction/construction.js';
 import { progressRepairs } from '../construction/repair.js';
 import { progressTraining } from '../training/training.js';
@@ -104,6 +105,7 @@ export function stepGame(
   );
   const deaths = applyHits(units, hits, current.tick);
   payBounties(economy, deaths, (player) => current.stocks[player] !== undefined);
+  grantExperience(units, deaths);
   if (ctx.nav.version !== navVersion) invalidateBlockedRoutes(ctx, units);
   planPaths(ctx, units);
   advanceUnits(units, current.tick);

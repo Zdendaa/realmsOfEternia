@@ -41,6 +41,8 @@ export interface AttackDefinition {
   splash?: { radius: number };
   /** Height above the ground the shot leaves from (rendering). */
   launchHeight?: number;
+  /** How the shot looks, when it isn't an arrow (rendering). */
+  shot?: { look: 'orb'; color: string; size: number };
 }
 
 export interface CombatStats {

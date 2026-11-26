@@ -16,6 +16,7 @@ export {
   type Command,
   type DebugSpawnCommand,
   type DebugFortCommand,
+  type DebugExperienceCommand,
   type DebugWaveCommand,
   type GatherCommand,
   type IssuedCommand,
@@ -153,3 +154,14 @@ export {
 } from './rules/walls.js';
 export { findCutOff, type CutOff } from './rules/enclosure.js';
 export type { TowerUpgrade, TowerUpgrades } from './combat/upgrades.js';
+export {
+  experienceWorth,
+  hasHero,
+  levelFor,
+  maxHealthOf,
+  spawnHero,
+  unitAttack,
+  type SpawnHeroIssue,
+  type SpawnHeroResult,
+} from './heroes/heroes.js';
+export type { HeroState } from './state/units.js';

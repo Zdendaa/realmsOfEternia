@@ -10,6 +10,7 @@ import {
   type BuildingId,
   type ResourceAmounts,
   attackOf,
+  isHeroId,
 } from '@roe/game-data';
 import { areEnemies } from '../combat/hostility.js';
 import { sendWave } from '../combat/waves.js';
@@ -42,6 +43,7 @@ import {
   moveTo,
   replaceUnits,
 } from '../units/orders.js';
+import { gainExperience, hasHero, spawnHero } from '../heroes/heroes.js';
 import { raiseDebugFort } from './debugFort.js';
 import { DEBUG_RESOURCES } from './types.js';
 import type {
@@ -51,6 +53,7 @@ import type {
   Command,
   DebugSpawnCommand,
   DebugFortCommand,
+  DebugExperienceCommand,
   GatherCommand,
   MoveUnitsCommand,
   PlaceBuildingCommand,
@@ -104,6 +107,8 @@ export type CommandIssue =
   | 'noTarget'
   /** The attack target isn't an enemy of the issuer. */
   | 'notEnemy'
+  /** The player already has that hero. */
+  | 'heroExists'
   /** None of the addressed units can hit the target (rams only hit buildings). */
   | 'cannotAttack'
   /** A development command sent to a simulation that doesn't accept them. */
@@ -438,8 +443,17 @@ export function validateCommand(
       return checkTrain(state, issuer, command);
     case 'cancelTraining':
       return checkCancelTraining(state, issuer, command);
-    case 'debugSpawn':
-      return checkDebugSpawn(ctx, command);
+    case 'debugSpawn': {
+      const check = checkDebugSpawn(ctx, command);
+      if (!check.ok || !isHeroId(command.unit)) return check;
+      // A hero needs an owner without one of that type yet, and comes alone.
+      const owner = command.owner === undefined ? issuer : command.owner;
+      const taken = owner === null || hasHero(state.units, owner, command.unit);
+      return taken ? fail('heroExists') : OK;
+    }
+    case 'debugExperience':
+      if (!ctx.dev) return fail('devOnly');
+      return ownUnits(state, issuer, command.unitIds).some((u) => u.hero) ? OK : fail('noUnits');
     case 'debugResources':
       return ctx.dev ? OK : fail('devOnly');
     case 'debugFort':
@@ -643,8 +657,26 @@ function debugWave(ctx: SimContext, state: GameState): GameState {
 }
 
 /** Dev spawn: `count` fresh units spread around the point, appended in id order. */
+function debugExperience(
+  state: GameState,
+  issuer: PlayerId,
+  command: DebugExperienceCommand,
+): GameState {
+  const changed = new Map<EntityId, UnitInstance>();
+  for (const unit of ownUnits(state, issuer, command.unitIds)) {
+    if (!unit.hero) continue;
+    const copy = { ...unit };
+    gainExperience(copy, command.amount);
+    changed.set(unit.id, copy);
+  }
+  return { ...state, units: replaceUnits(state.units, changed) };
+}
+
 function debugSpawn(state: GameState, issuer: PlayerId, command: DebugSpawnCommand): GameState {
   const owner = command.owner === undefined ? issuer : command.owner;
+  if (isHeroId(command.unit)) {
+    return owner === null ? state : spawnHero(state, command.unit, owner, command).state;
+  }
   const spawned = formationOffsets(command.count).map((offset, i) =>
     createUnit(state.nextEntityId + i, command.unit, owner, {
       x: command.x + offset.x,
@@ -785,6 +817,8 @@ export function applyCommand(
       return { ok: true, state: debugWave(ctx, state) };
     case 'debugResources':
       return { ok: true, state: debugResources(state, issuer) };
+    case 'debugExperience':
+      return { ok: true, state: debugExperience(state, issuer, command) };
     case 'debugFort':
       return { ok: true, state: raiseDebugFort(ctx, state, command.owner ?? issuer, command) };
   }

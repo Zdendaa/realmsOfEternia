@@ -20,6 +20,8 @@ export interface Projectile {
   fromHeight?: number;
   /** The tower type that shot it: decides its effects on impact and its look. */
   source?: BuildingId;
+  /** The unit kind that fired a shot with its own look (rendering). */
+  shooter?: UnitKind;
   /** The unit kind that fired a splash shot (a catapult's rock): decides what it hits. */
   weapon?: UnitKind;
   /**
@@ -76,7 +78,7 @@ export function landProjectiles(
   for (const p of projectiles) {
     // Splash shots carry no damage of their own (see `applyTowerImpacts`).
     if (p.impactAt <= tick) {
-      if (p.damage > 0) hits.add(p.targetId, p.damage, p.ownerId);
+      if (p.damage > 0) hits.add(p.targetId, p.damage, p.ownerId, p.attackerId);
     } else flying.push(p);
   }
   return flying;

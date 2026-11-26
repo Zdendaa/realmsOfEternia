@@ -1,6 +1,6 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { CHARACTER_PACK, towerOf } from '@roe/game-data';
+import { attackOf, CHARACTER_PACK, towerOf } from '@roe/game-data';
 import type { Projectile } from '@roe/sim';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import {
@@ -131,7 +131,12 @@ export function Projectiles() {
       // Along the path: the derivative of the arc.
       direction.set(dx, dy + arc * 4 * (1 - 2 * t), dz).normalize();
       quaternion.setFromUnitVectors(FORWARD, direction);
-      const shot = p.source === undefined ? undefined : towerOf(p.source)?.shot;
+      const shot =
+        p.source !== undefined
+          ? towerOf(p.source)?.shot
+          : p.shooter !== undefined
+            ? attackOf(p.shooter)?.shot
+            : undefined;
       if (shot?.look === 'orb') {
         if (orbCount >= ORB_CAPACITY) continue;
         matrix.compose(position, quaternion, orbScale.setScalar(shot.size));

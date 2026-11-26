@@ -21,6 +21,11 @@ export const PROTOTYPE_MAP = {
     { kind: 'gold', x: -42, z: -18, radius: 3, amount: 400 },
     { kind: 'iron', x: 18, z: 42, radius: 3, amount: 600 },
   ],
+  // The player's heroes, in front of the Town Hall next to the starting serfs.
+  startingHeroes: [
+    { player: 0, hero: 'commander', x: 1.9, z: 1.2 },
+    { player: 0, hero: 'archmage', x: 4, z: -0.9 },
+  ],
   // Victory: clear both camps and beat the wave.
   objective: 'clearMonsters',
   // After eight minutes a skeleton horde marches down the north road to the Town Hall.

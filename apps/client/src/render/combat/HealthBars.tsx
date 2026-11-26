@@ -1,13 +1,6 @@
 import { useFrame } from '@react-three/fiber';
-import {
-  CHARACTER_PACK,
-  combatOf,
-  isWall,
-  SIEGE_MODELS,
-  SIEGE_SIZE,
-  type UnitKind,
-} from '@roe/game-data';
-import { buildingMaxHealth, footprintOf } from '@roe/sim';
+import { CHARACTER_PACK, isWall, SIEGE_MODELS, SIEGE_SIZE, type UnitKind } from '@roe/game-data';
+import { buildingMaxHealth, footprintOf, maxHealthOf } from '@roe/sim';
 import type { EntityId } from '@roe/shared';
 import { useEffect, useMemo, useRef } from 'react';
 import {
@@ -39,6 +32,7 @@ const WALL_BAR_HEIGHT = 2.8;
 /** Soldier and monster models by unit kind (villagers use the serf's size). */
 const FIGHTER_MODELS: Partial<Record<UnitKind, { height: number; scale: number }>> = {
   ...CHARACTER_PACK.soldiers,
+  ...CHARACTER_PACK.heroes,
   ...CHARACTER_PACK.monsters,
 };
 
@@ -114,7 +108,8 @@ function createHealthBars() {
 
   // Lookups rebuilt only when their source arrays change (once per tick at most).
   let unitsRef: unknown = null;
-  let health = new Map<EntityId, number>();
+  /** Health and full health (heroes grow with their level) by unit id. */
+  let health = new Map<EntityId, readonly [number, number]>();
   let selectionRef: unknown = null;
   let selected = new Set<EntityId>();
 
@@ -133,7 +128,7 @@ function createHealthBars() {
     const units = useGameStore.getState().state.units;
     if (unitsRef !== units) {
       unitsRef = units;
-      health = new Map(units.map((u) => [u.id, u.health]));
+      health = new Map(units.map((u) => [u.id, [u.health, maxHealthOf(u)] as const]));
     }
     const selection = useSelectionStore.getState().units;
     if (selectionRef !== selection) {
@@ -142,8 +137,7 @@ function createHealthBars() {
     }
     for (const unit of renderedUnitList) {
       if (unit.deathElapsed !== null || unit.inside) continue;
-      const max = combatOf(unit.type).health;
-      const left = health.get(unit.id) ?? max;
+      const [left, max] = health.get(unit.id) ?? [1, 1];
       if (!all && left >= max && !selected.has(unit.id)) continue;
       matrix.makeTranslation(unit.x, unit.y + heightOf(unit.type) + BAR_GAP, unit.z);
       if (!write(left / max, unit.ownerId === LOCAL_PLAYER)) return;

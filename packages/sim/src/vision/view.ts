@@ -52,7 +52,8 @@ function seenFromOutside(unit: UnitInstance): UnitInstance {
     anchor: null,
     home: null,
   };
-  return { ...unit, task, movement: null, combat };
+  const hero = unit.hero && { ...unit.hero, experience: 0 };
+  return { ...unit, task, movement: null, combat, hero };
 }
 
 const pick = <T>(record: Readonly<Record<EntityId, T>>, keep: (id: EntityId) => boolean) =>

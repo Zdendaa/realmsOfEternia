@@ -107,7 +107,19 @@ export interface WaterSettings {
   lakes: readonly LakeDefinition[];
 }
 
+/** A hero a player starts the match with. */
+export interface StartingHeroDefinition {
+  /** The player's start slot (0: the owner of the starting settlement). */
+  player: number;
+  /** A game-data hero id; unknown ones are skipped, like camps' unknown units. */
+  hero: string;
+  x: number;
+  z: number;
+}
+
 export interface MapDefinition {
+  /** Heroes players start with: each map or mission can give others, or none. */
+  startingHeroes?: readonly StartingHeroDefinition[];
   id: string;
   name: string;
   /** Width and depth of the square playable area, in world units. Centered at the origin. */

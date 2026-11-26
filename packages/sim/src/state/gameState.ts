@@ -16,6 +16,7 @@ import type { TrainingQueue } from '../training/training.js';
 import type { Outcome, PlayerStats } from '../rules/outcome.js';
 import type { SimWorld } from '../world/createWorld.js';
 import { RIPE_FIELD, type FieldState } from './fields.js';
+import { spawnHero } from '../heroes/heroes.js';
 import { createUnit, type UnitInstance } from './units.js';
 import { hireWorkers } from '../units/workers.js';
 import { spawnPoint } from './spawn.js';
@@ -177,7 +178,7 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
   const fields = Object.fromEntries(
     buildings.filter((b) => productionOf(b.type)?.kind === 'farm').map((b) => [b.id, RIPE_FIELD]),
   );
-  return {
+  const initial: GameState = {
     tick: 0,
     buildings,
     construction: {},
@@ -197,6 +198,12 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     stats: {},
     nextEntityId,
   };
+  // The map's heroes for each start slot that has a player.
+  const slots = [owner, ...(options.players ?? [])];
+  return (world.map.startingHeroes ?? []).reduce((state, start) => {
+    const player = slots[start.player];
+    return player ? spawnHero(state, start.hero, player, start).state : state;
+  }, initial);
 }
 
 /** True for buildings of the hand-authored starting settlement (not placed by a player). */

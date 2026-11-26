@@ -162,6 +162,13 @@ export interface DebugFortCommand {
   owner?: PlayerId;
 }
 
+/** Development only: gives `amount` experience to the issuer's heroes among `unitIds`. */
+export interface DebugExperienceCommand {
+  type: 'debugExperience';
+  unitIds: EntityId[];
+  amount: number;
+}
+
 export type Command =
   | PlaceBuildingCommand
   | PlaceWallCommand
@@ -181,7 +188,8 @@ export type Command =
   | DebugSpawnCommand
   | DebugWaveCommand
   | DebugResourcesCommand
-  | DebugFortCommand;
+  | DebugFortCommand
+  | DebugExperienceCommand;
 
 /** A command together with the player who issued it, attached by the receiver. */
 export interface IssuedCommand {
@@ -191,6 +199,9 @@ export interface IssuedCommand {
 
 /** Most units one command may address. */
 export const MAX_COMMAND_UNITS = 256;
+
+/** The most experience one `debugExperience` gives. */
+const MAX_DEBUG_EXPERIENCE = 10_000;
 
 /** How much of each resource one `debugResources` adds. */
 export const DEBUG_RESOURCES = 50;
@@ -308,6 +319,13 @@ export function parseCommand(input: unknown): Command | null {
       return { type: 'debugWave' };
     case 'debugResources':
       return { type: 'debugResources' };
+    case 'debugExperience': {
+      const unitIds = parseUnitIds(data.unitIds);
+      const { amount } = data;
+      if (!unitIds || !Number.isSafeInteger(amount) || (amount as number) < 1) return null;
+      if ((amount as number) > MAX_DEBUG_EXPERIENCE) return null;
+      return { type: 'debugExperience', unitIds, amount: amount as number };
+    }
     case 'debugFort': {
       const { x, z, owner } = data;
       if (!isFiniteNumber(x) || !isFiniteNumber(z)) return null;

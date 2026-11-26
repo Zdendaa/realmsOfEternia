@@ -67,6 +67,14 @@ export {
   type BuildingPlacement,
   type SettlementLayout,
 } from './maps/prototypeSettlement.js';
+export {
+  HERO_IDS,
+  HERO_RULES,
+  HEROES,
+  isHeroId,
+  type HeroDefinition,
+  type HeroId,
+} from './heroes/definitions.js';
 export { attackOf, combatOf, isUnitKind, UNITS, type UnitKind } from './units/definitions.js';
 export type { UnitDefinition } from './units/types.js';
 export {

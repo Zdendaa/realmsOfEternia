@@ -31,7 +31,7 @@ const TOWERS = ['woodenTower', 'stoneTower', 'crossbowTower', 'magicTower', 'fir
 type TowerId = (typeof TOWERS)[number];
 
 function game(map: MapDefinition, layout: SettlementLayout) {
-  const world = createWorld(map, layout);
+  const world = createWorld({ ...map, startingHeroes: [] }, layout);
   const initial = createInitialState(world, { owner: 'alice', resources: RICH });
   const ctx = createSimContext(world, initial, { dev: true });
   let state: GameState = initial;

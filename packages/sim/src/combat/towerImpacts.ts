@@ -48,7 +48,7 @@ export function applyTowerImpacts(
     })) {
       if (!isAlive(unit) || !areEnemies(p.ownerId, unit.ownerId)) continue;
       if ((unit.x - center.x) ** 2 + (unit.z - center.z) ** 2 > radius * radius) continue;
-      hits.add(unit.id, towerDamage(tower.attack, unit), p.ownerId);
+      hits.add(unit.id, towerDamage(tower.attack, unit), p.ownerId, p.attackerId);
       if (tower.burn) {
         // A new hit starts the fire over; fires don't stack.
         unit.burning = {

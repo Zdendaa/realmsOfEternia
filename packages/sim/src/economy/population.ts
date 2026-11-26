@@ -5,7 +5,7 @@ import { isAlive, type UnitInstance } from '../state/units.js';
 
 /** A player's population: units alive and the housing for them. */
 export interface Population {
-  /** Serfs and workers (every unit takes one place). */
+  /** Every unit takes one place, heroes excepted. */
   used: number;
   /** Housing of the player's complete buildings (Town Hall, houses). */
   capacity: number;
@@ -28,7 +28,7 @@ export function housingCapacity(
 export function populationUsed(units: readonly UnitInstance[], player: PlayerId | null): number {
   if (player === null) return 0;
   let used = 0;
-  for (const u of units) if (u.ownerId === player && isAlive(u)) used++;
+  for (const u of units) if (u.ownerId === player && isAlive(u) && !u.hero) used++;
   return used;
 }
 

@@ -1,4 +1,4 @@
-import { attackOf, combatOf, type ResourceId, type UnitKind } from '@roe/game-data';
+import { attackOf, combatOf, isHeroId, type ResourceId, type UnitKind } from '@roe/game-data';
 import type { EntityId, PlayerId, Vec2 } from '@roe/shared';
 
 /** What a unit has been told (or decided) to do. */
@@ -141,7 +141,16 @@ export interface UnitCombat {
   home: Vec2 | null;
 }
 
+/** What only heroes have. */
+export interface HeroState {
+  level: number;
+  /** Total experience earned; the level follows from it (`levelFor`). */
+  experience: number;
+}
+
 export interface UnitInstance {
+  /** Heroes: level and experience; null for every other unit. */
+  hero: HeroState | null;
   id: EntityId;
   type: UnitKind;
   ownerId: PlayerId | null;
@@ -200,6 +209,7 @@ export function createUnit(
         }
       : null,
     diedAt: null,
+    hero: isHeroId(type) ? { level: 1, experience: 0 } : null,
   };
 }
 
