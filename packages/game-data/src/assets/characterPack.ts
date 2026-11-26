@@ -295,7 +295,10 @@ export const CHARACTER_PACK = {
       scale: SOLDIER_SCALE,
       height: 2.3,
       animations: {
-        idle: { file: RANGED, clip: 'Ranged_Bow_Idle' },
+        // Not the pack's Ranged_Bow_Idle: it hardly moves the head (~1/5 of Idle_A) while
+        // the bow arm drifts, which at RTS zoom is sub-pixel creeping, not breathing. Its
+        // keys, bake and playback are smooth; the motion is just too small to read.
+        idle: { file: GENERAL, clip: 'Idle_A' },
         walk: WALK,
         attack: {
           file: RANGED,
