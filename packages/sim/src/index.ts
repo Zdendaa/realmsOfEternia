@@ -10,6 +10,7 @@ export {
   MAX_DEBUG_SPAWN,
   parseCommand,
   type AssignBuildersCommand,
+  type RepairCommand,
   type AttackCommand,
   type AttackMoveCommand,
   type Command,
@@ -41,6 +42,7 @@ export { areEnemies, MONSTER_PLAYER } from './combat/hostility.js';
 export { waveTick } from './combat/waves.js';
 export type { Projectile } from './combat/projectiles.js';
 export { workSlots } from './construction/workSlots.js';
+export { repairCost } from './construction/repair.js';
 export { hasFreeHousing, populationOf, type Population } from './economy/population.js';
 export { canAfford, EMPTY_STOCK, missingResources, stockOf } from './economy/stock.js';
 export {

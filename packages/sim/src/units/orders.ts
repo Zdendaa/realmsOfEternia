@@ -43,12 +43,16 @@ export function byDistanceTo<T extends UnitInstance>(units: readonly T[], target
   return [...units].sort((a, b) => distanceSq(a, target) - distanceSq(b, target) || a.id - b.id);
 }
 
-/** Work slots of a site that no unit has claimed yet (builders fetching material keep theirs). */
+/**
+ * Work slots of a building that no unit has claimed yet: builders (also while fetching
+ * material) and repairers keep theirs.
+ */
 export function freeSlots(site: BuildingInstance, units: readonly UnitInstance[]): number[] {
   const taken = new Set<number>();
   for (const u of units) {
     const t = u.task;
     if ((t.kind === 'build' || t.kind === 'deliver') && t.siteId === site.id) taken.add(t.slot);
+    if (t.kind === 'repair' && t.buildingId === site.id) taken.add(t.slot);
   }
   return workSlots(site)
     .map((_, slot) => slot)
@@ -66,6 +70,20 @@ export function assignToSlot(
   return {
     ...unit,
     task: { kind: 'build', siteId: site.id, slot, manual },
+    movement: moveTo(goal),
+  };
+}
+
+/** Gives `unit` the repair task for `slot` and starts walking there. */
+export function assignToRepair(
+  unit: UnitInstance,
+  building: BuildingInstance,
+  slot: number,
+): UnitInstance {
+  const goal = workSlots(building)[slot] as Vec2;
+  return {
+    ...unit,
+    task: { kind: 'repair', buildingId: building.id, slot },
     movement: moveTo(goal),
   };
 }

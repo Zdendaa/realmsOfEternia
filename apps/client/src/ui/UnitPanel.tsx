@@ -199,7 +199,8 @@ export function UnitPanel({ ids }: { ids: readonly number[] }) {
         <CommandBar ids={ids} />
       ) : (
         <p className="selection-meta">
-          Right-click: move · a construction site: build · a tree or rock: gather
+          Right-click: move · a construction site: build · a damaged building: repair · a tree or
+          rock: gather
         </p>
       )}
     </section>

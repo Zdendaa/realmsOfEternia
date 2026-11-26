@@ -9,6 +9,7 @@ import { applyHits, Hits, removeCorpses } from '../combat/damage.js';
 import { updateFighters } from '../combat/fighting.js';
 import { landProjectiles, type Projectile } from '../combat/projectiles.js';
 import { progressConstruction } from '../construction/construction.js';
+import { progressRepairs } from '../construction/repair.js';
 import { progressTraining } from '../training/training.js';
 import { syncContext, type SimContext } from '../context/simContext.js';
 import { commitEconomy, createEconomyDraft } from '../economy/draft.js';
@@ -38,7 +39,7 @@ export interface StepResult {
  * Order: commands → arrows landing → behavior (serfs: tasks, gathering, deliveries;
  * workers: harvesting, farming; fighters: targets, chases, strikes) → the tick's damage
  * and deaths (units; then buildings, which fall into ruins with their workers) → route invalidation → path planning → walking → separation → construction
- * work → workers for production buildings that have none (housing permitting) → trained
+ * and repair work → workers for production buildings that have none (housing permitting) → trained
  * units leaving their building → scripted waves that are due → removal
  * of corpses that have lain long enough. `ctx` is synced along the
  * way and left matching the returned state. The given state is never mutated.
@@ -80,7 +81,7 @@ export function stepGame(
   }
   updateEffects(units, hits, current.tick);
   const released: Projectile[] = [];
-  updateSerfs(ctx, current.tick, current.buildings, units, economy);
+  updateSerfs(ctx, current.tick, current.buildings, units, economy, current.buildingDamage);
   updateWorkers(current.tick, current.buildings, units, economy);
   updateFighters(ctx, current.tick, units, current.buildings, hits, released, current.projectiles);
   // Towers shoot after the units have moved on this tick's orders (the grid is built only
@@ -119,6 +120,16 @@ export function stepGame(
     units,
   );
   const { construction } = built;
+  // Repairs work on what is left after this tick's hits.
+  const repaired = progressRepairs(
+    current.tick,
+    {
+      buildings: standing.buildings,
+      buildingDamage: standing.buildingDamage,
+      stocks: economic.stocks,
+    },
+    units,
+  );
   const { buildings, upgrades } = progressUpgrades(built.buildings, current.upgrades, current.tick);
 
   // Production buildings without a worker get one while their owner has free housing.
@@ -159,9 +170,9 @@ export function stepGame(
     buildings,
     construction,
     resourceNodes: economic.resourceNodes,
-    stocks: economic.stocks,
+    stocks: repaired.stocks,
     fields: standing.fields,
-    buildingDamage: standing.buildingDamage,
+    buildingDamage: repaired.buildingDamage,
     ruins: standing.ruins,
     wavesSent: waves.wavesSent,
     lastWaveAt: waves.sentNow ? current.tick : current.lastWaveAt,

@@ -31,6 +31,7 @@ export {
   type BuildingId,
 } from './buildings/definitions.js';
 export { BUILDING_SIGHT } from './buildings/sight.js';
+export { REPAIR_RULES } from './buildings/repair.js';
 export { WALL_RULES } from './buildings/walls.js';
 export { tileOffsets } from './buildings/tiling.js';
 export type {

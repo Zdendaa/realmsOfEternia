@@ -2,7 +2,7 @@ import { isWalkableBuilding } from '@roe/game-data';
 import type { Decoration, DecorationKind, EntityId, Vec2 } from '@roe/shared';
 import { areEnemies } from '@roe/sim';
 import { buildingInSight } from '../render/fog/knowledge';
-import { LOCAL_PLAYER } from '../state/gameStore';
+import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
 import type { PointerTarget } from './pointerTarget';
 
 /** Cursor shapes over the 3D view; styled in `ui/cursors/cursors.css`. */
@@ -19,6 +19,7 @@ const RESOURCE_CURSOR: Record<DecorationKind, CursorKind> = {
 export type CommandIntent =
   | { kind: 'attack'; targetId: EntityId }
   | { kind: 'build'; siteId: EntityId }
+  | { kind: 'repair'; buildingId: EntityId }
   /** (x, z): the clicked point, sent to the sim; `destination`: where the units end up. */
   | { kind: 'move'; x: number; z: number; destination: Vec2 }
   | { kind: 'gather'; node: Decoration }
@@ -37,8 +38,8 @@ export interface SelectionKinds {
 
 /**
  * The right-click command for the selected units: attack an enemy (when some of them
- * fight), build an own construction site or harvest a tree or rock (when some are
- * serfs), or walk. Without serfs a tree or rock is just an obstacle: like water and
+ * fight), build an own construction site, repair a damaged own building or harvest a
+ * tree or rock (when some are serfs), or walk. Without serfs a tree or rock is just an obstacle: like water and
  * steep slopes, the units go to the nearest walkable spot, as the sim resolves it.
  * Buildings units can walk across (fields) are ground too. Blocked: other buildings,
  * trees and rocks serfs can't harvest (the border forest), and points with nothing
@@ -58,8 +59,11 @@ export function commandIntent(target: PointerTarget, selection: SelectionKinds):
     return { kind: 'attack', targetId: building.id };
   }
   if (building) {
-    if (serfs && building.status === 'construction' && building.ownerId === LOCAL_PLAYER) {
-      return { kind: 'build', siteId: building.id };
+    if (serfs && building.ownerId === LOCAL_PLAYER) {
+      if (building.status === 'construction') return { kind: 'build', siteId: building.id };
+      if ((useGameStore.getState().state.buildingDamage[building.id] ?? 0) > 0) {
+        return { kind: 'repair', buildingId: building.id };
+      }
     }
     if (!isWalkableBuilding(building.type)) return { kind: 'blocked' };
   }
@@ -102,6 +106,7 @@ export function cursorFor(
   if (selection.units) {
     const intent = commandIntent(target, selection);
     if (intent.kind === 'gather') return RESOURCE_CURSOR[intent.node.kind];
+    if (intent.kind === 'repair') return 'build'; // the hammer
     return intent.kind === 'none' ? 'default' : intent.kind;
   }
   return target.building?.ownerId === LOCAL_PLAYER ? 'select' : 'default';

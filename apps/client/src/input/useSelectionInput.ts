@@ -125,7 +125,7 @@ function startAttackMove() {
 
 /**
  * Right click with units selected (see `commandIntent`): attack an enemy (soldiers),
- * build an own construction site, harvest a tree or rock, or walk. Blocked spots do
+ * build an own construction site or repair a damaged own building, harvest a tree or rock, or walk. Blocked spots do
  * nothing, matching the "not allowed" cursor. Accepted commands get a marker.
  */
 function commandSelected(element: HTMLElement, camera: Camera, x: number, y: number) {
@@ -141,6 +141,13 @@ function commandSelected(element: HTMLElement, camera: Camera, x: number, y: num
     const result = dispatch({ type: 'assignBuilders', unitIds: [...unitIds], siteId: site.id });
     if (result.ok) {
       commandFeedback.push({ kind: 'build', site, groundY: heights.getHeightAt(site.x, site.z) });
+    }
+  } else if (intent.kind === 'repair' && target.building) {
+    const { building } = target;
+    const result = dispatch({ type: 'repair', unitIds: [...unitIds], buildingId: building.id });
+    if (result.ok) {
+      const groundY = heights.getHeightAt(building.x, building.z);
+      commandFeedback.push({ kind: 'build', site: building, groundY });
     }
   } else if (intent.kind === 'gather') {
     const { node } = intent;

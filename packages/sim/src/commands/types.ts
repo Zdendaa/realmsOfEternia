@@ -72,6 +72,13 @@ export interface AssignBuildersCommand {
   siteId: EntityId;
 }
 
+/** Send the given serfs to repair one of the issuer's damaged, finished buildings. */
+export interface RepairCommand {
+  type: 'repair';
+  unitIds: EntityId[];
+  buildingId: EntityId;
+}
+
 /**
  * Send the given serfs to harvest a tree or rock (decoration id `nodeId`); a group
  * spreads over nearby nodes of the same kind.
@@ -153,6 +160,7 @@ export type Command =
   | RecruitSerfCommand
   | MoveUnitsCommand
   | AssignBuildersCommand
+  | RepairCommand
   | GatherCommand
   | AttackCommand
   | AttackMoveCommand
@@ -248,6 +256,11 @@ export function parseCommand(input: unknown): Command | null {
       const unitIds = parseUnitIds(data.unitIds);
       if (!unitIds || !isEntityId(data.siteId)) return null;
       return { type: 'assignBuilders', unitIds, siteId: data.siteId };
+    }
+    case 'repair': {
+      const unitIds = parseUnitIds(data.unitIds);
+      if (!unitIds || !isEntityId(data.buildingId)) return null;
+      return { type: 'repair', unitIds, buildingId: data.buildingId };
     }
     case 'gather': {
       const unitIds = parseUnitIds(data.unitIds);

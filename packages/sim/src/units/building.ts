@@ -139,6 +139,25 @@ export function updateDeliverer(
   unit.task = { kind: 'build', siteId: site.id, slot: task.slot, manual: task.manual };
 }
 
+/**
+ * A repairer: walks to its slot and works there while its building is damaged
+ * (`progressRepairs` does the repairing and takes the payment). Done, or the building
+ * gone, or the route ending out of reach: idle.
+ */
+export function updateRepairer(
+  unit: UnitInstance,
+  building: BuildingInstance | undefined,
+  damage: number,
+): void {
+  if (unit.task.kind !== 'repair') return;
+  if (!building || damage === 0) {
+    unit.task = IDLE;
+    unit.movement = null;
+    return;
+  }
+  if (!unit.movement && !atSite(building, unit)) unit.task = IDLE;
+}
+
 /** True when a builder stands at its site and delivered material leaves work to do. */
 export function isBuilding(
   unit: UnitInstance,

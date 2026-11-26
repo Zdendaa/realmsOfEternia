@@ -28,13 +28,14 @@ import { useState } from 'react';
 import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
 import { useSelectionStore } from '../state/selectionStore';
 import { CostList } from './CostList';
+import { RepairPanel } from './RepairPanel';
 import { RESOURCE_ICONS } from './icons/resourceIcons';
 import { TrainingPanel } from './TrainingPanel';
 import { UnitPanel } from './UnitPanel';
 import { UpgradePanel } from './UpgradePanel';
 
 const GATE_MESSAGES: Partial<Record<CommandIssue, string>> = {
-  damaged: 'A damaged segment cannot be made into a gate.',
+  damaged: 'Repair the segment before making it a gate.',
   notEnoughResources: 'Not enough resources.',
   gameOver: 'The game is over.',
 };
@@ -387,6 +388,7 @@ function BuildingSelection() {
           {own && <WorkerStatus buildingId={building.id} type={building.type} />}
         </>
       )}
+      {own && building.status === 'complete' && <RepairPanel building={building} />}
       {towerOf(building.type) && <TowerStats type={building.type} />}
       {own && towerOf(building.type) && building.status === 'complete' && (
         <UpgradePanel key={building.id} buildingId={building.id} type={building.type} />

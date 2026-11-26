@@ -33,6 +33,7 @@ import { spawnPoint } from '../state/spawn.js';
 import { createUnit, IDLE, isAlive, type UnitInstance } from '../state/units.js';
 import { startGathering } from '../units/gathering.js';
 import {
+  assignToRepair,
   assignToSlot,
   byDistanceTo,
   formationOffsets,
@@ -51,6 +52,7 @@ import type {
   MoveUnitsCommand,
   PlaceBuildingCommand,
   PlaceWallCommand,
+  RepairCommand,
   MakeGateCommand,
   UpgradeTowerCommand,
   CancelUpgradeCommand,
@@ -65,8 +67,10 @@ export type CommandIssue =
   | WallIssue
   /** Only a plain wall segment can become a gate. */
   | 'notWallSegment'
-  /** A damaged segment can't be rebuilt as a gate (that would repair it). */
+  /** A damaged segment can't be rebuilt as a gate (that would repair it for free). */
   | 'damaged'
+  /** There is nothing to repair. */
+  | 'notDamaged'
   /** The building can't be upgraded into that. */
   | 'noUpgrade'
   /** The tower is already being upgraded. */
@@ -178,6 +182,14 @@ function checkAssign(state: GameState, issuer: PlayerId, command: AssignBuilders
   return serfs.length === 0 ? fail('noUnits') : OK;
 }
 
+function checkRepair(state: GameState, issuer: PlayerId, command: RepairCommand) {
+  const base = checkOwnComplete(state, issuer, command.buildingId);
+  if (!base.ok) return base;
+  if ((state.buildingDamage[command.buildingId] ?? 0) === 0) return fail('notDamaged');
+  const serfs = ownUnits(state, issuer, command.unitIds).filter((u) => u.type === 'serf');
+  return serfs.length === 0 ? fail('noUnits') : OK;
+}
+
 function checkGather(ctx: SimContext, state: GameState, issuer: PlayerId, command: GatherCommand) {
   if (remainingAmount(ctx.world, state.resourceNodes, command.nodeId) <= 0) {
     return fail('noResource');
@@ -218,8 +230,8 @@ function checkStop(state: GameState, issuer: PlayerId, command: StopCommand) {
   return ownUnits(state, issuer, command.unitIds).length === 0 ? fail('noUnits') : OK;
 }
 
-/** The issuer's own, complete building that trains: the common checks of both training commands. */
-function checkTrainingBuilding(state: GameState, issuer: PlayerId, buildingId: EntityId) {
+/** The issuer's own, complete building: the common checks of training, upgrades and repair. */
+function checkOwnComplete(state: GameState, issuer: PlayerId, buildingId: EntityId) {
   const building = findBuilding(state, buildingId);
   if (!building) return fail('noBuilding');
   if (building.ownerId !== issuer) return fail('notOwner');
@@ -228,7 +240,7 @@ function checkTrainingBuilding(state: GameState, issuer: PlayerId, buildingId: E
 }
 
 function checkTrain(state: GameState, issuer: PlayerId, command: TrainUnitCommand) {
-  const base = checkTrainingBuilding(state, issuer, command.buildingId);
+  const base = checkOwnComplete(state, issuer, command.buildingId);
   if (!base.ok) return base;
   const building = findBuilding(state, command.buildingId) as BuildingInstance;
   if (!trainsOf(building.type).includes(command.unit)) return fail('cannotTrain');
@@ -242,7 +254,7 @@ function checkTrain(state: GameState, issuer: PlayerId, command: TrainUnitComman
 }
 
 function checkCancelTraining(state: GameState, issuer: PlayerId, command: CancelTrainingCommand) {
-  const base = checkTrainingBuilding(state, issuer, command.buildingId);
+  const base = checkOwnComplete(state, issuer, command.buildingId);
   if (!base.ok) return base;
   const queued = state.training[command.buildingId]?.queue.length ?? 0;
   return command.index < queued ? OK : fail('notQueued');
@@ -286,7 +298,7 @@ function checkWall(
 }
 
 function checkUpgrade(state: GameState, issuer: PlayerId, command: UpgradeTowerCommand) {
-  const base = checkTrainingBuilding(state, issuer, command.buildingId);
+  const base = checkOwnComplete(state, issuer, command.buildingId);
   if (!base.ok) return base;
   const tower = findBuilding(state, command.buildingId) as BuildingInstance;
   if (!upgradesOf(tower.type).includes(command.to)) return fail('noUpgrade');
@@ -297,7 +309,7 @@ function checkUpgrade(state: GameState, issuer: PlayerId, command: UpgradeTowerC
 }
 
 function checkCancelUpgrade(state: GameState, issuer: PlayerId, command: CancelUpgradeCommand) {
-  const base = checkTrainingBuilding(state, issuer, command.buildingId);
+  const base = checkOwnComplete(state, issuer, command.buildingId);
   if (!base.ok) return base;
   return state.upgrades[command.buildingId] ? OK : fail('notUpgrading');
 }
@@ -405,6 +417,8 @@ export function validateCommand(
       return checkMove(ctx, state, issuer, command);
     case 'assignBuilders':
       return checkAssign(state, issuer, command);
+    case 'repair':
+      return checkRepair(state, issuer, command);
     case 'gather':
       return checkGather(ctx, state, issuer, command);
     case 'attack':
@@ -624,17 +638,19 @@ function debugSpawn(state: GameState, issuer: PlayerId, command: DebugSpawnComma
 }
 
 /**
- * The serfs nearest to the site take its free work slots. Serfs beyond `maxBuilders`
- * walk to the site's entrance and wait there, so a big group doesn't stay behind.
+ * The serfs among `unitIds` nearest to the building take its free work slots, each given
+ * its task by `assign`. Serfs beyond `maxBuilders` walk to its entrance and wait
+ * there, so a big group doesn't stay behind.
  */
-function assignBuilders(
+function sendToWorkSlots(
   state: GameState,
   issuer: PlayerId,
-  command: AssignBuildersCommand,
+  unitIds: readonly EntityId[],
+  site: BuildingInstance,
+  assign: (serf: UnitInstance, slot: number) => UnitInstance,
 ): GameState {
-  const site = findBuilding(state, command.siteId) as BuildingInstance;
-  const serfs = ownUnits(state, issuer, command.unitIds).filter((u) => u.type === 'serf');
-  // Selected serfs already on this site give up their slots first, so they can be re-sorted.
+  const serfs = ownUnits(state, issuer, unitIds).filter((u) => u.type === 'serf');
+  // Selected serfs already on this building give up their slots first, to be re-sorted.
   const selected = new Set(serfs.map((u) => u.id));
   const others = state.units.filter((u) => !selected.has(u.id));
   const slots = freeSlots(site, others);
@@ -642,7 +658,7 @@ function assignBuilders(
   const changed = new Map<EntityId, UnitInstance>();
   const ordered = byDistanceTo(serfs, site);
   ordered.slice(0, slots.length).forEach((serf, i) => {
-    changed.set(serf.id, assignToSlot(serf, site, slots[i] as number, true));
+    changed.set(serf.id, assign(serf, slots[i] as number));
   });
   const extra = ordered.slice(slots.length);
   if (extra.length > 0) {
@@ -650,6 +666,24 @@ function assignBuilders(
     for (const [id, unit] of sendGroup(extra, door.x, door.z)) changed.set(id, unit);
   }
   return { ...state, units: replaceUnits(state.units, changed) };
+}
+
+function assignBuilders(
+  state: GameState,
+  issuer: PlayerId,
+  command: AssignBuildersCommand,
+): GameState {
+  const site = findBuilding(state, command.siteId) as BuildingInstance;
+  return sendToWorkSlots(state, issuer, command.unitIds, site, (serf, slot) =>
+    assignToSlot(serf, site, slot, true),
+  );
+}
+
+function repair(state: GameState, issuer: PlayerId, command: RepairCommand): GameState {
+  const building = findBuilding(state, command.buildingId) as BuildingInstance;
+  return sendToWorkSlots(state, issuer, command.unitIds, building, (serf, slot) =>
+    assignToRepair(serf, building, slot),
+  );
 }
 
 /**
@@ -710,6 +744,8 @@ export function applyCommand(
       return { ok: true, state: moveUnits(state, issuer, command) };
     case 'assignBuilders':
       return { ok: true, state: assignBuilders(state, issuer, command) };
+    case 'repair':
+      return { ok: true, state: repair(state, issuer, command) };
     case 'gather':
       return { ok: true, state: gather(ctx, state, issuer, command) };
     case 'attack':

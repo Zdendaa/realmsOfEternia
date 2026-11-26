@@ -40,7 +40,7 @@ const angleDelta = (a: number, b: number) => {
 };
 
 /**
- * Builders hammer (as do workers processing at their building); gatherers and workers
+ * Builders and repairers hammer (as do workers processing at their building); gatherers and workers
  * at a node chop trees and pick at rocks; farmers sow and reap.
  */
 function workOf(unit: UnitInstance, decorations: readonly Decoration[]): UnitWork {
@@ -153,6 +153,9 @@ export function UnitFrameDriver() {
       } else if (unit.activity === 'working' && unit.task.kind === 'build') {
         const site = look.buildings.get(unit.task.siteId);
         if (site) target = Math.atan2(site.x - x, site.z - z);
+      } else if (unit.activity === 'working' && unit.task.kind === 'repair') {
+        const repaired = look.buildings.get(unit.task.buildingId);
+        if (repaired) target = Math.atan2(repaired.x - x, repaired.z - z);
       } else if (unit.activity === 'working' && unit.task.kind === 'gather') {
         const node = world.decorations[unit.task.nodeId];
         if (node) target = Math.atan2(node.x - x, node.z - z);

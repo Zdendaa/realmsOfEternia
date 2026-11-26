@@ -30,6 +30,8 @@ export type UnitTask =
       phase: DeliverPhase;
     }
   | WorkTask
+  /** Repair a damaged own building from work slot `slot` (like a builder's). */
+  | { kind: 'repair'; buildingId: EntityId; slot: number }
   /** Chase and fight one enemy unit until it dies (ordered by the player). */
   | { kind: 'attack'; targetId: EntityId }
   /** Walk to a point, fighting every enemy met on the way. */

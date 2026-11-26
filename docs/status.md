@@ -100,6 +100,7 @@ _Last updated: 2026-11-26._
 - **Server:** a Colyseus server with a placeholder 2–4 player match room. The client doesn't connect to it yet.
 - **Performance with fortifications** (measured in 7.7, 334 wall segments, Apple M1 Pro): simulation ticks stay small (mean 1.1 ms, max 9 ms in a 120 v 120 battle with breaching; a tick has 100 ms); previewing a 64-segment wall costs about 2 ms plus 5 ms for the cut-off check, only when the line changes. In headless Chrome, uncapped, dev build, whole map revealed: median frame 3.5–4 ms with or without the walls (about 100 more draw calls). A wall segment finishing or falling takes about 15 ms across two frames (about 33 ms at worst; 7 ms when nothing changes). 240 attackers shut out by a closed ring: worst tick 6 ms in a simulation benchmark.
 - **Performance:** a steady 60 FPS (vsync-capped) on an Apple M1 Pro in Chrome, also with 200 animated serfs walking at once. Uncapped frame times were last measured before Phase 4 (about 2.4 ms at the default view).
+- **Repair:** serfs repair any damaged, finished own building, walls, gates and towers included: right-click it with serfs selected (hammer cursor), or select it and press **Repair**, which sends the nearest idle serfs. Each serf restores 5 health a second, up to the building's builder limit. A repair from nearly destroyed costs 25% of the build cost (less damage, less, rounded per resource, so walls and light damage are free; the Town Hall is always free), paid as the work goes; without the resources the serfs wait.
 
 ## Known limitations
 
@@ -150,7 +151,8 @@ _Last updated: 2026-11-26._
 - **Gates can't be closed by hand, undone, or made from a damaged segment.** There is one gate per 2-unit segment; no wider gates.
 - **The fog darkens the wall preview** over unexplored ground, so parts of a line can be hard to see there.
 - **Drag only:** a click without a drag draws nothing; lines snap to 8 directions.
-- **No repair,** and a palisade can't be upgraded to stone in place.
+- **A palisade can't be upgraded to stone in place.**
+- **Repair is manual:** serfs repair only when ordered; they don't move on to a damaged neighbour (such as the next wall segment) or pick up repairs on their own. Repair also works while the building is being attacked.
 - **The cut-off warning** compares against the largest connected area of the map; it can't tell which side of a wall you meant to be outside.
 - **Temporary look:** the palisade posts are a primitive tapered log.
 - **Ranged units shoot over walls,** at units and at buildings behind them. A skeleton crossbowman can stay just outside a wall, beyond a tower's reach, and chip at what is inside.

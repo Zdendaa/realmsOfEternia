@@ -5,7 +5,7 @@ import { cellCenter, isWalkable, nearestWalkableCell } from '../nav/navGrid.js';
 import { toPlacedFootprint, type BuildingInstance } from '../state/gameState.js';
 import { IDLE, isAlive, type UnitInstance } from '../state/units.js';
 import { materialsInTransit } from '../construction/delivery.js';
-import { isBuilding, updateBuilder, updateDeliverer } from './building.js';
+import { isBuilding, updateBuilder, updateDeliverer, updateRepairer } from './building.js';
 import { updateGatherer } from './gathering.js';
 import { assignToSlot, freeSlots, moveTo } from './orders.js';
 
@@ -18,7 +18,8 @@ export const SERF_RULES = {
 
 /**
  * Decides tasks and activities for every serf (state order): builders fetch missing
- * material and build while their site exists, gatherers run their loop, finished moves
+ * material and build while their site exists, repairers stay while their building is
+ * damaged, gatherers run their loop, finished moves
  * become idle, and idle serfs pick up nearby construction sites. Mutates the given
  * working copies and the economy draft.
  */
@@ -28,6 +29,7 @@ export function updateSerfs(
   buildings: readonly BuildingInstance[],
   units: UnitInstance[],
   economy: EconomyDraft,
+  buildingDamage: Readonly<Record<EntityId, number>>,
 ): void {
   const byId = new Map<EntityId, BuildingInstance>(buildings.map((b) => [b.id, b]));
   const transit = materialsInTransit(units);
@@ -38,6 +40,9 @@ export function updateSerfs(
       updateBuilder(unit, byId.get(task.siteId), buildings, economy, transit);
     } else if (task.kind === 'deliver') {
       updateDeliverer(unit, byId.get(task.siteId), buildings, economy);
+    } else if (task.kind === 'repair') {
+      const damage = buildingDamage[task.buildingId] ?? 0;
+      updateRepairer(unit, byId.get(task.buildingId), damage);
     } else if (task.kind === 'gather') {
       updateGatherer(unit, buildings, economy);
     } else if (task.kind === 'move' && !unit.movement) {
@@ -68,6 +73,8 @@ function activityOf(
   if (task.kind === 'build') {
     return isBuilding(unit, byId.get(task.siteId), economy) ? 'working' : 'idle';
   }
+  // Whether a repairer can be paid for is decided by `progressRepairs`.
+  if (task.kind === 'repair') return 'working';
   return task.kind === 'gather' && task.phase === 'working' ? 'working' : 'idle';
 }
 
