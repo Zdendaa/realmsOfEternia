@@ -4,16 +4,16 @@ import { useGameStore } from '../state/gameStore';
 import { useSelectionStore } from '../state/selectionStore';
 import type { SelectionKinds } from './cursorKind';
 
-/** Whether any units are selected, and whether some of them fight (soldiers). */
+/** Whether any units are selected, and whether some of them fight or are serfs. */
 export function selectionKinds(ids: readonly EntityId[] = useSelectionStore.getState().units) {
-  const kinds: SelectionKinds = { units: ids.length > 0, fighters: false };
+  const kinds: SelectionKinds = { units: ids.length > 0, fighters: false, serfs: false };
   if (!kinds.units) return kinds;
   const wanted = new Set(ids);
   for (const unit of useGameStore.getState().state.units) {
-    if (wanted.has(unit.id) && unit.combat && isAlive(unit)) {
-      kinds.fighters = true;
-      break;
-    }
+    if (!wanted.has(unit.id) || !isAlive(unit)) continue;
+    if (unit.combat) kinds.fighters = true;
+    if (unit.type === 'serf') kinds.serfs = true;
+    if (kinds.fighters && kinds.serfs) break;
   }
   return kinds;
 }

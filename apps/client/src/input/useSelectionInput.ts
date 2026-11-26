@@ -132,7 +132,7 @@ function commandSelected(element: HTMLElement, camera: Camera, x: number, y: num
   const unitIds = useSelectionStore.getState().units;
   if (unitIds.length === 0) return;
   const target = pickPointerTarget(element, camera, x, y);
-  const intent = commandIntent(target, selectionKinds(unitIds).fighters);
+  const intent = commandIntent(target, selectionKinds(unitIds));
   const { dispatch, heights } = useGameStore.getState();
   if (intent.kind === 'attack') {
     attackUnit(unitIds, intent.targetId);

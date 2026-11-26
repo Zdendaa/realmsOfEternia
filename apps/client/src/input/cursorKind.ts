@@ -1,3 +1,4 @@
+import { isWalkableBuilding } from '@roe/game-data';
 import type { Decoration, DecorationKind, EntityId, Vec2 } from '@roe/shared';
 import { areEnemies } from '@roe/sim';
 import { buildingInSight } from '../render/fog/knowledge';
@@ -8,7 +9,7 @@ import type { PointerTarget } from './pointerTarget';
 export type CursorKind =
   'default' | 'select' | 'move' | 'build' | 'blocked' | 'chop' | 'mine' | 'attack';
 
-/** Cursor over a harvestable tree or rock while serfs are selected. */
+/** Cursor over a harvestable tree or rock while serfs are selected (only they gather). */
 const RESOURCE_CURSOR: Record<DecorationKind, CursorKind> = {
   tree: 'chop',
   rock: 'mine',
@@ -30,17 +31,23 @@ export interface SelectionKinds {
   units: boolean;
   /** Some of them fight (soldiers). */
   fighters: boolean;
+  /** Some of them are serfs: only they gather and build. */
+  serfs: boolean;
 }
 
 /**
- * The right-click command for the selected units: attack an enemy unit (when some of
- * them fight), build an own construction site, harvest a tree or rock, or walk. Water and steep slopes are fine: the units go to the nearest
- * walkable spot, as the sim resolves it. Blocked: other buildings, trees and rocks that
- * can't be harvested (the border forest), and points with nothing reachable nearby. Own
- * units under the pointer are ignored, so right-clicking a serf walks to the ground there.
+ * The right-click command for the selected units: attack an enemy (when some of them
+ * fight), build an own construction site or harvest a tree or rock (when some are
+ * serfs), or walk. Without serfs a tree or rock is just an obstacle: like water and
+ * steep slopes, the units go to the nearest walkable spot, as the sim resolves it.
+ * Buildings units can walk across (fields) are ground too. Blocked: other buildings,
+ * trees and rocks serfs can't harvest (the border forest), and points with nothing
+ * reachable nearby. Own units under the pointer are ignored, so right-clicking a serf
+ * walks to the ground there.
  */
-export function commandIntent(target: PointerTarget, fighters = false): CommandIntent {
+export function commandIntent(target: PointerTarget, selection: SelectionKinds): CommandIntent {
   const { building, ground } = target;
+  const { fighters, serfs } = selection;
   if (fighters && target.enemyId !== null) return { kind: 'attack', targetId: target.enemyId };
   if (
     fighters &&
@@ -51,12 +58,13 @@ export function commandIntent(target: PointerTarget, fighters = false): CommandI
     return { kind: 'attack', targetId: building.id };
   }
   if (building) {
-    return building.status === 'construction' && building.ownerId === LOCAL_PLAYER
-      ? { kind: 'build', siteId: building.id }
-      : { kind: 'blocked' };
+    if (serfs && building.status === 'construction' && building.ownerId === LOCAL_PLAYER) {
+      return { kind: 'build', siteId: building.id };
+    }
+    if (!isWalkableBuilding(building.type)) return { kind: 'blocked' };
   }
   if (!ground) return { kind: 'none' };
-  if (ground.resource) {
+  if (serfs && ground.resource) {
     return ground.harvestable ? { kind: 'gather', node: ground.resource } : { kind: 'blocked' };
   }
   if (!ground.reachable) return { kind: 'blocked' };
@@ -92,7 +100,7 @@ export function cursorFor(
   if (attackMove) return attackMoveIntent(target).kind === 'blocked' ? 'blocked' : 'attack';
   if (target.unitId !== null) return 'select';
   if (selection.units) {
-    const intent = commandIntent(target, selection.fighters);
+    const intent = commandIntent(target, selection);
     if (intent.kind === 'gather') return RESOURCE_CURSOR[intent.node.kind];
     return intent.kind === 'none' ? 'default' : intent.kind;
   }
