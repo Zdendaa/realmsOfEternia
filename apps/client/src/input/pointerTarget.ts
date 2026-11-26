@@ -73,6 +73,18 @@ export const enemyUnitIds = (): EntityId[] =>
     .state.units.filter((u) => isAlive(u) && areEnemies(LOCAL_PLAYER, u.ownerId))
     .map((u) => u.id);
 
+/**
+ * Where units ordered to (x, z) end up: the point when walkable, else the nearest
+ * walkable spot (the sim's pathfinding goal); null outside the playable area or when
+ * nothing walkable is near.
+ */
+export function orderPoint(x: number, z: number): Vec2 | null {
+  const { ctx, world } = useGameStore.getState();
+  return isInPlayableArea(world.map, x, z)
+    ? nearestWalkablePoint(ctx.nav, x, z, LOCAL_PLAYER)
+    : null;
+}
+
 /** Tree or rock whose blocking circle (plus a margin) contains (x, z), nearest first. */
 function resourceAt(x: number, z: number): Decoration | null {
   const { world, state } = useGameStore.getState();
@@ -123,9 +135,7 @@ export function pickPointerTarget(
       y: hit.y,
       z: hit.z,
       walkable,
-      reachable: isInPlayableArea(world.map, hit.x, hit.z)
-        ? nearestWalkablePoint(ctx.nav, hit.x, hit.z, LOCAL_PLAYER)
-        : null,
+      reachable: orderPoint(hit.x, hit.z),
       resource,
       harvestable:
         resource !== null && remainingAmount(world, state.resourceNodes, resource.id) > 0,

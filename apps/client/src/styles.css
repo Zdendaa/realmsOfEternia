@@ -93,9 +93,38 @@ body,
   user-select: none;
 }
 
+/* Controls help: collapsed above the minimap (which is 200px plus its frame). */
 .hud-controls {
-  bottom: 12px;
+  bottom: 236px;
   left: 12px;
+  /* Opened on a short screen it lies over the dev panel, not under it. */
+  z-index: 2;
+}
+
+.hud-controls summary {
+  cursor: pointer;
+  user-select: none;
+  color: var(--hud-muted);
+}
+
+.hud-controls[open] summary {
+  margin-bottom: 8px;
+}
+
+/* The minimap sits in the HUD layer on its own, outside .hud. */
+.minimap {
+  left: 12px;
+  bottom: 12px;
+  padding: 5px;
+  line-height: 0;
+}
+
+.minimap canvas {
+  display: block;
+  border-radius: 4px;
+  background: #000;
+  cursor: crosshair;
+  touch-action: none;
 }
 
 .hud-controls dl {
@@ -323,7 +352,12 @@ body,
 @media (max-width: 1100px) {
   .construction-menu {
     max-width: calc(100% - 24px);
-    bottom: 140px;
+    bottom: 12px;
+    /* Beside the minimap instead of centered. */
+    left: 236px;
+    right: 12px;
+    transform: none;
+    max-width: none;
   }
 
   /* Narrow screens: as many columns as fit. */

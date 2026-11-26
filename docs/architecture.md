@@ -221,3 +221,7 @@ What this gives you: hot reload across packages, go-to-definition that lands in 
 - Relative imports in `shared`, `game-data` and `server` use the `.js` extension (NodeNext resolution). The client uses bundler resolution without extensions.
 - One React component per file, named after the component.
 - Formatting is handled by Prettier only; ESLint does not check style.
+
+## Minimap
+
+`ui/minimap/` is a 2D canvas in the HTML HUD, outside the three.js scene, redrawn on a timer (`MINIMAP_REDRAW_MS`), never from the render loop. Layers, bottom up: the ground picture (made once from the shared height field, water and the terrain colorizer), paths, trees and rocks (redrawn when one runs out), buildings and walls from `knownBuildings`, the fog (a vision-sized image repainted when `Vision.version` changes), units filtered by `shownAt`, and the camera outline. It reads the same player knowledge as the 3D view, so it can't show more than the fog allows. The camera is reached through `render/camera/cameraRig.ts` (view corners and look-at), which `RtsCameraControls` registers. Ground orders from the minimap and from the 3D view share `input/groundOrders.ts`.

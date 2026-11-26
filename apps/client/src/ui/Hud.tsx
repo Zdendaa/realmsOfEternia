@@ -10,6 +10,7 @@ const CONTROLS: readonly [key: string, action: string][] = [
   ['Right drag', 'Rotate camera'],
   ['W A S D / Middle drag / Edge', 'Pan camera'],
   ['Mouse wheel', 'Zoom'],
+  ['Minimap: left / right', 'Move camera / send units'],
 ];
 
 export function Hud() {
@@ -48,7 +49,8 @@ export function Hud() {
         </label>
       </section>
 
-      <section className="hud-panel hud-controls" aria-label="Controls">
+      <details className="hud-panel hud-controls">
+        <summary>Controls</summary>
         <dl>
           {CONTROLS.map(([key, action]) => (
             <div key={key} style={{ display: 'contents' }}>
@@ -57,7 +59,7 @@ export function Hud() {
             </div>
           ))}
         </dl>
-      </section>
+      </details>
     </div>
   );
 }

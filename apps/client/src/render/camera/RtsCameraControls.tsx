@@ -1,12 +1,13 @@
 import { MapControls } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { clamp, type HeightField } from '@roe/shared';
-import { useRef, type ComponentRef } from 'react';
-import { MOUSE, Vector3 } from 'three';
+import { useEffect, useRef, type ComponentRef } from 'react';
+import { MOUSE, Vector3, type Camera } from 'three';
 import { usePointerTracker, type PointerTrack } from '../../input/usePointerTracker';
 import { usePressedKeys } from '../../input/usePressedKeys';
 import { useSettingsStore } from '../../state/settingsStore';
 import { cameraFocus } from './cameraFocus';
+import { cameraRig } from './cameraRig';
 
 type MapControlsImpl = ComponentRef<typeof MapControls>;
 
@@ -41,6 +42,29 @@ const EDGE_BAND = 10;
  */
 const MOUSE_BUTTONS = { MIDDLE: MOUSE.PAN, RIGHT: MOUSE.ROTATE };
 
+/** The screen's corners in normalized device coordinates, in order around it. */
+const SCREEN_CORNERS = [
+  [-1, 1],
+  [1, 1],
+  [1, -1],
+  [-1, -1],
+] as const;
+/** A corner ray that misses the ground, or hits it farther than this, is cut off here. */
+const MAX_VIEW_REACH = 400;
+
+const ray = new Vector3();
+
+/** Where the screen corners meet the level ground at height `groundY`. */
+function viewCorners(camera: Camera, groundY: number) {
+  camera.updateMatrixWorld();
+  return SCREEN_CORNERS.map(([u, v]) => {
+    ray.set(u, v, 0.5).unproject(camera).sub(camera.position).normalize();
+    const reach = ray.y < 0 ? (groundY - camera.position.y) / ray.y : MAX_VIEW_REACH;
+    const t = Math.min(reach, MAX_VIEW_REACH);
+    return { x: camera.position.x + ray.x * t, z: camera.position.z + ray.z * t };
+  });
+}
+
 const forward = new Vector3();
 const right = new Vector3();
 const offset = new Vector3();
@@ -74,6 +98,29 @@ export function RtsCameraControls({ bounds, heights }: RtsCameraControlsProps) {
   const controlsRef = useRef<MapControlsImpl>(null);
   const keys = usePressedKeys();
   const pointer = usePointerTracker();
+
+  const camera = useThree((s) => s.camera);
+
+  useEffect(() => {
+    cameraRig.current = {
+      viewCorners: () => viewCorners(camera, controlsRef.current?.target.y ?? 0),
+      lookAt: (x, z) => {
+        const controls = controlsRef.current;
+        if (!controls) return;
+        const dx = clamp(x, -bounds, bounds) - controls.target.x;
+        const dz = clamp(z, -bounds, bounds) - controls.target.z;
+        // The camera moves with its focus; the height follows in the next frames.
+        for (const point of [controls.target, camera.position]) {
+          point.x += dx;
+          point.z += dz;
+        }
+        camera.updateMatrixWorld();
+      },
+    };
+    return () => {
+      cameraRig.current = null;
+    };
+  }, [camera, bounds]);
 
   useFrame(({ camera }, delta) => {
     const controls = controlsRef.current;

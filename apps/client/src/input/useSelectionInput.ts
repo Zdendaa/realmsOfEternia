@@ -9,6 +9,7 @@ import { usePlacementStore } from '../state/placementStore';
 import { useSelectionStore } from '../state/selectionStore';
 import { dragBox } from '../ui/dragBox';
 import { attackMoveIntent, commandIntent, type CommandIntent } from './cursorKind';
+import { orderToGround } from './groundOrders';
 import { ownUnitIds, pickPointerTarget } from './pointerTarget';
 import { selectionKinds } from './selectionKinds';
 
@@ -91,23 +92,7 @@ function attackMoveSelected(
   const intent: CommandIntent = attackMoveIntent(pickPointerTarget(element, camera, x, y));
   if (intent.kind === 'attack') attackUnit(unitIds, intent.targetId);
   else if (intent.kind === 'move') {
-    const { dispatch, heights } = useGameStore.getState();
-    const result = dispatch({
-      type: 'attackMove',
-      unitIds: [...unitIds],
-      x: intent.x,
-      z: intent.z,
-    });
-    const { x: dx, z: dz } = intent.destination;
-    if (result.ok) {
-      commandFeedback.push({
-        kind: 'move',
-        x: dx,
-        y: heights.getHeightAt(dx, dz),
-        z: dz,
-        attack: true,
-      });
-    }
+    orderToGround('attackMove', unitIds, intent, intent.destination);
   } else return;
   if (!keep) useCommandModeStore.getState().setMode(null);
 }
@@ -161,10 +146,7 @@ function commandSelected(element: HTMLElement, camera: Camera, x: number, y: num
       });
     }
   } else if (intent.kind === 'move') {
-    const result = dispatch({ type: 'moveUnits', unitIds: [...unitIds], x: intent.x, z: intent.z });
-    // The marker shows where the units end up: on the shore for a click into water.
-    const { x, z } = intent.destination;
-    if (result.ok) commandFeedback.push({ kind: 'move', x, y: heights.getHeightAt(x, z), z });
+    orderToGround('moveUnits', unitIds, intent, intent.destination);
   }
 }
 
