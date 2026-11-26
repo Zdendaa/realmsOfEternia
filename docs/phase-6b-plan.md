@@ -9,8 +9,8 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 | #    | Scope                                                                                                                           | Status  |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ✅ Done |
-| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ⬜      |
-| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ⬜      |
+| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ✅ Done |
+| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ✅ Done |
 | 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ⬜      |
 | 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ⬜      |
 | 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ⬜      |
@@ -50,6 +50,21 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 - **Archmage** (Mage model, staff; no other unit uses it): _Fireball_ (area damage, level 1), _Frost Nova_ (slows enemies in an area, level 3), _Mass Heal_ (level 5).
 - **Pathfinder** (ranger with a crossbow): _Eagle Eye_ (reveals an area through the fog for 15 s, level 1), _Volley_ (rain of arrows, level 3), _Sapper Charge_ (heavy damage to one building or wall, level 5). Defined in game-data but not given by the prototype map, so it is ready for later maps.
 - Heroes stand out by size (1.2×), a golden ring and their own gear.
+
+### As built (6b.3)
+
+|                    | Commander                    | Archmage                             | Pathfinder                      |
+| ------------------ | ---------------------------- | ------------------------------------ | ------------------------------- |
+| Health / per level | 300 / +45                    | 170 / +25                            | 200 / +30                       |
+| Damage / per level | 18 / +3 (melee, every 1.3 s) | 14 / +3 (bolt, range 9, every 1.8 s) | 16 / +3 (range 10, every 1.7 s) |
+| Armor / speed      | 4 / 2.4                      | 1 / 2.2                              | 2 / 2.5                         |
+
+- Levels at 0 / 100 / 250 / 450 / 700 experience. Worth: villager 3, skeleton minion 10, crossbowman 12, spearman and archer 18, swordsman 20, skeleton warrior 22, ram 30, catapult 35, hero 60. Buildings give none.
+- A level adds to full health and to current health by the same amount; it doesn't heal otherwise.
+- Heroes take **no place in housing**.
+- A hero's own kill: the last blow was its melee hit or its shot. Tower kills and burns count as the side's (the half share).
+- Until 6b.5, a fallen hero is removed like any unit.
+- Heroes are already drawn (so the map's heroes aren't invisible): own models and gear at 1.2×, a golden ring, level and level stats in the unit panel. Dev tools: spawn a hero, "+150 experience" for selected heroes.
 
 ## Key decisions (recommendation first)
 
