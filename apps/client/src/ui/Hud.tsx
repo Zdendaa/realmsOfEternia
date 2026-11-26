@@ -6,6 +6,7 @@ const CONTROLS: readonly [key: string, action: string][] = [
   ['Right click', 'Move / attack / work'],
   ['F, then click', 'Attack-move'],
   ['X', 'Stop'],
+  ['Q / E / R', 'Hero abilities'],
   ['Alt (hold)', 'All health bars'],
   ['Right drag', 'Rotate camera'],
   ['W A S D / Middle drag / Edge', 'Pan camera'],

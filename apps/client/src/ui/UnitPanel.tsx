@@ -7,6 +7,7 @@ import {
 } from '@roe/game-data';
 import { isAlive, maxHealthOf, unitAttack, type UnitActivity } from '@roe/sim';
 import { useEffect } from 'react';
+import { AbilityBar } from './AbilityBar';
 import { useCommandModeStore } from '../state/commandModeStore';
 import { useGameStore } from '../state/gameStore';
 import { useSelectionStore } from '../state/selectionStore';
@@ -253,6 +254,7 @@ export function UnitPanel({ ids }: { ids: readonly number[] }) {
           .filter(Boolean)
           .join(' · ')}
       </p>
+      <AbilityBar selected={ids} />
       {fighters ? (
         <CommandBar ids={ids} />
       ) : (

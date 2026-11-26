@@ -11,6 +11,7 @@ import { HealthBars } from './combat/HealthBars';
 import { FogPass } from './fog/FogPass';
 import { Projectiles } from './combat/Projectiles';
 import { RockShots } from './combat/RockShots';
+import { AbilityAimPreview } from './combat/AbilityAimPreview';
 import { AbilityBursts } from './combat/AbilityBursts';
 import { CommandMarkers } from './commands/CommandMarkers';
 import { PlacementPreview } from './placement/PlacementPreview';
@@ -74,6 +75,7 @@ export function GameCanvas() {
       </Suspense>
       <HeroRings />
       <AbilityBursts />
+      <AbilityAimPreview />
       <SelectionRings />
       <HealthBars />
       <StatusEffects />

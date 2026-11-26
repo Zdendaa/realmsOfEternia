@@ -90,6 +90,20 @@ function aim(
   return { center: target, walkTo: target, inRange: distance <= definition.range + RANGE_SLACK };
 }
 
+/**
+ * Whether the hero is close enough to cast `ability` at `target` from where it stands
+ * (the same rule the casting uses; always true for self-cast ones).
+ */
+export function castInRange(
+  hero: UnitInstance,
+  ability: AbilityId,
+  target: CastTarget | null,
+  buildings: readonly BuildingInstance[],
+): boolean {
+  const byId = new Map(buildings.map((b) => [b.id, b]));
+  return aim(hero, abilityOf(ability), target, byId)?.inRange ?? false;
+}
+
 /** Every effect of `definition`, around `center` (or on `building`). */
 function takeEffect(
   caster: UnitInstance,

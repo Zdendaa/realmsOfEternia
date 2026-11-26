@@ -7,7 +7,7 @@ import type { PointerTarget } from './pointerTarget';
 
 /** Cursor shapes over the 3D view; styled in `ui/cursors/cursors.css`. */
 export type CursorKind =
-  'default' | 'select' | 'move' | 'build' | 'blocked' | 'chop' | 'mine' | 'attack';
+  'default' | 'select' | 'move' | 'build' | 'blocked' | 'chop' | 'mine' | 'attack' | 'aim';
 
 /** Cursor over a harvestable tree or rock while serfs are selected (only they gather). */
 const RESOURCE_CURSOR: Record<DecorationKind, CursorKind> = {

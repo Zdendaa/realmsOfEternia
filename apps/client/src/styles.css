@@ -595,22 +595,6 @@ body,
   cursor: pointer;
 }
 
-/* The selected hero's abilities (dev), beside the spawn panel. */
-.dev-abilities {
-  top: 84px;
-  left: 304px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  width: 190px;
-  font-size: 12px;
-}
-
-.dev-aim {
-  margin: 0;
-  opacity: 0.7;
-}
-
 .dev-message {
   margin: 2px 0 0;
   color: #e88;
@@ -730,4 +714,59 @@ body,
   padding-inline: 4px;
   font-size: 12px;
   white-space: nowrap;
+}
+
+/* The hero's abilities in the selection panel. */
+.ability-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ability {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.ability kbd {
+  min-width: 14px;
+  padding: 0 3px;
+  border: 1px solid var(--hud-border);
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  color: var(--hud-accent);
+}
+
+.ability-name {
+  flex: 1;
+}
+
+.ability-wait {
+  color: var(--hud-muted);
+  font-size: 12px;
+}
+
+/* While aiming: under the resource bar, below the wave alert's place. */
+.aim-hint {
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: var(--hud-text);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.aim-problem {
+  margin-left: 10px;
+  color: #f08a7a;
+  font-weight: 600;
 }

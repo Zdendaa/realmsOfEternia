@@ -1,6 +1,6 @@
 import { GameCanvas } from './render/GameCanvas';
+import { AimHint } from './ui/AimHint';
 import { ConstructionMenu } from './ui/ConstructionMenu';
-import { DevHeroAbilities } from './ui/dev/DevHeroAbilities';
 import { DevSpawnPanel } from './ui/dev/DevSpawnPanel';
 import { Hud } from './ui/Hud';
 import { Minimap } from './ui/minimap/Minimap';
@@ -20,10 +20,10 @@ export function App() {
       <ConstructionMenu />
       <SelectionPanel />
       <SelectionBox />
+      <AimHint />
       <WaveAlert />
       <OutcomeOverlay />
       {import.meta.env.DEV && <DevSpawnPanel />}
-      {import.meta.env.DEV && <DevHeroAbilities />}
     </div>
   );
 }

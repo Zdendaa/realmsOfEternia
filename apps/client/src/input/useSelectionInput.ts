@@ -8,6 +8,7 @@ import { useCommandModeStore } from '../state/commandModeStore';
 import { usePlacementStore } from '../state/placementStore';
 import { useSelectionStore } from '../state/selectionStore';
 import { dragBox } from '../ui/dragBox';
+import { castAimed, pressAbilityKey } from './abilityAim';
 import { attackMoveIntent, commandIntent, type CommandIntent } from './cursorKind';
 import { orderToGround } from './groundOrders';
 import { ownUnitIds, pickPointerTarget } from './pointerTarget';
@@ -102,6 +103,7 @@ function attackMoveSelected(
 
 /** X: the selected units stop what they are doing. */
 function stopSelected() {
+  useCommandModeStore.getState().setMode(null);
   const unitIds = useSelectionStore.getState().units;
   if (unitIds.length > 0) useGameStore.getState().dispatch({ type: 'stop', unitIds: [...unitIds] });
 }
@@ -175,7 +177,7 @@ export function useSelectionInput() {
       if (event.button === 2) right = press;
     };
     const onPointerMove = (event: PointerEvent) => {
-      if (!left || left.placing) return;
+      if (!left || left.placing || useCommandModeStore.getState().mode === 'ability') return;
       const moved = Math.hypot(event.clientX - left.x, event.clientY - left.y);
       if (!left.boxing && moved > CLICK_TOLERANCE) left.boxing = true;
       if (left.boxing) dragBox.show(left.x, left.y, event.clientX, event.clientY);
@@ -186,6 +188,13 @@ export function useSelectionInput() {
         left = null;
         dragBox.hide();
         if (press.placing) return;
+        if (useCommandModeStore.getState().mode === 'ability') {
+          const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y);
+          if (moved <= CLICK_TOLERANCE) {
+            castAimed(pickPointerTarget(element, camera, event.clientX, event.clientY));
+          }
+          return;
+        }
         // Attack-move ends when no selected unit can fight any more.
         if (!selectionKinds().fighters) useCommandModeStore.getState().setMode(null);
         if (useCommandModeStore.getState().mode === 'attackMove' && !press.boxing) {
@@ -215,6 +224,7 @@ export function useSelectionInput() {
         if (modes.mode) modes.setMode(null);
         else useSelectionStore.getState().clear();
       } else if (event.code === 'KeyF' && !event.repeat) startAttackMove();
+      else if (!event.repeat && pressAbilityKey(event.code)) return;
       else if (event.code === 'KeyX' && !event.repeat) stopSelected();
     };
 

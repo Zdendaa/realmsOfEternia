@@ -170,6 +170,7 @@ export {
   abilitiesOf,
   abilityIssue,
   CAST_MEMORY,
+  castInRange,
   type AbilityIssue,
   type Cast,
   type Reveal,

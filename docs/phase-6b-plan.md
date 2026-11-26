@@ -6,15 +6,15 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 
 ## Milestones
 
-| #    | Scope                                                                                                                           | Status    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ✅ Done   |
-| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ✅ Done   |
-| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ✅ Done   |
-| 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | 👀 Review |
-| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ⬜        |
-| 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ⬜        |
-| 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜        |
+| #    | Scope                                                                                                                           | Status  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ✅ Done |
+| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ✅ Done |
+| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ✅ Done |
+| 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ✅ Done |
+| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ⬜      |
+| 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ⬜      |
+| 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜      |
 
 ## Units
 
@@ -68,24 +68,42 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 
 ### As built (6b.4)
 
-| Ability       | Level | Cooldown / cast | Aim (range, radius)             | Effect                                           |
-| ------------- | ----- | --------------- | ------------------------------- | ------------------------------------------------ |
-| Rally         | 1     | 45 s / 0.5 s    | around the Commander (8)        | own units: damage ×1.25 and speed ×1.25 for 10 s |
-| Shockwave     | 3     | 30 s / 0.6 s    | around (4)                      | 35 damage and a 2 s stun to enemies              |
-| Last Stand    | 5     | 90 s / 0.5 s    | around (8)                      | own units take ×0.4 damage for 8 s               |
-| Fireball      | 1     | 15 s / 0.8 s    | point (10, 2.5)                 | 45 damage                                        |
-| Frost Nova    | 3     | 25 s / 0.6 s    | point (10, 4)                   | 10 damage, speed ×0.45 for 6 s                   |
-| Mass Heal     | 5     | 60 s / 0.8 s    | around (8)                      | heals own units by 80                            |
-| Eagle Eye     | 1     | 45 s / 0.5 s    | any point, also unseen (40, 14) | shows the area for 15 s                          |
-| Volley        | 3     | 25 s / 0.8 s    | point (12, 3.5)                 | 30 damage                                        |
-| Sapper Charge | 5     | 60 s / 2 s      | enemy building or wall (2)      | 600 damage to it                                 |
+| Ability       | Level | Cooldown / cast | Aim (range, radius)             | Effect                                          |
+| ------------- | ----- | --------------- | ------------------------------- | ----------------------------------------------- |
+| Rally         | 1     | 45 s / 0.5 s    | self (10)                       | own units: damage ×1.5 and speed ×1.35 for 15 s |
+| Shockwave     | 3     | 30 s / 0.6 s    | self (5)                        | 60 damage and a 3 s stun to enemies             |
+| Last Stand    | 5     | 90 s / 0.5 s    | self (10)                       | own units take ×0.25 damage for 12 s            |
+| Fireball      | 1     | 15 s / 0.6 s    | point (10, 3.5)                 | 80 damage                                       |
+| Frost Nova    | 3     | 25 s / 0.6 s    | point (10, 5)                   | 25 damage, speed ×0.35 for 8 s                  |
+| Mass Heal     | 5     | 60 s / 0.8 s    | self (10)                       | heals own units by 150                          |
+| Eagle Eye     | 1     | 45 s / 0.5 s    | any point, also unseen (60, 18) | shows the area for 25 s                         |
+| Volley        | 3     | 25 s / 0.8 s    | point (13, 4.5)                 | 55 damage                                       |
+| Sapper Charge | 5     | 60 s / 2 s      | enemy building or wall (7)      | 1000 damage to it                               |
+
+**Raised after the playtest (2026-11-26),** measured in simulated fights (`heroes/abilityBalance.test.ts`, groups of 6 or 8):
+
+| Ability       | Before                               | After                   | Simulated outcome, before → after                                                                       |
+| ------------- | ------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| Rally         | r 8; damage ×1.25, speed ×1.25; 10 s | r 10; ×1.5, ×1.35; 15 s | 6 swordsmen vs 6 skeleton warriors, 15 s: 2 skeletons left → 0; own health lost 295 → 218               |
+| Shockwave     | r 4; 35; stun 2 s                    | r 5; 60; stun 3 s       | skeleton minions: none die → all die; warriors lose 32% → 55%                                           |
+| Last Stand    | r 8; damage taken ×0.4; 8 s          | r 10; ×0.25; 12 s       | 6 swordsmen vs 10 warriors, 10 s: health lost 182 → 128 (365 without it); 1 swordsman dies → none       |
+| Fireball      | r 2.5; 45; cast 0.8 s                | r 3.5; 80; cast 0.6 s   | minions and archers: none die → all die; warriors lose 27% → 73%, swordsmen 25% → 67%                   |
+| Frost Nova    | r 4; 10; speed ×0.45; 6 s            | r 5; 25; ×0.35; 8 s     | 12-unit march: 5.8 s without; frosted 9 s → 10.9 s                                                      |
+| Mass Heal     | r 8; 80                              | r 10; 150               | swordsmen at 10 health get back 67% → 92% of full health                                                |
+| Eagle Eye     | range 40; r 14; 15 s                 | range 60; r 18; 25 s    | revealed area ×1.65, for 10 s longer                                                                    |
+| Volley        | range 12; r 3.5; 30                  | range 13; r 4.5; 55     | minions: none die → all die; warriors lose 27% → 50%                                                    |
+| Sapper Charge | range 2; 600                         | range 7; 1000           | stone wall 43% → 71%, stone tower 50% → 83%, barracks 48% → 79%; house and wooden tower fall either way |
+
+Cooldowns are unchanged.
+
+**Aiming (changed after the playtest):** aimed abilities are aimed with the mouse (button or Q / E / R, in the order they unlock). A ring of the ability's radius follows the pointer and a faint ring shows the range; it turns red, with the reason, when the target is illegal or out of range, and then a click does nothing. Left click casts, right click or Esc cancels. Self-cast abilities (Rally, Shockwave, Last Stand, Mass Heal) go off at once. Shockwave is centred on the Commander, so it is self-cast. The simulation still walks a hero into range (a target can move during the cast), but the client only sends targets already in range; because of that Sapper Charge's range went from 2 to 7.
 
 - The Pathfinder's three are built too (the plan named only the Commander's and Archmage's for tests; the effects are shared).
 - Ability damage **ignores armor** and never hurts the caster's side. Area damage hits units only; only Sapper Charge hits a building.
 - `useAbility { unitId, ability, target? }`: the hero walks into range, casts, then the effects apply and the cooldown starts. A new order or a stun breaks the casting off without spending it. A hero that can't get into range gives up.
 - Boosts of one kind don't stack (the newest wins); a weaker, shorter slow doesn't replace a stronger one.
 - A spell's kill counts as the hero's own for experience and bounty.
-- Until the hero panel (6b.6): a placeholder ring shows where an ability takes effect, and dev builds have ability buttons for the selected hero (aimed ones go to the screen center).
+- A placeholder ring shows where an ability takes effect. The ability buttons are in the selected hero's panel; the rest of the hero panel comes in 6b.6.
 
 ## Key decisions (recommendation first)
 

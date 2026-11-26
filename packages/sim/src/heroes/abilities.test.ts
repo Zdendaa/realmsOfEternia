@@ -1,6 +1,7 @@
 import {
   ABILITIES,
   abilityOf,
+  type AbilityEffect,
   combatOf,
   HERO_IDS,
   HERO_RULES,
@@ -25,6 +26,12 @@ import { createWorld } from '../world/createWorld.js';
 import { maxHealthOf } from './heroes.js';
 
 const seconds = (s: number) => Math.round(s * SIMULATION_TICK_RATE);
+
+/** An ability's effect of a kind, as game-data has it (the numbers are tuned there). */
+function effect<K extends AbilityEffect['kind']>(ability: AbilityId, kind: K) {
+  const found = abilityOf(ability).effects.find((e) => e.kind === kind);
+  return must(found) as Extract<AbilityEffect, { kind: K }>;
+}
 
 /** The value, which the test expects to exist. */
 function must<T>(value: T | undefined | null): T {
@@ -226,8 +233,8 @@ describe('the Commander', () => {
     g.step({ type: 'moveUnits', unitIds: [near], x: 3, z: 45 });
     g.step({ type: 'moveUnits', unitIds: [far], x: 20, z: 45 });
     g.run(seconds(6));
-    expect((g.unit(near).z - 20) / (g.unit(far).z - 20)).toBeGreaterThan(1.18);
-    g.run(seconds(6));
+    expect((g.unit(near).z - 20) / (g.unit(far).z - 20)).toBeGreaterThan(1.25);
+    g.run(seconds(effect('rally', 'boost').seconds));
     expect(g.unit(near).boosts).toBeNull();
   });
 
@@ -245,7 +252,7 @@ describe('the Commander', () => {
       g.run(seconds(3), () => health(g, target) < full);
       return full - health(g, target);
     };
-    expect(blow(true)).toBe(Math.round(blow(false) * 1.25));
+    expect(blow(true)).toBe(Math.round(blow(false) * effect('rally', 'boost').factor));
   });
 
   it('Shockwave: hurts and stuns enemies around, sparing its own side', () => {
@@ -255,7 +262,9 @@ describe('the Commander', () => {
     const outside = g.spawn('bob', 'serf', 9, 20);
     g.cast('shockwave');
     // Spells ignore armor.
-    expect(health(g, foe)).toBe(combatOf('swordsman').health - 35);
+    expect(health(g, foe)).toBe(
+      combatOf('swordsman').health - effect('shockwave', 'damage').amount,
+    );
     expect(health(g, friend)).toBe(combatOf('serf').health);
     expect(health(g, outside)).toBe(combatOf('serf').health);
     const at = { x: g.unit(foe).x, z: g.unit(foe).z };
@@ -281,7 +290,7 @@ describe('the Commander', () => {
       expect(g.unit(foe)).toBeDefined();
       return full - health(g, ally);
     };
-    expect(lost(true)).toBe(Math.round(lost(false) * 0.4));
+    expect(lost(true)).toBe(Math.round(lost(false) * effect('lastStand', 'boost').factor));
   });
 });
 
@@ -291,10 +300,10 @@ describe('the Archmage', () => {
     const a = g.spawn('bob', 'swordsman', 0, 28);
     const b = g.spawn('bob', 'serf', 1.5, 28);
     const own = g.spawn('alice', 'swordsman', -1.5, 28);
-    const away = g.spawn('bob', 'serf', 6, 28);
+    const away = g.spawn('bob', 'serf', 7, 28);
     g.pacify(a, own);
     g.cast('fireball', { x: 0, z: 28 });
-    expect(health(g, a)).toBe(combatOf('swordsman').health - 45);
+    expect(health(g, a)).toBe(combatOf('swordsman').health - effect('fireball', 'damage').amount);
     expect(g.state.units.some((u) => u.id === b && isAlive(u))).toBe(false);
     expect(health(g, own)).toBe(combatOf('swordsman').health);
     expect(health(g, away)).toBe(combatOf('serf').health);
@@ -313,7 +322,7 @@ describe('the Archmage', () => {
     const free = g.spawn('bob', 'swordsman', 20, 28);
     g.pacify(slow, free);
     g.cast('frostNova', { x: 0, z: 28 });
-    expect(g.unit(slow).slowed?.factor).toBe(0.45);
+    expect(g.unit(slow).slowed?.factor).toBe(effect('frostNova', 'slow').factor);
     const start = [g.unit(slow).z, g.unit(free).z];
     g.patch(slow, { task: { kind: 'move', x: 0, z: 45 }, movement: null });
     const walk = (id: EntityId, x: number) => {
@@ -327,7 +336,7 @@ describe('the Archmage', () => {
     walk(free, 20);
     g.run(seconds(3));
     const ratio = (g.unit(slow).z - must(start[0])) / (g.unit(free).z - must(start[1]));
-    expect(ratio).toBeCloseTo(0.45, 1);
+    expect(ratio).toBeCloseTo(effect('frostNova', 'slow').factor, 1);
   });
 
   it('Mass Heal: heals own units nearby, never past full health', () => {
@@ -335,21 +344,22 @@ describe('the Archmage', () => {
     const hurt = g.spawn('alice', 'swordsman', 3, 20);
     const scratched = g.spawn('alice', 'swordsman', -3, 20);
     const foe = g.spawn('bob', 'ram', 0, 26);
-    g.patch(hurt, { health: 10 });
+    g.patch(hurt, { health: 1 });
     g.patch(scratched, { health: 100 });
     g.patch(foe, { health: 100 });
     g.patch(g.hero, { health: 20 });
+    const amount = effect('massHeal', 'heal').amount;
     g.cast('massHeal');
-    expect(health(g, hurt)).toBe(90);
+    expect(health(g, hurt)).toBe(Math.min(combatOf('swordsman').health, 1 + amount));
     expect(health(g, scratched)).toBe(combatOf('swordsman').health);
-    expect(health(g, g.hero)).toBe(100);
-    expect(maxHealthOf(g.me())).toBeGreaterThan(100);
+    expect(health(g, g.hero)).toBe(20 + amount);
+    expect(maxHealthOf(g.me())).toBeGreaterThan(20 + amount);
     expect(health(g, foe)).toBe(100);
   });
 });
 
 describe('the Pathfinder', () => {
-  it('Eagle Eye: shows a far area through the fog for 15 s', () => {
+  it('Eagle Eye: shows a far area through the fog for a while', () => {
     const g = game('pathfinder');
     const spot = { x: -30, z: -5 };
     const vision = must(g.ctx.visions.get('alice'));
@@ -357,7 +367,7 @@ describe('the Pathfinder', () => {
     g.cast('eagleEye', spot);
     expect(isVisible(vision, spot.x, spot.z)).toBe(true);
     expect(isVisible(vision, spot.x - 10, spot.z)).toBe(true);
-    g.run(seconds(14));
+    g.run(seconds(effect('eagleEye', 'reveal').seconds - 1));
     expect(isVisible(vision, spot.x, spot.z)).toBe(true);
     g.run(seconds(2));
     expect(isVisible(vision, spot.x, spot.z)).toBe(false);
@@ -370,7 +380,8 @@ describe('the Pathfinder', () => {
     const ids = [-2, 0, 2].map((x) => g.spawn('bob', 'swordsman', x, 29));
     g.pacify(...ids);
     g.cast('volley', { x: 0, z: 29 });
-    for (const id of ids) expect(health(g, id)).toBe(combatOf('swordsman').health - 30);
+    for (const id of ids)
+      expect(health(g, id)).toBe(combatOf('swordsman').health - effect('volley', 'damage').amount);
   });
 
   it('Sapper Charge: heavy damage to one wall, from right beside it', () => {
@@ -383,10 +394,10 @@ describe('the Pathfinder', () => {
     // Towers off, so the hero lives to set it.
     g.patch(g.hero, { boosts: { damageTaken: { factor: 0.01, until: 99_999 } } });
     g.cast('sapperCharge', { id: segment.id });
-    expect(g.state.buildingDamage[segment.id]).toBe(600);
+    expect(g.state.buildingDamage[segment.id]).toBe(effect('sapperCharge', 'damage').amount);
     const damaged = Object.keys(g.state.buildingDamage);
     expect(damaged).toEqual([String(segment.id)]);
-    expect(30 - g.me().z).toBeLessThan(3.5);
+    expect(30 - g.me().z).toBeLessThan(abilityOf('sapperCharge').range + 1.5);
   });
 
   it('takes no building order against its own side or what it can’t see', () => {

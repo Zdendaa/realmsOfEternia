@@ -102,3 +102,8 @@
     image-set(url('./attack.svg') 2x) 4 4,
     crosshair;
 }
+
+/* Aiming an ability: the ground ring shows the area. */
+.game-canvas canvas[data-cursor='aim'] {
+  cursor: crosshair;
+}
