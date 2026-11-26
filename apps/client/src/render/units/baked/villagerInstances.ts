@@ -43,6 +43,7 @@ const CLIP_FOR: Record<UnitActivity, CharacterAnimation> = {
   working: 'build',
   // Villagers don't fight.
   attacking: 'idle',
+  casting: 'idle',
   dying: 'death',
 };
 

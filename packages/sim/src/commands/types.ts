@@ -1,4 +1,11 @@
-import { isBuildingId, isUnitKind, type BuildingId, type UnitKind } from '@roe/game-data';
+import {
+  isAbilityId,
+  isBuildingId,
+  isUnitKind,
+  type AbilityId,
+  type BuildingId,
+  type UnitKind,
+} from '@roe/game-data';
 import type { EntityId, PlayerId, Vec2 } from '@roe/shared';
 
 /**
@@ -162,6 +169,17 @@ export interface DebugFortCommand {
   owner?: PlayerId;
 }
 
+/**
+ * A hero uses an ability: at nothing (around itself), a point, or a building, as the
+ * ability asks. It walks into range first.
+ */
+export interface UseAbilityCommand {
+  type: 'useAbility';
+  unitId: EntityId;
+  ability: AbilityId;
+  target?: { x: number; z: number } | { id: EntityId };
+}
+
 /** Development only: gives `amount` experience to the issuer's heroes among `unitIds`. */
 export interface DebugExperienceCommand {
   type: 'debugExperience';
@@ -170,6 +188,7 @@ export interface DebugExperienceCommand {
 }
 
 export type Command =
+  | UseAbilityCommand
   | PlaceBuildingCommand
   | PlaceWallCommand
   | MakeGateCommand
@@ -319,6 +338,18 @@ export function parseCommand(input: unknown): Command | null {
       return { type: 'debugWave' };
     case 'debugResources':
       return { type: 'debugResources' };
+    case 'useAbility': {
+      const { unitId, ability, target } = data;
+      if (!isEntityId(unitId) || !isAbilityId(ability)) return null;
+      const command: UseAbilityCommand = { type: 'useAbility', unitId, ability };
+      if (target === undefined) return command;
+      if (typeof target !== 'object' || target === null) return null;
+      const { x, z, id } = target as Record<string, unknown>;
+      if (isEntityId(id)) command.target = { id };
+      else if (isFiniteNumber(x) && isFiniteNumber(z)) command.target = { x, z };
+      else return null;
+      return command;
+    }
     case 'debugExperience': {
       const unitIds = parseUnitIds(data.unitIds);
       const { amount } = data;

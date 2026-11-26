@@ -1,5 +1,6 @@
 import { combatOf, damageAgainst, towerOf, type TowerDefinition } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type EntityId } from '@roe/shared';
+import { applySlow, expireStatus } from '../heroes/status.js';
 import { isAlive, type UnitInstance } from '../state/units.js';
 import type { Hits } from './damage.js';
 import { areEnemies } from './hostility.js';
@@ -33,7 +34,7 @@ export function applyTowerImpacts(
     if (!tower || (!tower.splash && !tower.slow)) continue;
     const target = byId().get(p.targetId);
     if (tower.slow && target && isAlive(target)) {
-      target.slowed = { until: tick + ticks(tower.slow.seconds), factor: tower.slow.factor };
+      applySlow(target, tower.slow.factor, tick + ticks(tower.slow.seconds));
     }
     if (!tower.splash) continue;
     // Around the target where it is now; where it was aimed at if it is gone.
@@ -68,6 +69,7 @@ export function applyTowerImpacts(
 export function updateEffects(units: UnitInstance[], hits: Hits, tick: number): void {
   for (const unit of units) {
     if (unit.slowed && tick >= unit.slowed.until) unit.slowed = null;
+    expireStatus(unit, tick);
     const fire = unit.burning;
     if (!fire) continue;
     if (tick >= fire.until) unit.burning = null;

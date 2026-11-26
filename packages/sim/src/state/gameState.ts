@@ -16,6 +16,7 @@ import type { TrainingQueue } from '../training/training.js';
 import type { Outcome, PlayerStats } from '../rules/outcome.js';
 import type { SimWorld } from '../world/createWorld.js';
 import { RIPE_FIELD, type FieldState } from './fields.js';
+import type { Cast, Reveal } from '../heroes/abilities.js';
 import { spawnHero } from '../heroes/heroes.js';
 import { createUnit, type UnitInstance } from './units.js';
 import { hireWorkers } from '../units/workers.js';
@@ -118,6 +119,10 @@ export interface GameState {
   readonly outcome: Readonly<Record<PlayerId, Outcome>>;
   /** Per-player numbers for the end screen (soldiers trained, enemies killed, buildings lost). */
   readonly stats: Readonly<Record<PlayerId, PlayerStats>>;
+  /** Abilities that took effect in the last moments, for every screen to show. */
+  readonly casts: readonly Cast[];
+  /** Stretches of the map abilities show through the fog. */
+  readonly reveals: readonly Reveal[];
   readonly nextEntityId: EntityId;
 }
 
@@ -196,6 +201,8 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     lastWaveAt: null,
     outcome: {},
     stats: {},
+    casts: [],
+    reveals: [],
     nextEntityId,
   };
   // The map's heroes for each start slot that has a player.

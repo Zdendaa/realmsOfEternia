@@ -11,6 +11,7 @@ import { HealthBars } from './combat/HealthBars';
 import { FogPass } from './fog/FogPass';
 import { Projectiles } from './combat/Projectiles';
 import { RockShots } from './combat/RockShots';
+import { AbilityBursts } from './combat/AbilityBursts';
 import { CommandMarkers } from './commands/CommandMarkers';
 import { PlacementPreview } from './placement/PlacementPreview';
 import { ATMOSPHERE } from './scene/atmosphere';
@@ -72,6 +73,7 @@ export function GameCanvas() {
         <RockShots />
       </Suspense>
       <HeroRings />
+      <AbilityBursts />
       <SelectionRings />
       <HealthBars />
       <StatusEffects />

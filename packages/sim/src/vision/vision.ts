@@ -157,6 +157,10 @@ export function updateVision(vision: Vision, state: GameState): void {
     const cell = cellAt(vision, building.x, building.z);
     place(vision, building.id, cell, buildingSightOf(building.type), seen);
   }
+  for (const reveal of state.reveals) {
+    if (reveal.ownerId !== vision.player || state.tick > reveal.until) continue;
+    place(vision, reveal.id, cellAt(vision, reveal.x, reveal.z), reveal.radius, seen);
+  }
   if (vision.stamps.size > seen.size) {
     for (const [id, previous] of vision.stamps) {
       if (seen.has(id)) continue;

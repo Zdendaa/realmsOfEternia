@@ -11,6 +11,7 @@ import {
   type ResourceAmounts,
   attackOf,
   isHeroId,
+  abilityOf,
 } from '@roe/game-data';
 import { areEnemies } from '../combat/hostility.js';
 import { sendWave } from '../combat/waves.js';
@@ -44,6 +45,8 @@ import {
   replaceUnits,
 } from '../units/orders.js';
 import { gainExperience, hasHero, spawnHero } from '../heroes/heroes.js';
+import { abilityIssue, isCastPoint } from '../heroes/abilities.js';
+import { approachPoint } from '../combat/buildings.js';
 import { raiseDebugFort } from './debugFort.js';
 import { DEBUG_RESOURCES } from './types.js';
 import type {
@@ -54,6 +57,7 @@ import type {
   DebugSpawnCommand,
   DebugFortCommand,
   DebugExperienceCommand,
+  UseAbilityCommand,
   GatherCommand,
   MoveUnitsCommand,
   PlaceBuildingCommand,
@@ -107,6 +111,14 @@ export type CommandIssue =
   | 'noTarget'
   /** The attack target isn't an enemy of the issuer. */
   | 'notEnemy'
+  /** The unit has no such ability. */
+  | 'noSuchAbility'
+  /** The hero's level doesn't unlock it yet. */
+  | 'abilityLocked'
+  /** Used too recently. */
+  | 'onCooldown'
+  /** The ability needs another kind of target. */
+  | 'badTarget'
   /** The player already has that hero. */
   | 'heroExists'
   /** None of the addressed units can hit the target (rams only hit buildings). */
@@ -451,6 +463,8 @@ export function validateCommand(
       const taken = owner === null || hasHero(state.units, owner, command.unit);
       return taken ? fail('heroExists') : OK;
     }
+    case 'useAbility':
+      return checkAbility(ctx, state, issuer, command);
     case 'debugExperience':
       if (!ctx.dev) return fail('devOnly');
       return ownUnits(state, issuer, command.unitIds).some((u) => u.hero) ? OK : fail('noUnits');
@@ -566,6 +580,60 @@ function sendGroup(units: readonly UnitInstance[], x: number, z: number, fight =
 
 function moveUnits(state: GameState, issuer: PlayerId, command: MoveUnitsCommand): GameState {
   const changed = sendGroup(ownUnits(state, issuer, command.unitIds), command.x, command.z);
+  return { ...state, units: replaceUnits(state.units, changed) };
+}
+
+/**
+ * An own living hero, an ability it has unlocked and ready, and the kind of target it
+ * asks for: a point in the playable area, or an enemy building; seen, unless the
+ * ability is one for scouting.
+ */
+function checkAbility(
+  ctx: SimContext,
+  state: GameState,
+  issuer: PlayerId,
+  command: UseAbilityCommand,
+): CommandCheck {
+  const [hero] = ownUnits(state, issuer, [command.unitId]);
+  if (!hero) return fail('noUnits');
+  const issue = abilityIssue(hero, command.ability, state.tick);
+  if (issue) return fail(issue);
+  const definition = abilityOf(command.ability);
+  const { target } = command;
+  if (definition.target === 'self') return target ? fail('badTarget') : OK;
+  const vision = ctx.visions.get(issuer);
+  if (definition.target === 'building') {
+    if (!target || !('id' in target)) return fail('badTarget');
+    const building = findBuilding(state, target.id);
+    if (!building) return fail('noTarget');
+    if (!areEnemies(issuer, building.ownerId)) return fail('notEnemy');
+    return vision && !buildingSeen(vision, building) ? fail('notVisible') : OK;
+  }
+  if (!target || 'id' in target) return fail('badTarget');
+  if (!isCastPoint(ctx, target)) return fail('outOfBounds');
+  return vision && !definition.blind && !isVisible(vision, target.x, target.z)
+    ? fail('notVisible')
+    : OK;
+}
+
+function useAbility(state: GameState, issuer: PlayerId, command: UseAbilityCommand): GameState {
+  const changed = new Map<EntityId, UnitInstance>();
+  for (const hero of ownUnits(state, issuer, [command.unitId])) {
+    const target = command.target ?? null;
+    // Walk there if need be; the ability system stops the hero once it is in range.
+    let goal: { x: number; z: number } | null = null;
+    if (target && 'id' in target) {
+      const building = findBuilding(state, target.id);
+      if (building) goal = approachPoint(hero, building);
+    } else goal = target;
+    changed.set(hero.id, {
+      ...hero,
+      task: { kind: 'cast', ability: command.ability, target, castAt: null },
+      movement: goal ? moveTo(goal) : null,
+      activity: goal ? 'walking' : 'idle',
+      combat: freshCombat(hero),
+    });
+  }
   return { ...state, units: replaceUnits(state.units, changed) };
 }
 
@@ -817,6 +885,8 @@ export function applyCommand(
       return { ok: true, state: debugWave(ctx, state) };
     case 'debugResources':
       return { ok: true, state: debugResources(state, issuer) };
+    case 'useAbility':
+      return { ok: true, state: useAbility(state, issuer, command) };
     case 'debugExperience':
       return { ok: true, state: debugExperience(state, issuer, command) };
     case 'debugFort':

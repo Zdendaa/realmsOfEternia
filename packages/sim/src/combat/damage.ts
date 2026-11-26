@@ -1,6 +1,7 @@
 import { COMBAT_RULES } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type EntityId, type PlayerId } from '@roe/shared';
 import type { Death } from '../heroes/heroes.js';
+import { boostOf, scaled } from '../heroes/status.js';
 import { IDLE, isAlive, type UnitInstance } from '../state/units.js';
 
 /**
@@ -56,7 +57,7 @@ export function applyHits(units: UnitInstance[], hits: Hits, tick: number): Deat
   for (const unit of units) {
     const damage = hits.of(unit.id);
     if (damage === 0 || !isAlive(unit)) continue;
-    unit.health = Math.max(0, unit.health - damage);
+    unit.health = Math.max(0, unit.health - scaled(damage, boostOf(unit, 'damageTaken', tick)));
     if (unit.health > 0) continue;
     unit.diedAt = tick;
     unit.task = IDLE;
@@ -65,6 +66,8 @@ export function applyHits(units: UnitInstance[], hits: Hits, tick: number): Deat
     unit.carrying = null;
     unit.slowed = null;
     unit.burning = null;
+    unit.boosts = null;
+    unit.stunned = null;
     if (unit.combat) unit.combat = { ...unit.combat, targetId: null, strikeAt: null, anchor: null };
     deaths.push({
       victim: unit,

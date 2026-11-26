@@ -170,7 +170,7 @@ describe('levels', () => {
 
   it('raise health and damage in whole numbers', () => {
     for (const hero of HERO_IDS) {
-      const unit = { type: hero, hero: { level: 5, experience: 700 } };
+      const unit = { type: hero, hero: { level: 5, experience: 700, cooldowns: {} } };
       const { healthPerLevel, damagePerLevel } = HEROES[hero];
       expect(maxHealthOf(unit)).toBe(combatOf(hero).health + 4 * healthPerLevel);
       expect(unitAttack(unit)?.damage).toBe(must(attackOf(hero)).damage + 4 * damagePerLevel);
@@ -184,7 +184,7 @@ describe('levels', () => {
     g.patch(commander.id, { health: 100 });
     g.step({ type: 'debugExperience', unitIds: [commander.id], amount: 250 });
     const after = g.unit(commander.id);
-    expect(after.hero).toEqual({ level: 3, experience: 250 });
+    expect(after.hero).toEqual({ level: 3, experience: 250, cooldowns: {} });
     expect(after.health).toBe(100 + 2 * HEROES.commander.healthPerLevel);
   });
 
@@ -287,7 +287,7 @@ describe('experience', () => {
     const vision = createVision(g.ctx.world.map, 'bob');
     updateVision(vision, g.state);
     const seen = must(viewOf(g.ctx.world, g.state, vision).units.find((u) => u.id === hero));
-    expect(seen.hero).toEqual({ level: 3, experience: 0 });
+    expect(seen.hero).toEqual({ level: 3, experience: 0, cooldowns: {} });
   });
 
   it('the same orders give the same heroes', () => {

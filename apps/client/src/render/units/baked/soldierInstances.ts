@@ -98,7 +98,8 @@ export function createSoldierInstances(
       onceAt(baked.clips.death, unit.deathElapsed ?? 0, fps, animValues);
       return;
     }
-    if (unit.activity === 'attacking' && unit.attackElapsed !== null) {
+    const strikes = unit.activity === 'attacking' || unit.activity === 'casting';
+    if (strikes && unit.attackElapsed !== null) {
       const clipTime = unit.attackElapsed * attackSpeed;
       if (clipTime < attackClip.duration) {
         onceAt(attackClip, clipTime, fps, animValues);

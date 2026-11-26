@@ -1,4 +1,12 @@
-import { attackOf, combatOf, isHeroId, type ResourceId, type UnitKind } from '@roe/game-data';
+import {
+  attackOf,
+  combatOf,
+  isHeroId,
+  type AbilityId,
+  type BoostStat,
+  type ResourceId,
+  type UnitKind,
+} from '@roe/game-data';
 import type { EntityId, PlayerId, Vec2 } from '@roe/shared';
 
 /** What a unit has been told (or decided) to do. */
@@ -34,6 +42,11 @@ export type UnitTask =
   | { kind: 'repair'; buildingId: EntityId; slot: number }
   /** Chase and fight one enemy unit until it dies (ordered by the player). */
   | { kind: 'attack'; targetId: EntityId }
+  /**
+   * A hero using an ability: walks until the target is in range, then stands casting
+   * until the tick `castAt` (null while still on the way), when it takes effect.
+   */
+  | { kind: 'cast'; ability: AbilityId; target: CastTarget | null; castAt: number | null }
   /** Walk to a point, fighting every enemy met on the way. */
   | { kind: 'attackMove'; x: number; z: number };
 
@@ -106,7 +119,7 @@ export interface UnitMovement {
 }
 
 /** What the unit is visibly doing; rendering picks the animation from this. */
-export type UnitActivity = 'idle' | 'walking' | 'working' | 'attacking' | 'dying';
+export type UnitActivity = 'idle' | 'walking' | 'working' | 'attacking' | 'casting' | 'dying';
 
 /**
  * A fighting unit's combat state. Timers are tick numbers (not countdowns), so they
@@ -146,9 +159,18 @@ export interface HeroState {
   level: number;
   /** Total experience earned; the level follows from it (`levelFor`). */
   experience: number;
+  /** The tick each used ability is ready again; absent: ready. */
+  cooldowns: Partial<Record<AbilityId, number>>;
 }
 
+/** Where a cast is aimed: a point on the ground, or a building by id. */
+export type CastTarget = Vec2 | { id: EntityId };
+
 export interface UnitInstance {
+  /** Lasting boosts from abilities, by what they change; null without any. */
+  boosts: Partial<Record<BoostStat, { factor: number; until: number }>> | null;
+  /** Stunned (can't move or strike) until this tick; null otherwise. */
+  stunned: number | null;
   /** Heroes: level and experience; null for every other unit. */
   hero: HeroState | null;
   id: EntityId;
@@ -209,7 +231,9 @@ export function createUnit(
         }
       : null,
     diedAt: null,
-    hero: isHeroId(type) ? { level: 1, experience: 0 } : null,
+    hero: isHeroId(type) ? { level: 1, experience: 0, cooldowns: {} } : null,
+    boosts: null,
+    stunned: null,
   };
 }
 

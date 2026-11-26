@@ -68,6 +68,16 @@ export {
   type SettlementLayout,
 } from './maps/prototypeSettlement.js';
 export {
+  ABILITIES,
+  abilityOf,
+  isAbilityId,
+  type AbilityDefinition,
+  type AbilityEffect,
+  type AbilityId,
+  type AbilityTarget,
+  type BoostStat,
+} from './heroes/abilities.js';
+export {
   HERO_IDS,
   HERO_RULES,
   HEROES,

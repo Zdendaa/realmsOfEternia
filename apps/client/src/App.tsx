@@ -1,5 +1,6 @@
 import { GameCanvas } from './render/GameCanvas';
 import { ConstructionMenu } from './ui/ConstructionMenu';
+import { DevHeroAbilities } from './ui/dev/DevHeroAbilities';
 import { DevSpawnPanel } from './ui/dev/DevSpawnPanel';
 import { Hud } from './ui/Hud';
 import { Minimap } from './ui/minimap/Minimap';
@@ -22,6 +23,7 @@ export function App() {
       <WaveAlert />
       <OutcomeOverlay />
       {import.meta.env.DEV && <DevSpawnPanel />}
+      {import.meta.env.DEV && <DevHeroAbilities />}
     </div>
   );
 }

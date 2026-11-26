@@ -19,6 +19,7 @@ import {
 } from '../state/units.js';
 import type { BuildingInstance } from '../state/gameState.js';
 import { unitAttack } from '../heroes/heroes.js';
+import { boostOf, isStunned, scaled } from '../heroes/status.js';
 import { moveTo } from '../units/orders.js';
 import { approachPoint, buildingReach, findBuildingTarget } from './buildings.js';
 import type { Hits } from './damage.js';
@@ -135,6 +136,15 @@ export function updateFighters(
 
   for (const unit of units) {
     if (!isFighter(unit)) continue;
+    // A hero on a cast is the ability system's business (`updateAbilities`).
+    if (unit.task.kind === 'cast') continue;
+    if (isStunned(unit, tick)) {
+      // The blow it was winding up is lost; it stands where it is.
+      const still = unit.combat as UnitCombat;
+      if (still.strikeAt !== null) unit.combat = { ...still, strikeAt: null };
+      unit.activity = 'idle';
+      continue;
+    }
     const attack = unitAttack(unit) as AttackDefinition;
     const combat = { ...(unit.combat as UnitCombat) };
     unit.combat = combat;
@@ -337,7 +347,11 @@ function strike(
   hits: Hits,
   projectiles: Projectile[],
 ): void {
-  const damage = damageAgainst(attack, target.unit ? combatOf(target.unit.type) : BUILDING_COMBAT);
+  const boost = boostOf(unit, 'damage', tick);
+  const damage = scaled(
+    damageAgainst(attack, target.unit ? combatOf(target.unit.type) : BUILDING_COMBAT),
+    boost,
+  );
   if (reachTo(unit, target) > attack.range + COMBAT_RULES.strikeTolerance) return; // a miss
   const id = foeId(target);
   if (attack.splash) {
@@ -346,6 +360,7 @@ function strike(
     projectiles.push({
       ...fireProjectile(unit, id, at, tick, attack.projectileSpeed ?? 1, 0),
       weapon: unit.type,
+      ...(boost === 1 ? {} : { boost }),
       aim: { x: at.x, z: at.z },
       fromHeight: attack.launchHeight,
     });

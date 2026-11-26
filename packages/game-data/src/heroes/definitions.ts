@@ -1,4 +1,5 @@
 import type { UnitKind } from '../units/definitions.js';
+import type { AbilityId } from './abilities.js';
 
 /** The hero types of the Humans; each is also a unit kind with its level 1 numbers. */
 export const HERO_IDS = [
@@ -14,13 +15,30 @@ export interface HeroDefinition {
   /** Added per level above the first, in whole numbers (every machine computes the same). */
   healthPerLevel: number;
   damagePerLevel: number;
+  /** In the order they unlock (levels 1, 3 and 5). */
+  abilities: readonly AbilityId[];
 }
 
 export const HEROES: Readonly<Record<HeroId, HeroDefinition>> = {
-  commander: { id: 'commander', healthPerLevel: 45, damagePerLevel: 3 },
-  archmage: { id: 'archmage', healthPerLevel: 25, damagePerLevel: 3 },
+  commander: {
+    id: 'commander',
+    healthPerLevel: 45,
+    damagePerLevel: 3,
+    abilities: ['rally', 'shockwave', 'lastStand'],
+  },
+  archmage: {
+    id: 'archmage',
+    healthPerLevel: 25,
+    damagePerLevel: 3,
+    abilities: ['fireball', 'frostNova', 'massHeal'],
+  },
   /** Not given by the prototype map; ready for later maps. */
-  pathfinder: { id: 'pathfinder', healthPerLevel: 30, damagePerLevel: 3 },
+  pathfinder: {
+    id: 'pathfinder',
+    healthPerLevel: 30,
+    damagePerLevel: 3,
+    abilities: ['eagleEye', 'volley', 'sapperCharge'],
+  },
 };
 
 export const HERO_RULES = {

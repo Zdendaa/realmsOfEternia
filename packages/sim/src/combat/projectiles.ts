@@ -20,6 +20,8 @@ export interface Projectile {
   fromHeight?: number;
   /** The tower type that shot it: decides its effects on impact and its look. */
   source?: BuildingId;
+  /** A splash shot's shooter was boosted: its damage on impact is scaled by this. */
+  boost?: number;
   /** The unit kind that fired a shot with its own look (rendering). */
   shooter?: UnitKind;
   /** The unit kind that fired a splash shot (a catapult's rock): decides what it hits. */

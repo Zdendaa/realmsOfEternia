@@ -33,6 +33,8 @@ export interface PlayerView {
   readonly ruins: readonly Ruin[];
   /** Harvested trees and rocks on explored ground. */
   readonly resourceNodes: GameState['resourceNodes'];
+  /** The player's own casts, and others' whose area is in sight. */
+  readonly casts: GameState['casts'];
   /** Scenario progress (public: the waves are announced). */
   readonly wavesSent: number;
   readonly lastWaveAt: number | null;
@@ -40,11 +42,13 @@ export interface PlayerView {
 
 /**
  * Another player's unit as the viewer may see it: where it is and what it visibly does,
- * without its route or destination (a move or attack-move goal would tell where the
- * enemy is heading).
+ * without its route, destination or aim (they would tell what the enemy is about to
+ * do).
  */
 function seenFromOutside(unit: UnitInstance): UnitInstance {
-  const task = unit.task.kind === 'move' || unit.task.kind === 'attackMove' ? IDLE : unit.task;
+  let task = unit.task.kind === 'move' || unit.task.kind === 'attackMove' ? IDLE : unit.task;
+  // That a hero is casting shows; what it aims at doesn't.
+  if (task.kind === 'cast') task = { ...task, target: null };
   const combat = unit.combat && {
     ...unit.combat,
     breachId: null,
@@ -52,7 +56,7 @@ function seenFromOutside(unit: UnitInstance): UnitInstance {
     anchor: null,
     home: null,
   };
-  const hero = unit.hero && { ...unit.hero, experience: 0 };
+  const hero = unit.hero && { ...unit.hero, experience: 0, cooldowns: {} };
   return { ...unit, task, movement: null, combat, hero };
 }
 
@@ -100,6 +104,7 @@ export function viewOf(world: SimWorld, state: GameState, vision: Vision): Playe
       const node = world.decorations[id];
       return node !== undefined && isExplored(vision, node.x, node.z);
     }),
+    casts: state.casts.filter((c) => c.ownerId === player || isVisible(vision, c.x, c.z)),
     wavesSent: state.wavesSent,
     lastWaveAt: state.lastWaveAt,
   };

@@ -75,6 +75,7 @@ function useSelectionSummary(ids: readonly number[]) {
       walking: 0,
       working: 0,
       attacking: 0,
+      casting: 0,
       dying: 0,
     };
     for (const u of s.state.units) {
@@ -91,7 +92,8 @@ function useSelectionSummary(ids: readonly number[]) {
       activity[u.activity]++;
     }
     const groups = [...kinds].map(([kind, stats]) => [kind, ...stats].join(':'));
-    const acts = `${activity.attacking},${activity.working},${activity.walking},${activity.idle}`;
+    const { attacking, casting, working, walking, idle } = activity;
+    const acts = [attacking, working, walking, idle, casting].join();
     return `${groups.join('|')};${acts}`;
   });
 }
@@ -207,7 +209,9 @@ export function UnitPanel({ ids }: { ids: readonly number[] }) {
         };
       })
     : [];
-  const [attacking = 0, working = 0, walking = 0, idle = 0] = actText.split(',').map(Number);
+  const [attacking = 0, working = 0, walking = 0, idle = 0, casting = 0] = actText
+    .split(',')
+    .map(Number);
   const total = groups.reduce((sum, g) => sum + g.n, 0);
   if (total === 0) return null;
   const fighters = groups.some((g) => combatOf(g.kind).attack);
@@ -240,6 +244,7 @@ export function UnitPanel({ ids }: { ids: readonly number[] }) {
       )}
       <p className="selection-meta">
         {[
+          casting && `${casting} casting`,
           attacking && `${attacking} fighting`,
           working && `${working} working`,
           walking && `${walking} walking`,

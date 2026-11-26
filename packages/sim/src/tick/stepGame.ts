@@ -8,6 +8,7 @@ import { sendDueWaves } from '../combat/waves.js';
 import { applyHits, Hits, removeCorpses } from '../combat/damage.js';
 import { updateFighters } from '../combat/fighting.js';
 import { landProjectiles, type Projectile } from '../combat/projectiles.js';
+import { updateAbilities } from '../heroes/abilities.js';
 import { grantExperience } from '../heroes/heroes.js';
 import { progressConstruction } from '../construction/construction.js';
 import { progressRepairs } from '../construction/repair.js';
@@ -91,6 +92,7 @@ export function stepGame(
   const released: Projectile[] = [];
   updateSerfs(ctx, current.tick, current.buildings, units, economy, current.buildingDamage);
   updateWorkers(current.tick, current.buildings, units, economy);
+  const magic = updateAbilities(current.tick, units, current.buildings, hits, current);
   updateFighters(ctx, current.tick, units, current.buildings, hits, released, current.projectiles);
   // Towers shoot after the units have moved on this tick's orders (the grid is built only
   // when a tower is ready to look).
@@ -186,6 +188,8 @@ export function stepGame(
     wavesSent: waves.wavesSent,
     lastWaveAt: waves.sentNow ? current.tick : current.lastWaveAt,
     stats,
+    casts: magic.casts,
+    reveals: magic.reveals,
     projectiles,
     towerCooldowns,
     upgrades,

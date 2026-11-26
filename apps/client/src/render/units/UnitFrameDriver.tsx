@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber';
-import { attackOf, combatOf, productionOf, type ProfessionId } from '@roe/game-data';
+import { abilityOf, attackOf, combatOf, productionOf, type ProfessionId } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type Decoration, type EntityId } from '@roe/shared';
 import {
   combatTicks,
@@ -29,10 +29,35 @@ const SINK_SPEED = 0.9;
  * attack began `cooldown` ticks before `readyAt`), or null when it isn't attacking.
  */
 function attackElapsed(unit: UnitInstance, now: number): number | null {
+  if (unit.activity === 'casting') return castElapsed(unit, now);
   const attack = unit.activity === 'attacking' && unit.combat ? attackOf(unit.type) : undefined;
   if (!attack || !unit.combat) return null;
   const start = unit.combat.readyAt - combatTicks(attack.cooldown);
   return Math.max(0, now - start) / SIMULATION_TICK_RATE;
+}
+
+/**
+ * A cast in the attack's time: stretched or squeezed so that the clip's hit moment,
+ * which the attack's windup lines up with, falls on the tick the ability takes effect.
+ */
+function castElapsed(unit: UnitInstance, now: number): number | null {
+  const task = unit.task;
+  const attack = attackOf(unit.type);
+  if (task.kind !== 'cast' || task.castAt === null || !attack) return null;
+  const total = combatTicks(abilityOf(task.ability).castTime);
+  // Real seconds since the cast began, then scaled by windup / castTime.
+  const elapsed = Math.max(0, now - (task.castAt - total)) / SIMULATION_TICK_RATE;
+  return elapsed * (attack.windup / (total / SIMULATION_TICK_RATE));
+}
+
+/** Where a casting hero looks: its target point or building. */
+function castFocus(
+  unit: UnitInstance,
+  buildings: ReadonlyMap<EntityId, BuildingInstance>,
+): { x: number; z: number } | undefined {
+  const target = unit.task.kind === 'cast' ? unit.task.target : null;
+  if (!target) return undefined;
+  return 'id' in target ? buildings.get(target.id) : target;
 }
 
 /** Shortest signed angle from `a` to `b`. */
@@ -154,6 +179,9 @@ export function UnitFrameDriver() {
         const foe =
           look.units.get(unit.combat.targetId) ?? look.buildings.get(unit.combat.targetId);
         if (foe) target = Math.atan2(foe.x - x, foe.z - z);
+      } else if (unit.activity === 'casting') {
+        const aimed = castFocus(unit, look.buildings);
+        if (aimed) target = Math.atan2(aimed.x - x, aimed.z - z);
       } else if (unit.activity === 'working' && unit.task.kind === 'build') {
         const site = look.buildings.get(unit.task.siteId);
         if (site) target = Math.atan2(site.x - x, site.z - z);

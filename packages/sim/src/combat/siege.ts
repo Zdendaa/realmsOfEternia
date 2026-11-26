@@ -9,6 +9,7 @@ import {
 } from '@roe/game-data';
 import { distanceToFootprint, type Vec2 } from '@roe/shared';
 import type { SimContext } from '../context/simContext.js';
+import { scaled } from '../heroes/status.js';
 import { isWalkable } from '../nav/navGrid.js';
 import { hasLineOfSight } from '../nav/smoothPath.js';
 import { toPlacedFootprint, type BuildingInstance } from '../state/gameState.js';
@@ -138,12 +139,14 @@ export function applySplashImpacts(
     })) {
       if (!isAlive(unit) || !areEnemies(p.ownerId, unit.ownerId)) continue;
       if ((unit.x - x) ** 2 + (unit.z - z) ** 2 > radius * radius) continue;
-      hits.add(unit.id, damageAgainst(attack, combatOf(unit.type)), p.ownerId, p.attackerId);
+      const damage = scaled(damageAgainst(attack, combatOf(unit.type)), p.boost ?? 1);
+      hits.add(unit.id, damage, p.ownerId, p.attackerId);
     }
     for (const building of buildings) {
       if (!areEnemies(p.ownerId, building.ownerId)) continue;
       if (buildingReach(p.aim, radius, building) > 0) continue;
-      hits.add(building.id, damageAgainst(attack, BUILDING_COMBAT), p.ownerId);
+      const damage = scaled(damageAgainst(attack, BUILDING_COMBAT), p.boost ?? 1);
+      hits.add(building.id, damage, p.ownerId, p.attackerId);
     }
   }
 }

@@ -595,6 +595,22 @@ body,
   cursor: pointer;
 }
 
+/* The selected hero's abilities (dev), beside the spawn panel. */
+.dev-abilities {
+  top: 84px;
+  left: 304px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 190px;
+  font-size: 12px;
+}
+
+.dev-aim {
+  margin: 0;
+  opacity: 0.7;
+}
+
 .dev-message {
   margin: 2px 0 0;
   color: #e88;

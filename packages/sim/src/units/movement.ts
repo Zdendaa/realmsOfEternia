@@ -2,6 +2,7 @@ import { UNITS } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type Vec2 } from '@roe/shared';
 import { createRoutePlanner } from '../combat/breaching.js';
 import type { SimContext } from '../context/simContext.js';
+import { boostOf, isStunned } from '../heroes/status.js';
 import { hasLineOfSight } from '../nav/smoothPath.js';
 import type { UnitInstance, UnitMovement } from '../state/units.js';
 
@@ -81,9 +82,10 @@ export function invalidateBlockedRoutes(ctx: SimContext, units: UnitInstance[]):
 export function advanceUnits(units: UnitInstance[], tick: number): void {
   for (const unit of units) {
     const m = unit.movement;
-    if (!m?.waypoints) continue;
+    if (!m?.waypoints || isStunned(unit, tick)) continue;
     const slow = unit.slowed && tick < unit.slowed.until ? unit.slowed.factor : 1;
-    unit.movement = walk(unit, m, UNITS[unit.type].speed * slow * TICK_SECONDS);
+    const speed = UNITS[unit.type].speed * slow * boostOf(unit, 'speed', tick);
+    unit.movement = walk(unit, m, speed * TICK_SECONDS);
   }
 }
 

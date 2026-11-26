@@ -23,6 +23,7 @@ export function unitPose(activity: UnitActivity, time: number, phase: number): P
       return { lift: Math.abs(Math.sin(t)) * 0.07, pitch: 0.08, roll: Math.sin(t) * 0.06 };
     }
     case 'working':
+    case 'casting':
     case 'attacking': {
       const t = time * WORK_RATE + phase;
       const swing = Math.max(0, Math.sin(t));

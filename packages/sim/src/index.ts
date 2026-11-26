@@ -17,6 +17,7 @@ export {
   type DebugSpawnCommand,
   type DebugFortCommand,
   type DebugExperienceCommand,
+  type UseAbilityCommand,
   type DebugWaveCommand,
   type GatherCommand,
   type IssuedCommand,
@@ -165,3 +166,13 @@ export {
   type SpawnHeroResult,
 } from './heroes/heroes.js';
 export type { HeroState } from './state/units.js';
+export {
+  abilitiesOf,
+  abilityIssue,
+  CAST_MEMORY,
+  type AbilityIssue,
+  type Cast,
+  type Reveal,
+} from './heroes/abilities.js';
+export { boostOf, isStunned } from './heroes/status.js';
+export type { CastTarget } from './state/units.js';
