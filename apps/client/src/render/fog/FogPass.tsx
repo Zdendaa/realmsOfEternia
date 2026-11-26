@@ -23,6 +23,7 @@ import {
 import { useSettingsStore } from '../../state/settingsStore';
 import { FOG_LOOK } from './fogLook';
 import { localVision } from './knowledge';
+import { OVERLAY_LAYER, overlayObjects, overlayUniforms } from './overlay';
 
 /** How fast the drawn fog follows the vision (per second): reveals and hides in ~0.3 s. */
 const FADE_RATE = 7;
@@ -150,6 +151,25 @@ function createFogMaterial(fog: DataTexture, vision: Vision) {
   });
 }
 
+/**
+ * Draws the overlay objects (`fog/overlay.ts`) on top of the fogged image, hidden where
+ * the scene's depth is in front of them. The screen's own depth was just cleared, so
+ * their depth test passes; their shaders test against `depth` instead.
+ */
+function renderOverlay(gl: WebGLRenderer, camera: Camera, depth: DepthTexture) {
+  if (![...overlayObjects].some((o) => o.visible)) return;
+  overlayUniforms.uSceneDepth.value = depth;
+  overlayUniforms.uUseSceneDepth.value = 1;
+  gl.getDrawingBufferSize(overlayUniforms.uViewport.value);
+  const autoClear = gl.autoClear;
+  const mask = camera.layers.mask;
+  gl.autoClear = false;
+  camera.layers.set(OVERLAY_LAYER);
+  for (const object of overlayObjects) if (object.visible) gl.render(object, camera);
+  camera.layers.mask = mask;
+  gl.autoClear = autoClear;
+}
+
 /** The pass's GPU objects and its per-frame render (a plain object, outside React). */
 function createFogPass(vision: Vision) {
   const fog = createFogTexture(vision);
@@ -177,6 +197,7 @@ function createFogPass(vision: Vision) {
       gl.render(scene, camera);
       gl.setRenderTarget(null);
       gl.render(screen, screenCamera);
+      renderOverlay(gl, camera, depthTexture);
     },
     dispose() {
       fog.dispose();
@@ -193,6 +214,7 @@ function createFogPass(vision: Vision) {
  * the scene into a multisampled linear target with a depth texture, then the fog pass
  * to the screen. Covers every material at once (terrain, trees, buildings, ruins,
  * water). Units the player can't see are not drawn at all (see `UnitFrameDriver`).
+ * Command markers are drawn after it, undarkened (`renderOverlay`).
  */
 export function FogPass() {
   const gl = useThree((s) => s.gl);
@@ -210,7 +232,12 @@ export function FogPass() {
 
   useFrame(({ scene, camera }, delta) => {
     if (pass) pass.render(gl, scene, camera, delta, useSettingsStore.getState().revealMap);
-    else gl.render(scene, camera);
+    else {
+      // No fog: the overlay is drawn with the scene, with the normal depth test.
+      camera.layers.enable(OVERLAY_LAYER);
+      gl.render(scene, camera);
+      camera.layers.disable(OVERLAY_LAYER);
+    }
   }, 1);
 
   return null;

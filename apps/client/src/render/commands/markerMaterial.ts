@@ -1,4 +1,5 @@
 import { DoubleSide, ShaderMaterial } from 'three';
+import { OVERLAY_DEPTH_PARS, overlayUniforms } from '../fog/overlay';
 
 /** Marker kinds, as stored in the `aMarker.y` instance attribute. */
 export const MARKER_KIND = { move: 0, site: 1 } as const;
@@ -11,7 +12,8 @@ export const MARKER_DURATION = { move: 0.6, site: 1.1 } as const;
  * instance). Per instance: `aMarker` = (start time, kind, size x, size z) and `aColor`.
  * - move: four chevrons slide in to the point while a ring closes and fades.
  * - site: an outline shrinks onto the footprint and pulses, over a fading fill.
- * Finished instances are discarded in the fragment shader.
+ * Finished instances are discarded in the fragment shader. Drawn over the fog of war (see
+ * `fog/overlay.ts`), so it tone-maps itself like the fog pass does for the scene.
  */
 export function createMarkerMaterial() {
   return new ShaderMaterial({
@@ -19,6 +21,7 @@ export function createMarkerMaterial() {
       uTime: { value: 0 },
       uMoveDuration: { value: MARKER_DURATION.move },
       uSiteDuration: { value: MARKER_DURATION.site },
+      ...overlayUniforms,
     },
     transparent: true,
     depthWrite: false,
@@ -43,6 +46,7 @@ export function createMarkerMaterial() {
       varying vec2 vLocal;
       varying vec4 vMarker;
       varying vec3 vColor;
+      ${OVERLAY_DEPTH_PARS}
 
       float band(float d, float halfWidth) {
         float aa = fwidth(d);
@@ -85,10 +89,12 @@ export function createMarkerMaterial() {
         bool isMove = vMarker.y < 0.5;
         float t = (uTime - vMarker.x) / (isMove ? uMoveDuration : uSiteDuration);
         if (t < 0.0 || t >= 1.0) discard;
+        overlayDepthTest();
         float alpha = isMove ? moveMarker(vLocal, vMarker.z * 0.5, t) : siteMarker(vLocal, vMarker.zw, t);
         if (alpha < 0.01) discard;
         // Brightened player color so it reads on grass and dirt.
         gl_FragColor = vec4(mix(vColor * 1.4, vec3(1.0), 0.25), alpha * 0.95);
+        #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
     `,
