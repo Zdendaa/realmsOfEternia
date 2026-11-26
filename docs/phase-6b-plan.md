@@ -1,6 +1,6 @@
 # Phase 6b plan: cavalry, siege weapons, heroes
 
-Draft 2026-11-26, **waiting for approval**. Changed at review: heroes are not recruited; the map gives each player their starting heroes (decision 4).
+**Approved 2026-11-26** with every decision as recommended (decision 4 as written: heroes come from the map, not from recruiting). Changed at review: cavalry moved to the last milestone, so nothing waits on the horse asset.
 
 Cavalry, the siege weapons that answer walls, gates and towers (rams and catapults), and heroes in the style of The Settlers 5: unique active abilities with cooldowns, experience and levels that unlock further abilities, and fallen heroes that their own units revive. All numbers below are starting values and live in game-data; all rules live in `@roe/sim`, so client and server run the same code.
 
@@ -10,11 +10,11 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 | ---- | ------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ⬜     |
 | 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ⬜     |
-| 6b.3 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜     |
-| 6b.4 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ⬜     |
-| 6b.5 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ⬜     |
-| 6b.6 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ⬜     |
-| 6b.7 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ⬜     |
+| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ⬜     |
+| 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ⬜     |
+| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ⬜     |
+| 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ⬜     |
+| 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜     |
 
 ## Units
 
@@ -60,4 +60,4 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 ## Risks
 
 - **Large siege units and pathfinding:** paths are planned for point-sized units, so a ram could squeeze through gaps narrower than itself. Checked in 6b.1; the clearance is widened only if it shows.
-- **Cavalry depends on the horse asset.** Without it, 6b.3 moves to the end and the rest goes ahead.
+- **Cavalry depends on the horse asset.** That is why it is the last milestone (6b.7): siege and heroes don't wait for it.
