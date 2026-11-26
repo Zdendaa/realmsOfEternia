@@ -12,6 +12,16 @@ type MapControlsImpl = ComponentRef<typeof MapControls>;
 
 const MIN_DISTANCE = 15;
 const MAX_DISTANCE = 120;
+/**
+ * Each wheel event multiplies the distance by 0.95 ^ this (in or out): at 3 about 14
+ * wheel notches cover the whole range.
+ */
+const CAMERA_ZOOM_SPEED = 3;
+/**
+ * Right drag: dragging the height of the view turns by 360° × this (tilt too): at 0.4,
+ * 144° per view height.
+ */
+const CAMERA_ROTATE_SPEED = 0.4;
 /** Polar angle limits, measured from straight down (0) toward the horizon. */
 const MIN_POLAR_ANGLE = 0.2;
 const MAX_POLAR_ANGLE = 1.1;
@@ -118,6 +128,8 @@ export function RtsCameraControls({ bounds, heights }: RtsCameraControlsProps) {
       mouseButtons={MOUSE_BUTTONS}
       enableDamping
       dampingFactor={0.12}
+      zoomSpeed={CAMERA_ZOOM_SPEED}
+      rotateSpeed={CAMERA_ROTATE_SPEED}
       screenSpacePanning={false}
       minDistance={MIN_DISTANCE}
       maxDistance={MAX_DISTANCE}
