@@ -225,7 +225,7 @@ Resource storage, gathering, transportation, production chains, worker assignmen
 
 ### Phase 6 – Military and combat ✅
 
-Infantry and archers trained in a barracks and an archery range, unit commands, deterministic combat with counters, destructible buildings, neutral skeleton camps and a first scripted wave (see [phase-6-plan.md](phase-6-plan.md)). Cavalry, siege weapons and heroes follow as **Phase 6b**. Comes right after the economy (including its depth part, Phase 5b): armies give the economy a purpose, and everything after it needs enemies.
+Infantry and archers trained in a barracks and an archery range, unit commands, deterministic combat with counters, destructible buildings, neutral skeleton camps and a first scripted wave (see [phase-6-plan.md](phase-6-plan.md)). Cavalry, siege weapons and heroes follow as **Phase 6b** (see [phase-6b-plan.md](phase-6b-plan.md)). Comes right after the economy (including its depth part, Phase 5b): armies give the economy a purpose, and everything after it needs enemies.
 
 ### Phase 6c – Fog of war
 
