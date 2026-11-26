@@ -1,8 +1,8 @@
 # Project status
 
-_Last updated: 2026-11-25._
+_Last updated: 2026-11-26._
 
-**Current state:** Phase 7 (fortifications, see [phase-7-plan.md](phase-7-plan.md)) is built and **waiting for the final review**: walls drawn with the mouse, gates, breaching, self-firing towers, tower upgrades, and balance and performance work (7.1–7.7). Phase 6b (cavalry, siege weapons, heroes) comes later. Before it, Phase 6c (fog of war and win/lose, see [phase-6c-plan.md](phase-6c-plan.md)) was finished: vision in the simulation (6c.1), drawn fog of war (6c.2), attacks that need sight and filtered player views (6c.3) and victory and defeat with an end screen (6c.4). Before it, Phase 6 (military and combat) was finished, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy, can send the next wave at once and adds 50 of every resource.
+**Current state:** Phase 7 (fortifications, see [phase-7-plan.md](phase-7-plan.md)) is **done** (accepted 2026-11-26): walls drawn with the mouse, gates, breaching, self-firing towers, tower upgrades, and balance and performance work (7.1–7.7). Phase 6b (cavalry, siege weapons, heroes) comes later. Before it, Phase 6c (fog of war and win/lose, see [phase-6c-plan.md](phase-6c-plan.md)) was finished: vision in the simulation (6c.1), drawn fog of war (6c.2), attacks that need sight and filtered player views (6c.3) and victory and defeat with an end screen (6c.4). Before it, Phase 6 (military and combat) was finished, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy, can send the next wave at once and adds 50 of every resource.
 
 ## Phases
 
@@ -50,7 +50,7 @@ _Last updated: 2026-11-25._
 | 6c.3  | Attacks need sight; player views without hidden enemy state (anti-cheat)          | ✅ Done   |
 | 6c.4  | Victory and defeat: map objective, orders refused afterwards, end screen          | ✅ Done   |
 | 6c    | Fog of war and win/lose: see [phase-6c-plan.md](phase-6c-plan.md)                 | ✅ Done   |
-| 7     | Fortifications: see [phase-7-plan.md](phase-7-plan.md)                            | 🔍 Review |
+| 7     | Fortifications: see [phase-7-plan.md](phase-7-plan.md)                            | ✅ Done   |
 
 ## What works today
 
