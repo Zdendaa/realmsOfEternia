@@ -82,17 +82,17 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 
 **Raised after the playtest (2026-11-26),** measured in simulated fights (`heroes/abilityBalance.test.ts`, groups of 6 or 8):
 
-| Ability       | Before                               | After                   | Simulated outcome, before → after                                                                       |
-| ------------- | ------------------------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------- |
-| Rally         | r 8; damage ×1.25, speed ×1.25; 10 s | r 10; ×1.5, ×1.35; 15 s | 6 swordsmen vs 6 skeleton warriors, 15 s: 2 skeletons left → 0; own health lost 295 → 218               |
-| Shockwave     | r 4; 35; stun 2 s                    | r 5; 60; stun 3 s       | skeleton minions: none die → all die; warriors lose 32% → 55%                                           |
-| Last Stand    | r 8; damage taken ×0.4; 8 s          | r 10; ×0.25; 12 s       | 6 swordsmen vs 10 warriors, 10 s: health lost 182 → 128 (365 without it); 1 swordsman dies → none       |
-| Fireball      | r 2.5; 45; cast 0.8 s                | r 3.5; 80; cast 0.6 s   | minions and archers: none die → all die; warriors lose 27% → 73%, swordsmen 25% → 67%                   |
-| Frost Nova    | r 4; 10; speed ×0.45; 6 s            | r 5; 25; ×0.35; 8 s     | 12-unit march: 5.8 s without; frosted 9 s → 10.9 s                                                      |
-| Mass Heal     | r 8; 80                              | r 10; 150               | swordsmen at 10 health get back 67% → 92% of full health                                                |
-| Eagle Eye     | range 40; r 14; 15 s                 | range 60; r 18; 25 s    | revealed area ×1.65, for 10 s longer                                                                    |
-| Volley        | range 12; r 3.5; 30                  | range 13; r 4.5; 55     | minions: none die → all die; warriors lose 27% → 50%                                                    |
-| Sapper Charge | range 2; 600                         | range 7; 1000           | stone wall 43% → 71%, stone tower 50% → 83%, barracks 48% → 79%; house and wooden tower fall either way |
+| Ability       | Before                               | After                   | Simulated outcome, before → after                                                                                    |
+| ------------- | ------------------------------------ | ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Rally         | r 8; damage ×1.25, speed ×1.25; 10 s | r 10; ×1.5, ×1.35; 15 s | 6 swordsmen vs 6 skeleton warriors, 15 s: skeletons left 1 → 0, own health lost 260 → 218 (without Rally: 2 and 295) |
+| Shockwave     | r 4; 35; stun 2 s                    | r 5; 60; stun 3 s       | skeleton minions: none die → all die; warriors lose 32% → 55%                                                        |
+| Last Stand    | r 8; damage taken ×0.4; 8 s          | r 10; ×0.25; 12 s       | 6 swordsmen vs 10 warriors, 10 s: health lost 182 → 128 (365 without it); 1 swordsman dies → none                    |
+| Fireball      | r 2.5; 45; cast 0.8 s                | r 3.5; 80; cast 0.6 s   | minions and archers: none die → all die; warriors lose 27% → 73%, swordsmen 25% → 67%                                |
+| Frost Nova    | r 4; 10; speed ×0.45; 6 s            | r 5; 25; ×0.35; 8 s     | 12-unit march: 5.8 s without; frosted 9 s → 10.9 s                                                                   |
+| Mass Heal     | r 8; 80                              | r 10; 150               | swordsmen at 10 health get back 67% → 92% of full health                                                             |
+| Eagle Eye     | range 40; r 14; 15 s                 | range 60; r 18; 25 s    | revealed area ×1.65, for 10 s longer                                                                                 |
+| Volley        | range 12; r 3.5; 30                  | range 13; r 4.5; 55     | minions: none die → all die; warriors lose 27% → 50%                                                                 |
+| Sapper Charge | range 2; 600                         | range 7; 1000           | stone wall 43% → 71%, stone tower 50% → 83%, barracks 48% → 79%; house and wooden tower fall either way              |
 
 Cooldowns are unchanged.
 
