@@ -1,26 +1,26 @@
 /**
  * How strong heroes are, as relations measured in simulated fights (the numbers in
- * game-data can still be tuned). The prototype map's camps and wave against its two
- * starting heroes alone are reported, not asserted: how much they should manage is
- * still an open decision (docs/status.md).
+ * game-data can still be tuned), and how hard the prototype map is: its two starting
+ * heroes alone shouldn't clear a camp or beat the wave, with soldiers beside them they
+ * should. One fight turns on small differences in timing, so each is fought from nine
+ * directions and the wins are counted.
  */
 import {
   HERO_RULES,
   PROTOTYPE_MAP,
-  PROTOTYPE_SETTLEMENT,
   type HeroId,
   type SettlementLayout,
   type UnitKind,
 } from '@roe/game-data';
 import type { EntityId, MapDefinition } from '@roe/shared';
 import { describe, expect, it } from 'vitest';
-import { MONSTER_PLAYER } from '../combat/hostility.js';
 import type { Command } from '../commands/types.js';
 import { createSimContext } from '../context/simContext.js';
 import { createInitialState, type GameState } from '../state/gameState.js';
 import { isAlive } from '../state/units.js';
 import { report } from '../test/bench.js';
 import { FLAT_MAP, TOWN } from '../test/fixtures.js';
+import { APPROACHES, skirmish, type Army, type SkirmishResult } from '../test/skirmish.js';
 import { stepGame } from '../tick/stepGame.js';
 import { createWorld } from '../world/createWorld.js';
 
@@ -47,10 +47,6 @@ function game(map: MapDefinition, layout: SettlementLayout) {
     heroes: () => state.units.filter((u) => u.hero && isAlive(u)),
     alive: (ids: readonly EntityId[]) =>
       state.units.filter((u) => ids.includes(u.id) && isAlive(u)).length,
-    monstersNear: (x: number, z: number) =>
-      state.units.filter(
-        (u) => u.ownerId === MONSTER_PLAYER && isAlive(u) && Math.hypot(u.x - x, u.z - z) < 25,
-      ).length,
   };
   return g;
 }
@@ -72,12 +68,13 @@ describe('how strong a hero is on its own', () => {
   it('a new Commander holds off a few soldiers, not a squad', () => {
     expect(duel('commander', 1, 'swordsman', 2).won).toBe(true);
     expect(duel('commander', 1, 'swordsman', 3).won).toBe(false);
-    expect(duel('commander', 1, 'skeletonWarrior', 3).won).toBe(true);
-    expect(duel('commander', 1, 'skeletonWarrior', 4).won).toBe(false);
+    expect(duel('commander', 1, 'skeletonWarrior', 2).won).toBe(true);
+    expect(duel('commander', 1, 'skeletonWarrior', 3).won).toBe(false);
   });
 
   it('a new Archmage is fragile up close', () => {
-    expect(duel('archmage', 1, 'skeletonMinion', 4).won).toBe(true);
+    expect(duel('archmage', 1, 'skeletonMinion', 2).won).toBe(true);
+    expect(duel('archmage', 1, 'skeletonMinion', 3).won).toBe(false);
     expect(duel('archmage', 1, 'spearman', 2).won).toBe(false);
   });
 
@@ -88,32 +85,44 @@ describe('how strong a hero is on its own', () => {
   });
 });
 
-describe('the starting heroes on the prototype map (reported, no abilities)', () => {
-  const left = (g: ReturnType<typeof game>) =>
-    g
-      .heroes()
-      .map((u) => `${u.type} ${u.health} hp`)
-      .join(', ') || 'no hero';
+describe('the starting heroes on the prototype map, using their abilities', () => {
+  const FIGHTS = {
+    ironCamp: { camp: { x: 18, z: 42 } },
+    goldCamp: { camp: { x: -42, z: -18 } },
+    wave: { wave: true },
+  } as const;
 
-  it.each([
-    ['gold camp', -42, -18],
-    ['iron camp', 18, 42],
-  ])('against the %s', (name, x, z) => {
-    const g = game({ ...PROTOTYPE_MAP, waves: [] }, PROTOTYPE_SETTLEMENT);
-    g.step({ type: 'attackMove', unitIds: g.heroes().map((u) => u.id), x, z });
-    for (let i = 0; i < 1500 && g.heroes().length > 0 && g.monstersNear(x, z) > 0; i++) g.step();
-    report(`heroes vs ${name}: ${g.monstersNear(x, z)} skeletons left; ${left(g)}`);
-  });
-
-  it('against the wave', () => {
-    const g = game(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT);
-    g.step({ type: 'debugWave' });
-    const wave = g.state.units.filter((u) => u.ownerId === MONSTER_PLAYER && !u.combat?.home);
-    const ids = wave.map((u) => u.id);
-    g.step({ type: 'attackMove', unitIds: g.heroes().map((u) => u.id), x: 4, z: -25 });
-    for (let i = 0; i < 2400 && g.heroes().length > 0 && g.alive(ids) > 0; i++) g.step();
+  function wins(name: keyof typeof FIGHTS, army: Army): number {
+    const runs = APPROACHES.map((aside) => skirmish(PROTOTYPE_MAP, FIGHTS[name], army, aside));
+    const won = runs.filter((r) => r.cleared).length;
+    const mean = (of: (r: SkirmishResult) => number) =>
+      (runs.reduce((sum, r) => sum + of(r), 0) / runs.length).toFixed(1);
     report(
-      `heroes vs wave of ${ids.length}: ${g.alive(ids)} left; ${left(g)}; Town Hall damage ${g.state.buildingDamage[1] ?? 0}`,
+      `${name} with ${JSON.stringify(army)}: won ${won}/${runs.length}, ` +
+        `soldiers left ${mean((r) => r.soldiersLeft)}, monsters left ${mean((r) => r.monstersLeft)}`,
     );
-  });
+    return won;
+  }
+
+  it.each(['ironCamp', 'goldCamp', 'wave'] as const)(
+    'alone they nearly always lose: %s',
+    (name) => {
+      expect(wins(name, {})).toBeLessThanOrEqual(2);
+    },
+    60_000,
+  );
+
+  // The iron camp falls before there is any iron: five archers are what 5 gold buys.
+  it.each([
+    ['ironCamp', { archer: 5 }],
+    ['goldCamp', { archer: 8 }],
+    ['goldCamp', { swordsman: 4, archer: 4 }],
+    ['wave', { swordsman: 3, archer: 4 }],
+  ] as const)(
+    'with soldiers they win: %s %o',
+    (name, army) => {
+      expect(wins(name, army)).toBeGreaterThanOrEqual(8);
+    },
+    60_000,
+  );
 });

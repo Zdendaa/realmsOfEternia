@@ -175,8 +175,18 @@ describe('tower balance', () => {
   });
 });
 
-/** The real map and its wave, with only the Town Hall, so a ring can be closed around it. */
+/**
+ * The real map with only the Town Hall, so a ring can be closed around it, attacked by a
+ * fixed wave of nine: the benchmark walls and towers are balanced against, whatever the
+ * map's own wave is.
+ */
 describe('the wave against walls and towers', () => {
+  const MAP = {
+    ...PROTOTYPE_MAP,
+    waves: [
+      { ...PROTOTYPE_MAP.waves[0], units: MATCHUPS.wave.map(([unit, count]) => ({ unit, count })) },
+    ],
+  };
   const HALL_ONLY: SettlementLayout = {
     ...PROTOTYPE_SETTLEMENT,
     buildings: PROTOTYPE_SETTLEMENT.buildings.filter((b) => b.building === 'townHall'),
@@ -202,7 +212,7 @@ describe('the wave against walls and towers', () => {
   ];
 
   function assault(walls: Command[], towers: [number, number, BuildingId][]) {
-    const g = game(PROTOTYPE_MAP, HALL_ONLY);
+    const g = game(MAP, HALL_ONLY);
     g.fortify(walls, towers);
     const built = g.state.buildings.length - 1 - towers.length;
     // A tower on a bad spot would be silently refused and skew the result.

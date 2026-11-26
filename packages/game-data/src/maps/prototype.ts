@@ -35,30 +35,32 @@ export const PROTOTYPE_MAP = {
       x: 9,
       z: -80,
       units: [
-        { unit: 'skeletonWarrior', count: 2 },
-        { unit: 'skeletonMinion', count: 5 },
-        { unit: 'skeletonArcher', count: 2 },
+        { unit: 'skeletonWarrior', count: 7 },
+        { unit: 'skeletonMinion', count: 6 },
+        { unit: 'skeletonArcher', count: 6 },
       ],
     },
   ],
   // Skeleton camps on the deposits: the mines can only be built once they are cleared.
-  // Gold is guarded harder than iron.
+  // Neither falls to the starting heroes alone. Iron (guarded less, cleared first) can be
+  // taken with the five archers the starting gold pays for; gold needs a larger army.
   camps: [
     {
       x: -42,
       z: -18,
       units: [
-        { unit: 'skeletonWarrior', count: 2 },
-        { unit: 'skeletonMinion', count: 3 },
-        { unit: 'skeletonArcher', count: 2 },
+        { unit: 'skeletonWarrior', count: 10 },
+        { unit: 'skeletonMinion', count: 8 },
+        { unit: 'skeletonArcher', count: 6 },
       ],
     },
     {
       x: 18,
       z: 42,
       units: [
-        { unit: 'skeletonWarrior', count: 1 },
-        { unit: 'skeletonMinion', count: 3 },
+        { unit: 'skeletonWarrior', count: 6 },
+        { unit: 'skeletonMinion', count: 5 },
+        { unit: 'skeletonArcher', count: 4 },
       ],
     },
   ],
