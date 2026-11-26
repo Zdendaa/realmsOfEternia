@@ -1,3 +1,4 @@
+import { SIEGE_SIZE } from '../assets/siegeModels.js';
 import type { AttackDefinition, CombatStats } from './combat.js';
 import type { UnitDefinition } from './types.js';
 
@@ -123,7 +124,7 @@ export const UNITS = {
     cost: { wood: 10, iron: 3 },
     trainTime: 30,
     speed: 1.4,
-    radius: 1,
+    radius: SIEGE_SIZE.radius,
     maxPerPlayer: 20,
     controllable: true,
     combat: {
@@ -155,7 +156,7 @@ export const UNITS = {
     cost: { wood: 12, iron: 4, gold: 3 },
     trainTime: 40,
     speed: 1.3,
-    radius: 1,
+    radius: SIEGE_SIZE.radius,
     maxPerPlayer: 20,
     controllable: true,
     combat: {
@@ -163,7 +164,7 @@ export const UNITS = {
       armor: 2,
       armorClass: 'siege',
       // Center to the target's edge: the range plus its own radius.
-      sightRange: 16,
+      sightRange: 15 + SIEGE_SIZE.radius,
       attack: {
         kind: 'ranged',
         damage: 16,
@@ -172,7 +173,7 @@ export const UNITS = {
         range: 15,
         minRange: 5,
         projectileSpeed: 9,
-        launchHeight: 2,
+        launchHeight: 2 * SIEGE_SIZE.modelScale,
         splash: { radius: 1.5 },
         bonus: { building: 10 },
         siege: true,

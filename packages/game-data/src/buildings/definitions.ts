@@ -1,6 +1,6 @@
 import { HEXAGON_PACK } from '../assets/hexagonPack.js';
 import { MEDIEVAL_PACK } from '../assets/medievalPack.js';
-import { SIEGE_MODELS } from '../assets/siegeModels.js';
+import { SIEGE_MODELS, SIEGE_SIZE } from '../assets/siegeModels.js';
 import type { UnitKind } from '../units/definitions.js';
 import { BUILDING_SIGHT } from './sight.js';
 import type { BuildingDefinition } from './types.js';
@@ -37,8 +37,12 @@ const STOREHOUSE_PARTS = [
   { modelPath: HEXAGON_PACK.construction.flag, x: 3.1, z: 2.6, scale: 6 },
 ] as const;
 
-const T = SIEGE_MODELS.catapult.scale;
+/** The workshop shows its turret and rocks at the size of the finished engines. */
+const T = SIEGE_MODELS.catapult.scale * SIEGE_SIZE.modelScale;
 const ROCK = SIEGE_MODELS.rock;
+const ROCK_SCALE = ROCK.scale * SIEGE_SIZE.modelScale;
+/** A rock's radius (its model is 0.28 pack units tall) as stacked. */
+const ROCK_R = 0.14 * ROCK_SCALE;
 /** A rock of the workshop's stack; `y` is its center (the model's origin). */
 const rock = (x: number, z: number, y: number, turn = 0) => ({
   modelPath: ROCK.model,
@@ -46,7 +50,7 @@ const rock = (x: number, z: number, y: number, turn = 0) => ({
   y,
   z,
   rotation: deg(turn),
-  scale: ROCK.scale,
+  scale: ROCK_SCALE,
 });
 
 /**
@@ -66,10 +70,10 @@ const SIEGE_WORKSHOP_PARTS = [
     rotation: deg(-25),
     scale: T,
   },
-  rock(2.4, 1.5, 0.33),
-  rock(3.05, 1.6, 0.33, 70),
-  rock(2.75, 2.15, 0.33, 150),
-  rock(2.72, 1.72, 0.82, 40),
+  rock(2.6 - ROCK_R, 1.6, ROCK_R * 0.9),
+  rock(2.6 + ROCK_R, 1.65, ROCK_R * 0.9, 70),
+  rock(2.62, 1.65 + ROCK_R * 1.7, ROCK_R * 0.9, 150),
+  rock(2.62, 1.65 + ROCK_R * 0.6, ROCK_R * 2.3, 40),
   { modelPath: prop('weaponrack'), x: -3.1, z: 2.1, rotation: deg(25), scale: H },
   { modelPath: prop('resource_lumber'), x: -1.1, z: 2.2, rotation: deg(-8), scale: H },
   { modelPath: prop('resource_lumber'), x: -3.0, z: 0.9, rotation: deg(90), scale: H },

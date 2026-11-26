@@ -28,13 +28,14 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 |                 | Ram                                  | Catapult                                                                                  |
 | --------------- | ------------------------------------ | ----------------------------------------------------------------------------------------- |
 | Health / armor  | 500 / 6                              | 200 / 2                                                                                   |
-| Speed / radius  | 1.4 / 1                              | 1.3 / 1                                                                                   |
+| Speed / radius  | 1.4 / 0.75                           | 1.3 / 0.75                                                                                |
 | Attack          | 34 every 2.5 s, ×4 against buildings | 16 every 6 s, ×10 against buildings; range 15, minimum 5, splash radius 1.5, rock speed 9 |
 | Cost / training | 10 wood, 3 iron / 30 s               | 12 wood, 4 iron, 3 gold / 40 s                                                            |
 
-- Simulated: a ram breaks a stone wall segment (1,400 health) in 26.9 s; a catapult destroys a stone tower (1,200) in 45 s without being hit.
+- Simulated: a ram breaks a stone wall segment (1,400 health) in 27.1 s; a catapult destroys a stone tower (1,200) in 45 s without being hit.
 - Arrows and wooden tower shots do 2 damage to a ram. Swords, spears and skeleton blades hit siege engines double.
 - A catapult's rock hits only enemies. Its splash also reaches the wall segments on both sides of the one it hits, so it wears down three at once.
+- Size (changed at review 2026-11-26): the engines are drawn at 0.7 of the first version, about a soldier's height and 2 × 1.35 on the ground, and their radius went from 1 to 0.75. Both numbers are `SIEGE_SIZE` in game-data `assets/siegeModels.ts`; the workshop's parked turret and rocks follow it.
 - Large units and pathfinding: a ram walks through a gap one segment (2 units) wide. Paths are still planned for point-sized units, so between buildings a ram can pass a 1-unit slot, overlapping both. The clearance wasn't widened.
 
 ### As built (6b.2)

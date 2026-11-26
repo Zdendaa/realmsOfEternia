@@ -50,7 +50,7 @@ export function SelectionRings() {
       const unit = renderedUnits.get(id);
       if (!unit) continue;
       // Wider under large units (the siege engines).
-      const wide = Math.max(1, (UNITS[unit.type].radius / RING_UNIT_RADIUS) * 0.75);
+      const wide = Math.max(1, UNITS[unit.type].radius / RING_UNIT_RADIUS);
       matrix.makeScale(wide, 1, wide).setPosition(unit.x, unit.y + 0.05, unit.z);
       mesh.setMatrixAt(count++, matrix);
     }

@@ -1,6 +1,6 @@
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
-import { SIEGE_MODELS } from '@roe/game-data';
+import { SIEGE_MODELS, SIEGE_SIZE } from '@roe/game-data';
 import type { Projectile } from '@roe/sim';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { Euler, Matrix4, Quaternion, Vector3, type InstancedMesh } from 'three';
@@ -37,7 +37,7 @@ const matrix = new Matrix4();
 const position = new Vector3();
 const rotation = new Quaternion();
 const spin = new Euler();
-const size = new Vector3().setScalar(SIEGE_MODELS.rock.scale);
+const size = new Vector3().setScalar(SIEGE_MODELS.rock.scale * SIEGE_SIZE.modelScale);
 
 /** The dust of rocks that landed since it was last asked for. */
 function createDust() {

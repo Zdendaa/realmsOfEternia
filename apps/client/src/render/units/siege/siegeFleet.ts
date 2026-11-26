@@ -1,4 +1,4 @@
-import { attackOf, SIEGE_MODELS, type UnitKind } from '@roe/game-data';
+import { attackOf, SIEGE_MODELS, SIEGE_SIZE, type UnitKind } from '@roe/game-data';
 import type { EntityId } from '@roe/shared';
 import {
   DynamicDrawUsage,
@@ -29,6 +29,8 @@ import {
 } from './siegeGeometry';
 import { catapultArm, ramSwing, type ArmPose } from './siegeMotion';
 
+const SIZE = SIEGE_SIZE.modelScale;
+const sizing = new Matrix4().makeScale(SIZE, SIZE, SIZE);
 /** Most engines of one kind drawn at once. */
 const CAPACITY = 64;
 /** The turret stands on the catapult's deck, this high. */
@@ -38,7 +40,7 @@ const BUCKET = { y: 0.04, z: -0.54 };
 /** A wreck tips over this far (radians) in half a second, and sinks faster than a body. */
 const WRECK_TILT = 0.35;
 const WRECK_SINK_START = 1.8;
-const WRECK_SINK_SPEED = 1.1;
+const WRECK_SINK_SPEED = 0.7;
 
 type SiegeKind = Extract<UnitKind, 'ram' | 'catapult'>;
 
@@ -207,7 +209,7 @@ export function createSiegeFleet(catapult: Object3D, rock: Object3D) {
         const dz = unit.z - roll.z;
         // Forward or backward along the way it faces.
         const forward = dx * Math.sin(unit.heading) + dz * Math.cos(unit.heading) < 0 ? -1 : 1;
-        roll.angle += (forward * Math.hypot(dx, dz)) / WHEEL_RADIUS;
+        roll.angle += (forward * Math.hypot(dx, dz)) / (WHEEL_RADIUS * SIZE);
         roll.x = unit.x;
         roll.z = unit.z;
 
@@ -225,6 +227,8 @@ export function createSiegeFleet(catapult: Object3D, rock: Object3D) {
         if (dead !== null) {
           unitMatrix.multiply(step.makeRotationZ(Math.min(1, dead * 2) * WRECK_TILT));
         }
+        // Everything above is modeled full size.
+        unitMatrix.multiply(sizing);
         pieces.forEach((piece, i) => {
           const index = counts[i] as number;
           if (piece.kind !== unit.type || index >= CAPACITY || !piece.place(pose, local)) return;

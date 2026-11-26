@@ -1,4 +1,4 @@
-import { CHARACTER_PACK, UNITS, type UnitKind } from '@roe/game-data';
+import { CHARACTER_PACK, combatOf, SIEGE_MODELS, SIEGE_SIZE, type UnitKind } from '@roe/game-data';
 import type { EntityId } from '@roe/shared';
 import { Vector3, type Camera } from 'three';
 import { renderedUnits } from '../units/renderedUnits';
@@ -7,11 +7,11 @@ import { renderedUnits } from '../units/renderedUnits';
 const UNIT_CENTER_HEIGHT = 0.5 * CHARACTER_PACK.serf.height * CHARACTER_PACK.serf.scale;
 /** A click this close (px) to a unit's center selects it. */
 const CLICK_RADIUS = 18;
-/** Siege engines are much larger: their center is higher and they are easier to hit. */
-const LARGE_CENTER_HEIGHT = 1.1;
-const LARGE_CLICK_RADIUS = 34;
+/** Siege engines are wider than people: easier to hit. */
+const LARGE_CENTER_HEIGHT = 0.5 * SIEGE_MODELS.ram.height * SIEGE_SIZE.modelScale;
+const LARGE_CLICK_RADIUS = 26;
 
-const isLarge = (type: UnitKind) => UNITS[type].radius >= 1;
+const isLarge = (type: UnitKind) => combatOf(type).armorClass === 'siege';
 
 const point = new Vector3();
 

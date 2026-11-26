@@ -1,5 +1,12 @@
 import { useFrame } from '@react-three/fiber';
-import { CHARACTER_PACK, combatOf, isWall, SIEGE_MODELS, type UnitKind } from '@roe/game-data';
+import {
+  CHARACTER_PACK,
+  combatOf,
+  isWall,
+  SIEGE_MODELS,
+  SIEGE_SIZE,
+  type UnitKind,
+} from '@roe/game-data';
 import { buildingMaxHealth, footprintOf } from '@roe/sim';
 import type { EntityId } from '@roe/shared';
 import { useEffect, useMemo, useRef } from 'react';
@@ -37,7 +44,9 @@ const FIGHTER_MODELS: Partial<Record<UnitKind, { height: number; scale: number }
 
 /** Standing height (world units) of each kind, for placing its bar above the head. */
 function heightOf(kind: UnitKind): number {
-  if (kind === 'ram' || kind === 'catapult') return SIEGE_MODELS[kind].height;
+  if (kind === 'ram' || kind === 'catapult') {
+    return SIEGE_MODELS[kind].height * SIEGE_SIZE.modelScale;
+  }
   const model = FIGHTER_MODELS[kind] ?? CHARACTER_PACK.serf;
   return model.height * model.scale;
 }
