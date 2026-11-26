@@ -95,6 +95,8 @@ Abilities are data in game-data `heroes/abilities.ts`: a level, cooldown, cast t
 
 A dead hero leaves a `Grave` in `GameState.graves` (`heroes/graves.ts`), not a unit, so combat never sees it. `updateGraves` runs at the end of the tick: it adds this tick's fallen, advances revivals whose conditions hold (`reviveStatus`, also read by the client's bar) and brings heroes back under their old unit id. Graves stamp sight in `Vision`.
 
+The HUD side is `ui/heroes/HeroStrip.tsx` (all own heroes and graves) and `ui/AbilityBar.tsx` (the active hero: the first selected one), each re-rendering only when its summary string changes.
+
 #### Siege weapons (`combat/siege.ts`)
 
 What siege engines do differently is set by flags on their attack in game-data, never by unit name: `siege` (on its own: towers first, then the nearest building, walls included, then units), `buildingsOnly` (the ram: never targets or fights units; in a unit attack order it attack-moves along), `minRange` (it picks other targets than units that come too close, and backs off from an ordered target or a wall it has to break) and `splash`. A splash shot of a unit carries no damage of its own: it remembers its `weapon` and the spot aimed at (`aim`), and `applySplashImpacts` hits every enemy unit and building around that spot when it lands, so moving units dodge it. A catapult with a target that can walk to within its range shoots over walls instead of breaching them (`standOff` in `breaching.ts`). Toughness against arrows is flat armor; infantry attacks have a `siege` bonus. Separation widens its neighbour search only on ticks where large units are alive, and siege engines take a quarter of a push.

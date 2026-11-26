@@ -6,15 +6,15 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 
 ## Milestones
 
-| #    | Scope                                                                                                                           | Status  |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ✅ Done |
-| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ✅ Done |
-| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ✅ Done |
-| 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ✅ Done |
-| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ✅ Done |
-| 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ⬜      |
-| 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜      |
+| #    | Scope                                                                                                                           | Status    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ✅ Done   |
+| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ✅ Done   |
+| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ✅ Done   |
+| 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ✅ Done   |
+| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ✅ Done   |
+| 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | 👀 Review |
+| 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜        |
 
 ## Units
 
@@ -112,6 +112,14 @@ Cooldowns are unchanged.
 - The `revive` order: fighters attack-move to the grave (they clear enemies, then stand guard); serfs walk there and stay until the hero is back. Right click with units selected on an own grave (revive cursor).
 - The bar over a grave: gold while reviving, grey while it waits for an own unit, red while an enemy is near.
 - Building over a grave is allowed; the hero then rises on the nearest walkable spot.
+
+### As built (6b.6)
+
+- **Hero list** (right, under the settings): every own hero with level, health and experience; a fallen one shows how its revival stands, in the grave bar's colors. Click selects (a fallen one: shows its grave), double click moves the camera.
+- **Selected hero:** experience bar, three ability buttons with Q / E / R, a fill that runs with the cooldown; stats in two columns (the description is a tooltip), so the panel fits 1280 × 720 under the list. With a group selected, the first hero's abilities show under its name.
+- **Balance tests** (`heroBalance.test.ts`): a level 1 Commander beats 2 swordsmen or 3 skeleton warriors, not 3 or 4; a level 1 Archmage beats 4 skeleton minions, not 2 spearmen; level 5 clearly more.
+- **Open balance question:** the two starting heroes **alone, without abilities**, clear the gold camp (Commander 59 of 300 health left), the iron camp, and beat the whole wave with the Town Hall untouched (each in its own simulated game; reported by the test). Cutting their health and damage by up to a third didn't change that. So an army isn't needed to win the prototype map. Not changed yet: it is a gameplay decision.
+- **Performance:** 120 v 120 with six heroes casting: tick mean 0.9 ms, p99 8.6 ms, max 18 ms (a tick has 100 ms). In headless Chrome with 262 units, median frame 16.7 ms (vsync) with and without aiming (p95 about 21 ms); one aim check costs about 0.07 ms.
 
 ## Key decisions (recommendation first)
 

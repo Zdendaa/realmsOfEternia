@@ -121,11 +121,15 @@ function UnitStats({
   const lines = attack ? counters(attack) : null;
   return (
     <>
-      <p className="selection-meta">{definition.description}</p>
+      {/* A hero's panel is tall with its abilities: its description is a tooltip. */}
+      {level === 0 && <p className="selection-meta">{definition.description}</p>}
       <div className="unit-health" title={`${health} / ${max}`}>
         <span style={{ width: `${(health / max) * 100}%` }} />
       </div>
-      <dl className="unit-stats">
+      <dl
+        className={`unit-stats ${level > 0 ? 'is-compact' : ''}`}
+        title={level > 0 ? definition.description : undefined}
+      >
         {level > 0 && (
           <>
             <dt>Level</dt>
@@ -157,8 +161,10 @@ function UnitStats({
             {line}
           </p>
         ))}
-      {lines?.strong && <p className="selection-meta">Strong against {lines.strong}</p>}
-      {lines?.weak && <p className="selection-meta">Weak against {lines.weak}</p>}
+      {level === 0 && lines?.strong && (
+        <p className="selection-meta">Strong against {lines.strong}</p>
+      )}
+      {level === 0 && lines?.weak && <p className="selection-meta">Weak against {lines.weak}</p>}
     </>
   );
 }
@@ -254,7 +260,7 @@ export function UnitPanel({ ids }: { ids: readonly number[] }) {
           .filter(Boolean)
           .join(' · ')}
       </p>
-      <AbilityBar selected={ids} />
+      <AbilityBar selected={ids} named={!single} />
       {fighters ? (
         <CommandBar ids={ids} />
       ) : (

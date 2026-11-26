@@ -2,6 +2,7 @@ import { GameCanvas } from './render/GameCanvas';
 import { AimHint } from './ui/AimHint';
 import { ConstructionMenu } from './ui/ConstructionMenu';
 import { DevSpawnPanel } from './ui/dev/DevSpawnPanel';
+import { HeroStrip } from './ui/heroes/HeroStrip';
 import { Hud } from './ui/Hud';
 import { Minimap } from './ui/minimap/Minimap';
 import { ResourceBar } from './ui/ResourceBar';
@@ -17,6 +18,7 @@ export function App() {
       <Hud />
       <ResourceBar />
       <Minimap />
+      <HeroStrip />
       <ConstructionMenu />
       <SelectionPanel />
       <SelectionBox />

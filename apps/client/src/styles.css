@@ -770,3 +770,122 @@ body,
   color: #f08a7a;
   font-weight: 600;
 }
+
+/* The ability fills back up while it cools down. */
+.ability {
+  position: relative;
+  overflow: hidden;
+}
+
+.ability::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--cooling, 0%);
+  height: 3px;
+  background: var(--hud-accent);
+}
+
+.hero-abilities {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hero-abilities p {
+  margin: 0;
+}
+
+.hero-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hero-bar {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(0 0 0 / 45%);
+  overflow: hidden;
+}
+
+.hero-bar > span {
+  display: block;
+  height: 100%;
+}
+
+.hero-health > span {
+  background: #4fc46a;
+}
+
+.hero-experience > span {
+  background: #6fb6ff;
+}
+
+/* The player's heroes: right side, under the settings. */
+.hero-strip {
+  top: 138px;
+  right: 12px;
+  width: 220px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  color: var(--hud-text);
+  font-size: 12px;
+}
+
+.hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--hud-border);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 6%);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.hero-card:hover {
+  background: rgb(255 255 255 / 14%);
+}
+
+.hero-card.is-selected {
+  border-color: var(--hud-accent);
+}
+
+.hero-card.is-fallen {
+  color: var(--hud-muted);
+}
+
+/* The bar of a fallen hero shows the revival, colored like the one over the grave. */
+.hero-card.is-reviving .hero-health > span {
+  background: #f2b632;
+}
+
+.hero-card.is-noUnit .hero-health > span {
+  background: #9e998c;
+}
+
+.hero-card.is-contested .hero-health > span {
+  background: #d9382b;
+}
+
+.hero-note {
+  font-size: 11px;
+}
+
+/* A hero's stats in two columns. */
+.unit-stats.is-compact {
+  grid-template-columns: auto 1fr auto 1fr;
+  column-gap: 8px;
+}
