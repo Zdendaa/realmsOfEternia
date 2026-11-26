@@ -1,4 +1,4 @@
-import type { SettlementLayout } from '@roe/game-data';
+import { BUILDING_SIGHT, type SettlementLayout } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type EntityId, type PlayerId } from '@roe/shared';
 import { describe, expect, it } from 'vitest';
 import type { Command } from '../commands/types.js';
@@ -17,7 +17,7 @@ import {
   type Vision,
 } from './vision.js';
 
-/** Alice's Town Hall at the origin (sight 14) and a house 30 units east (sight 8), no serfs. */
+/** Alice's Town Hall at the origin and a house 30 units east, no serfs. */
 const LAYOUT: SettlementLayout = {
   buildings: [
     { building: 'townHall', x: 0, z: 0, rotation: 0 },
@@ -76,8 +76,8 @@ describe('vision', () => {
   it('starts with the own buildings’ sight visible and explored, the rest unknown', () => {
     const g = game();
     expect(isVisible(g.alice, 0, 0)).toBe(true);
-    expect(isVisible(g.alice, 0, 13)).toBe(true);
-    expect(isVisible(g.alice, 0, 18)).toBe(false);
+    expect(isVisible(g.alice, 0, BUILDING_SIGHT.townHall - 1)).toBe(true);
+    expect(isVisible(g.alice, 0, BUILDING_SIGHT.townHall + 4)).toBe(false);
     expect(isVisible(g.alice, 30, 6)).toBe(true);
     expect(isExplored(g.alice, -40, -40)).toBe(false);
     // Bob owns nothing yet: he sees nothing, but remembers nothing either.

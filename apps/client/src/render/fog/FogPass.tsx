@@ -21,6 +21,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { useSettingsStore } from '../../state/settingsStore';
+import { FOG_LOOK } from './fogLook';
 import { localVision } from './knowledge';
 
 /** How fast the drawn fog follows the vision (per second): reveals and hides in ~0.3 s. */
@@ -90,8 +91,8 @@ function createFogTexture(vision: Vision) {
 
 /**
  * Darkens the rendered scene by the fog: world position from depth, then the fog
- * texture at that point. Unexplored is black, explored is dim and greyish, visible is
- * untouched; outside the map grid (the border mountains) counts as explored, and the sky
+ * texture at that point. Unexplored is black, explored is a little dimmer and less
+ * colorful (`FOG_LOOK`), visible is untouched; outside the map grid (the border mountains) counts as explored, and the sky
  * (depth 1) is left alone. Tone mapping and the sRGB conversion happen here, as the scene
  * is rendered to a linear target first.
  */
@@ -133,10 +134,13 @@ function createFogMaterial(fog: DataTexture, vision: Vision) {
           vec2 grid = (world.xz - uGrid.xy) / uGrid.zw;
           bool inside = all(greaterThanEqual(grid, vec2(0.0))) && all(lessThanEqual(grid, vec2(1.0)));
           float v = inside ? texture2D(tFog, grid).r : ${EXPLORED.toFixed(2)};
-          // Black → dim (explored) → full light (visible); explored is also greyer.
-          float light = v < 0.5 ? v * 0.9 : 0.45 + (v - 0.5) * 1.1;
+          // Black → explored (0.5) → visible (1); explored is also less colorful.
+          float unseen = clamp(v * 2.0, 0.0, 1.0);
+          float seen = clamp(v * 2.0 - 1.0, 0.0, 1.0);
+          float light = mix(unseen * ${FOG_LOOK.exploredLight.toFixed(3)}, 1.0, seen);
+          float saturation = mix(${FOG_LOOK.exploredSaturation.toFixed(3)}, 1.0, seen);
           float luma = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-          color.rgb = mix(vec3(luma), color.rgb, smoothstep(0.35, 1.0, v)) * light;
+          color.rgb = mix(vec3(luma), color.rgb, saturation) * light;
         }
         gl_FragColor = color;
         #include <tonemapping_fragment>

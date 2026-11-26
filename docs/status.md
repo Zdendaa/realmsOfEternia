@@ -6,58 +6,58 @@ _Last updated: 2026-11-26._
 
 ## Phases
 
-| Phase | Scope                                                                             | Status    |
-| ----- | --------------------------------------------------------------------------------- | --------- |
-| 1     | Monorepo foundation: client, server, shared, game-data, tooling                   | ✅ Done   |
-| 2.1   | Terrain heightmap, atmosphere, forests, RTS camera                                | ✅ Done   |
-| 2.1b  | Camera-following shadows, mountain border ring                                    | ✅ Done   |
-| 2.2   | First settlement with KayKit buildings, terrain flattening, paths                 | ✅ Done   |
-| 2.2b  | Visual tuning: scale, layout, fields, soft paths, props, sun                      | ✅ Done   |
-| 2.3   | Terrain detail shader, muted crops, lake with stylized water                      | ✅ Done   |
-| 2.3b  | Grass tufts and flowers, uniform tree scale, subtler water highlights             | ✅ Done   |
-| 2.3c  | Meadow-scale grass carpet, smaller flowers, calm water with a shoreline foam line | ✅ Done   |
-| 3.1   | `@roe/sim` package; world creation moved out of the client                        | ✅ Done   |
-| 3.2   | Placement rules, commands, game state, unit tests                                 | ✅ Done   |
-| 3.3   | Construction menu, placement preview and placing                                  | ✅ Done   |
-| 4.1   | Sim core: 10 Hz tick, serfs, nav grid + A*, separation, construction, commands    | ✅ Done   |
-| 4.2   | Client tick loop, interpolation, placeholder serfs, recruiting                    | ✅ Done   |
-| 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | ✅ Done   |
-| 4.4   | Construction sites: visuals, progress, right-click assignment                     | ✅ Done   |
-| 4.5   | Character models with baked-animation instancing                                  | ✅ Done   |
-| 4.6   | Context cursors and command markers                                               | ✅ Done   |
-| 5.1   | Resource stock, paid construction costs, resource bar                             | ✅ Done   |
-| 5.2   | Finite trees and rocks, serf gathering, axe/pickaxe cursors                       | ✅ Done   |
-| 5.3   | Carrying visual: walk with held load, low-poly bundles on the rig                 | ✅ Done   |
-| 5.4   | Material delivery to construction sites                                           | ✅ Done   |
-| 5.6   | Workers: lumbermill and quarry                                                    | ✅ Done   |
-| 5b.1  | Population (housing), recruit cost, population indicator                          | ✅ Done   |
-| 5b.2  | Profession looks: hats, tunic colors, tools in hand, new loads                    | ✅ Done   |
-| 5b.3  | Farm: farmer, sow / grow / harvest cycle, grain, walkable fields                  | ✅ Done   |
-| 5b.4  | Mill and bakery: process loop, spinning sails, temporary bakery                   | ✅ Done   |
-| 5b.5  | Gold and iron mines on ore deposits                                               | ✅ Done   |
-| 5b.6  | Hexagon Pack buildings, construction stages, stumps, storehouse, model pruning    | ✅ Done   |
-| 5b    | Economy depth: see [phase-5b-plan.md](phase-5b-plan.md)                           | ✅ Done   |
-| 6.1   | Combat core in the sim: health, counters, melee, arrows, death, attack orders     | ✅ Done   |
-| 6.2   | Soldier visuals: models, weapons, player color, attack timing, arrows, dev spawn  | ✅ Done   |
-| 6.3   | Barracks and archery range: training queue, costs, housing, training panel        | ✅ Done   |
-| 6.4   | Attack commands, attack-move (F), stop (X), health bars, unit panel               | ✅ Done   |
-| 6.5   | Building damage and destruction: health, attacking sites, ruins with smoke        | ✅ Done   |
-| 6.6   | Skeleton camps on the deposits: guards, leash, bounties                           | ✅ Done   |
-| 6.7   | Scripted skeleton wave down the north road at 8 minutes                           | ✅ Done   |
-| 6     | Military and combat: see [phase-6-plan.md](phase-6-plan.md)                       | ✅ Done   |
-| 6c.1  | Vision in the sim: sight ranges, visibility grid, explored, last-seen buildings   | ✅ Done   |
-| 6c.2  | Fog of war drawn: black / grey fog, hidden enemies, last-seen buildings           | ✅ Done   |
-| 6c.3  | Attacks need sight; player views without hidden enemy state (anti-cheat)          | ✅ Done   |
-| 6c.4  | Victory and defeat: map objective, orders refused afterwards, end screen          | ✅ Done   |
-| 6c    | Fog of war and win/lose: see [phase-6c-plan.md](phase-6c-plan.md)                 | ✅ Done   |
-| 7     | Fortifications: see [phase-7-plan.md](phase-7-plan.md)                            | ✅ Done   |
+| Phase | Scope                                                                             | Status  |
+| ----- | --------------------------------------------------------------------------------- | ------- |
+| 1     | Monorepo foundation: client, server, shared, game-data, tooling                   | ✅ Done |
+| 2.1   | Terrain heightmap, atmosphere, forests, RTS camera                                | ✅ Done |
+| 2.1b  | Camera-following shadows, mountain border ring                                    | ✅ Done |
+| 2.2   | First settlement with KayKit buildings, terrain flattening, paths                 | ✅ Done |
+| 2.2b  | Visual tuning: scale, layout, fields, soft paths, props, sun                      | ✅ Done |
+| 2.3   | Terrain detail shader, muted crops, lake with stylized water                      | ✅ Done |
+| 2.3b  | Grass tufts and flowers, uniform tree scale, subtler water highlights             | ✅ Done |
+| 2.3c  | Meadow-scale grass carpet, smaller flowers, calm water with a shoreline foam line | ✅ Done |
+| 3.1   | `@roe/sim` package; world creation moved out of the client                        | ✅ Done |
+| 3.2   | Placement rules, commands, game state, unit tests                                 | ✅ Done |
+| 3.3   | Construction menu, placement preview and placing                                  | ✅ Done |
+| 4.1   | Sim core: 10 Hz tick, serfs, nav grid + A*, separation, construction, commands    | ✅ Done |
+| 4.2   | Client tick loop, interpolation, placeholder serfs, recruiting                    | ✅ Done |
+| 4.3   | Selection (click, box), move command, mouse scheme, edge scrolling                | ✅ Done |
+| 4.4   | Construction sites: visuals, progress, right-click assignment                     | ✅ Done |
+| 4.5   | Character models with baked-animation instancing                                  | ✅ Done |
+| 4.6   | Context cursors and command markers                                               | ✅ Done |
+| 5.1   | Resource stock, paid construction costs, resource bar                             | ✅ Done |
+| 5.2   | Finite trees and rocks, serf gathering, axe/pickaxe cursors                       | ✅ Done |
+| 5.3   | Carrying visual: walk with held load, low-poly bundles on the rig                 | ✅ Done |
+| 5.4   | Material delivery to construction sites                                           | ✅ Done |
+| 5.6   | Workers: lumbermill and quarry                                                    | ✅ Done |
+| 5b.1  | Population (housing), recruit cost, population indicator                          | ✅ Done |
+| 5b.2  | Profession looks: hats, tunic colors, tools in hand, new loads                    | ✅ Done |
+| 5b.3  | Farm: farmer, sow / grow / harvest cycle, grain, walkable fields                  | ✅ Done |
+| 5b.4  | Mill and bakery: process loop, spinning sails, temporary bakery                   | ✅ Done |
+| 5b.5  | Gold and iron mines on ore deposits                                               | ✅ Done |
+| 5b.6  | Hexagon Pack buildings, construction stages, stumps, storehouse, model pruning    | ✅ Done |
+| 5b    | Economy depth: see [phase-5b-plan.md](phase-5b-plan.md)                           | ✅ Done |
+| 6.1   | Combat core in the sim: health, counters, melee, arrows, death, attack orders     | ✅ Done |
+| 6.2   | Soldier visuals: models, weapons, player color, attack timing, arrows, dev spawn  | ✅ Done |
+| 6.3   | Barracks and archery range: training queue, costs, housing, training panel        | ✅ Done |
+| 6.4   | Attack commands, attack-move (F), stop (X), health bars, unit panel               | ✅ Done |
+| 6.5   | Building damage and destruction: health, attacking sites, ruins with smoke        | ✅ Done |
+| 6.6   | Skeleton camps on the deposits: guards, leash, bounties                           | ✅ Done |
+| 6.7   | Scripted skeleton wave down the north road at 8 minutes                           | ✅ Done |
+| 6     | Military and combat: see [phase-6-plan.md](phase-6-plan.md)                       | ✅ Done |
+| 6c.1  | Vision in the sim: sight ranges, visibility grid, explored, last-seen buildings   | ✅ Done |
+| 6c.2  | Fog of war drawn: black / grey fog, hidden enemies, last-seen buildings           | ✅ Done |
+| 6c.3  | Attacks need sight; player views without hidden enemy state (anti-cheat)          | ✅ Done |
+| 6c.4  | Victory and defeat: map objective, orders refused afterwards, end screen          | ✅ Done |
+| 6c    | Fog of war and win/lose: see [phase-6c-plan.md](phase-6c-plan.md)                 | ✅ Done |
+| 7     | Fortifications: see [phase-7-plan.md](phase-7-plan.md)                            | ✅ Done |
 
 ## What works today
 
 - **World:** a 240×240 playable map generated deterministically from a seed. It has rolling hills, a flat 40×40 settlement plateau, noise-clustered forests, scattered rocks, one lake, and about 41,000 instanced grass patches (a short meadow carpet) with about 950 flower clusters. A ring of forested mountains surrounds the map and fades into the fog.
 - **Settlement:** a Town Hall, a market, a well, six houses, a mill with two 2×3 fields and a lumbermill (workers: a woodcutter, a miller and two farmers; population 9 / 34), connected by dirt paths. Two roads leave toward the map edge.
 - **Building style:** the buildings are KayKit Medieval Hexagon Pack models at 4× (slightly larger than units, as in most RTS games): a tall castle as the Town Hall (3.5×, about 14 units high, the village landmark), two house styles (half-timbered cottage and a taller house with steps) that alternate by building id, a roofed well, a windmill whose sails turn while the miller works, a lumbermill (its saw blade turns while the woodcutter prepares wood), a market with stalls, the bakery and the mines. Roofs, banners and trims take the owner's color (blue for the local player; neutral buildings keep the pack's yellow), keeping the roof shading. Every building stands in a trampled dirt yard that reaches about two units past its walls and widens in front of the entrance; placed buildings get theirs when they are placed. Fields and the quarry keep their Builder Pack models (the Hexagon pack has no 2 × 3 field or quarry).
-- **Fog of war:** the map starts black except around your village. Your units and buildings reveal what they see (serf and worker 7, swordsman and spearman 10, archer 12, buildings 8, Town Hall 14); places you have seen but don't see now stay in a dim grey fog: terrain and buildings as you last saw them (a building destroyed out of sight stays there until you look again), but no units. The fog moves softly as units walk. Enemy units and arrows out of sight aren't drawn, so the skeleton camps are a surprise until scouted. The border mountains outside the map are shown dim. You can only order attacks on what you see: the sword cursor doesn't appear over buildings remembered in the fog. Dev builds have a "Reveal map" switch in the Dev spawn panel.
+- **Fog of war:** the map starts black except around your village. Your units and buildings reveal what they see (serf and worker 7, swordsman and spearman 10, archer 12, buildings 18, Town Hall 28, towers 22–27, walls 8, all in game-data `buildings/sight.ts`); places you have seen but don't see now stay in a dim grey fog: terrain and buildings as you last saw them (a building destroyed out of sight stays there until you look again), but no units. The fog moves softly as units walk. Enemy units and arrows out of sight aren't drawn, so the skeleton camps are a surprise until scouted. The border mountains outside the map are shown dim. You can only order attacks on what you see: the sword cursor doesn't appear over buildings remembered in the fog. Dev builds have a "Reveal map" switch in the Dev spawn panel.
 - **Victory and defeat:** you win when every scripted wave has been sent and no skeleton is left (both camps cleared, the horde beaten), and you lose when your Town Hall falls (if both happen on the same tick, it is a defeat). An end screen shows the result, the time, soldiers trained, enemies killed and buildings lost. "Continue watching" closes it and leaves a small "Victory / Defeat · watching" badge; the game keeps running, but your orders are refused. "New game" reloads the page. In a dev build the Dev spawn panel still works after the end.
 - **Walls:** pick Palisade (1 wood per segment, weak, quick) or Stone Wall (2 stone, 3.5× the health: 1,400 against 400, slow to build) in the construction menu and **drag** on the ground. The line snaps to 8 directions; the preview shows each segment green (will be built), amber (the stock runs out before it), red (blocked) or grey (already stands), with the segment count and total cost. Blocked segments are left out; when the stock can't pay for the whole line, as many segments as it can pay for are built, from where the drag started. The tool stays active (Esc or right click ends it; another button during a drag calls the line off), and a drag starting near the end of a wall continues from it, so corners connect with a post. Serfs carry the material over and build segment by segment. Walls block walking, can be attacked and fall one segment at a time into rubble. A warning appears when a line would shut your own units or building sites off from the rest of the map with no gate to leave by.
 - **Gates:** select one of your wall segments and press **Make gate** (palisade gate: 3 wood; stone gate: 3 stone, 2 wood; a segment still being built is refunded). Serfs build it; until it is finished it blocks like a wall. A finished gate lets your units through and nobody else, and its doors swing open when your units come close. Enemies have to break it (it is weaker than the wall around it).

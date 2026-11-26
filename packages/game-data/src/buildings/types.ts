@@ -261,6 +261,6 @@ export interface BuildingDefinition {
    * Construction sites have a share of it that grows with their progress.
    */
   health?: number;
-  /** How far it sees in the fog of war (world units); absent: `DEFAULT_BUILDING_SIGHT`. */
+  /** How far it sees in the fog of war (world units); absent: `BUILDING_SIGHT.default` (see sight.ts). */
   sight?: number;
 }

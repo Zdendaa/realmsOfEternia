@@ -26,11 +26,11 @@ export {
   modelPathOf,
   buildingHealthOf,
   buildingSightOf,
-  DEFAULT_BUILDING_SIGHT,
   productionOf,
   trainsOf,
   type BuildingId,
 } from './buildings/definitions.js';
+export { BUILDING_SIGHT } from './buildings/sight.js';
 export { WALL_RULES } from './buildings/walls.js';
 export { tileOffsets } from './buildings/tiling.js';
 export type {

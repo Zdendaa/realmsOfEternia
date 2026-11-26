@@ -1,4 +1,11 @@
-import { BUILDINGS, combatOf, RESOURCE_IDS, towerOf, upgradesOf } from '@roe/game-data';
+import {
+  BUILDING_SIGHT,
+  BUILDINGS,
+  combatOf,
+  RESOURCE_IDS,
+  towerOf,
+  upgradesOf,
+} from '@roe/game-data';
 import type { BuildingId, ResourceAmounts, SettlementLayout, UnitKind } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type EntityId } from '@roe/shared';
 import { describe, expect, it } from 'vitest';
@@ -126,12 +133,12 @@ describe('tower upgrades', () => {
   it('see farther once done', () => {
     const g = game();
     const vision = ensureVision(g.ctx, 'alice', g.state);
-    // 13.5 east of the tower: past the wooden tower's sight (13), within the stone one's.
-    const far = { x: 14.5, z: SPOT.z };
+    // East of the tower: past the wooden tower's sight, within the stone one's.
+    const far = { x: SPOT.x + BUILDING_SIGHT.woodenTower + 2, z: SPOT.z };
     expect(isVisible(vision, far.x, far.z)).toBe(false);
     g.upgrade('stoneTower');
     g.run(seconds(BUILDINGS.stoneTower.buildTime) + 2);
-    expect(isVisible(vision, far.x - 1, far.z)).toBe(true);
+    expect(isVisible(vision, far.x, far.z)).toBe(true);
   });
 
   it('can be called off for a full refund', () => {

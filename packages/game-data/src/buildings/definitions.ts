@@ -1,6 +1,7 @@
 import { HEXAGON_PACK } from '../assets/hexagonPack.js';
 import { MEDIEVAL_PACK } from '../assets/medievalPack.js';
 import type { UnitKind } from '../units/definitions.js';
+import { BUILDING_SIGHT } from './sight.js';
 import type { BuildingDefinition } from './types.js';
 import { WALL_RULES } from './walls.js';
 
@@ -57,7 +58,7 @@ export const BUILDINGS = {
     scale: 3.5,
     // The heart of the village: much sturdier than its size alone gives, and it sees far.
     health: 3000,
-    sight: 14,
+    sight: BUILDING_SIGHT.townHall,
     footprint: { w: 7, d: 8 },
     yard: true,
     rotationOffset: 0,
@@ -343,7 +344,7 @@ export const BUILDINGS = {
     buildTime: 4,
     maxBuilders: 2,
     health: 400,
-    sight: 3,
+    sight: BUILDING_SIGHT.wall,
   },
   stoneWall: {
     id: 'stoneWall',
@@ -372,7 +373,7 @@ export const BUILDINGS = {
     buildTime: 10,
     maxBuilders: 2,
     health: 1400,
-    sight: 3,
+    sight: BUILDING_SIGHT.wall,
   },
   palisadeGate: {
     id: 'palisadeGate',
@@ -398,7 +399,7 @@ export const BUILDINGS = {
     buildTime: 8,
     maxBuilders: 2,
     health: 300,
-    sight: 3,
+    sight: BUILDING_SIGHT.wall,
   },
   stoneGate: {
     id: 'stoneGate',
@@ -432,7 +433,7 @@ export const BUILDINGS = {
     buildTime: 15,
     maxBuilders: 2,
     health: 1100,
-    sight: 3,
+    sight: BUILDING_SIGHT.wall,
   },
   woodenTower: {
     id: 'woodenTower',
@@ -449,7 +450,7 @@ export const BUILDINGS = {
     buildTime: 25,
     maxBuilders: 3,
     health: 600,
-    sight: 13,
+    sight: BUILDING_SIGHT.woodenTower,
     upgradesTo: ['stoneTower'],
     tower: {
       attack: {
@@ -478,7 +479,7 @@ export const BUILDINGS = {
     buildTime: 30,
     maxBuilders: 3,
     health: 1200,
-    sight: 14,
+    sight: BUILDING_SIGHT.stoneTower,
     upgradesTo: ['crossbowTower', 'magicTower', 'fireTower'],
     tower: {
       attack: {
@@ -509,7 +510,7 @@ export const BUILDINGS = {
     buildTime: 35,
     maxBuilders: 3,
     health: 1200,
-    sight: 15,
+    sight: BUILDING_SIGHT.crossbowTower,
     tower: {
       attack: {
         kind: 'ranged',
@@ -541,7 +542,7 @@ export const BUILDINGS = {
     buildTime: 35,
     maxBuilders: 3,
     health: 1400,
-    sight: 14,
+    sight: BUILDING_SIGHT.magicTower,
     tower: {
       attack: {
         kind: 'ranged',
@@ -573,7 +574,7 @@ export const BUILDINGS = {
     buildTime: 35,
     maxBuilders: 3,
     health: 1100,
-    sight: 13,
+    sight: BUILDING_SIGHT.fireTower,
     tower: {
       attack: {
         kind: 'ranged',
@@ -635,12 +636,9 @@ export function buildingHealthOf(type: BuildingId): number {
   return Math.max(MIN_BUILDING_HEALTH, Math.round(w * d * HEALTH_PER_AREA));
 }
 
-/** Sight of buildings without their own `sight` (world units). */
-export const DEFAULT_BUILDING_SIGHT = 8;
-
 /** How far a building of this type sees in the fog of war. */
 export const buildingSightOf = (type: BuildingId): number =>
-  (BUILDINGS[type] as BuildingDefinition).sight ?? DEFAULT_BUILDING_SIGHT;
+  (BUILDINGS[type] as BuildingDefinition).sight ?? BUILDING_SIGHT.default;
 
 /** The units a building type trains (empty for most buildings). */
 export const trainsOf = (type: BuildingId): readonly UnitKind[] =>
