@@ -13,6 +13,7 @@ import { MINIMAP_REDRAW_MS, MINIMAP_SIZE } from './constants';
 import {
   createGroundImage,
   drawBuildings,
+  drawGraves,
   drawTerrain,
   drawUnits,
   drawView,
@@ -61,6 +62,8 @@ function createPainter(canvas: HTMLCanvasElement, pixelRatio: number) {
       context.drawImage(fog.canvas, 0, 0, covered, covered);
     }
     drawUnits(context, state.units, (u) => shownAt(u.ownerId, u.x, u.z), transform, pixelRatio);
+    const graves = state.graves.filter((g) => shownAt(g.ownerId, g.x, g.z));
+    drawGraves(context, graves, transform, pixelRatio);
     const rig = cameraRig.current;
     if (rig) drawView(context, rig.viewCorners(), transform, pixelRatio);
   };

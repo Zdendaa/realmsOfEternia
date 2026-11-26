@@ -62,6 +62,34 @@ export function unitAt(
   return best;
 }
 
+/** The headstone's middle, above its ground point. */
+const GRAVE_CENTER_HEIGHT = 0.6;
+const GRAVE_CLICK_RADIUS = 24;
+
+/** The grave drawn under client point (x, y), if any (screen-space, like units). */
+export function graveAt(
+  graves: readonly { id: EntityId; x: number; y: number; z: number }[],
+  camera: Camera,
+  rect: ScreenRect,
+  x: number,
+  y: number,
+): EntityId | null {
+  let best: EntityId | null = null;
+  let bestDistance = GRAVE_CLICK_RADIUS;
+  for (const grave of graves) {
+    point.set(grave.x, grave.y + GRAVE_CENTER_HEIGHT, grave.z).project(camera);
+    if (point.z > 1 || point.z < -1) continue;
+    const dx = rect.left + ((point.x + 1) / 2) * rect.width - x;
+    const dy = rect.top + ((1 - point.y) / 2) * rect.height - y;
+    const distance = Math.hypot(dx, dy);
+    if (distance < bestDistance) {
+      best = grave.id;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
 /** Candidates whose screen position lies inside the rectangle spanned by two corners. */
 export function unitsInBox(
   candidates: readonly EntityId[],

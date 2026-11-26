@@ -1,6 +1,13 @@
 import { useFrame } from '@react-three/fiber';
 import { CHARACTER_PACK, isWall, SIEGE_MODELS, SIEGE_SIZE, type UnitKind } from '@roe/game-data';
-import { buildingMaxHealth, footprintOf, maxHealthOf } from '@roe/sim';
+import {
+  buildingMaxHealth,
+  footprintOf,
+  maxHealthOf,
+  REVIVE_TICKS,
+  reviveStatus,
+  type ReviveStatus,
+} from '@roe/sim';
 import type { EntityId } from '@roe/shared';
 import { useEffect, useMemo, useRef } from 'react';
 import {
@@ -47,11 +54,19 @@ function heightOf(kind: UnitKind): number {
 
 const matrix = new Matrix4();
 
+/** A grave's bar: wider than a unit's, above the headstone. */
+const GRAVE_BAR_SCALE = 1.6;
+const GRAVE_BAR_HEIGHT = 1.9;
+/** `aBar.y` of a grave's bar by how the revival stands (0 and 1 are health bars). */
+const REVIVE_LOOK: Record<ReviveStatus, number> = { reviving: 2, noUnit: 3, contested: 4 };
+
 /**
  * Billboarded bars: the instance matrix only places the bar (translation); the vertex
  * shader spreads the quad in view space so it always faces the camera. Per instance
  * `aBar` = (health fraction, 1 for the local player's units / 0 for others). The fill is
  * green → yellow → red with the health; own bars have a light frame, others a red one.
+ * A grave's bar (`aBar.y` 2 to 4) fills with the revival: gold while it goes on, grey
+ * while it waits for an own unit, red while enemies are near.
  */
 function createBarMaterial() {
   return new ShaderMaterial({
@@ -86,6 +101,13 @@ function createBarMaterial() {
           ? mix(vec3(0.95, 0.8, 0.2), vec3(0.3, 0.8, 0.3), (fill - 0.5) * 2.0)
           : mix(vec3(0.85, 0.2, 0.15), vec3(0.95, 0.8, 0.2), fill * 2.0);
         vec3 color = frame ? frameColor : (vUv.x <= fill ? healthColor : vec3(0.08, 0.07, 0.06));
+        if (vBar.y > 1.5) {
+          vec3 state = vBar.y < 2.5
+            ? vec3(0.95, 0.72, 0.2)
+            : vBar.y < 3.5 ? vec3(0.62, 0.6, 0.55) : vec3(0.85, 0.22, 0.17);
+          // Waiting or held up, the whole frame says so even at no progress.
+          color = frame ? state : (vUv.x <= fill ? state : vec3(0.08, 0.07, 0.06));
+        }
         gl_FragColor = vec4(color, frame ? 0.95 : 0.85);
         #include <colorspace_fragment>
       }
@@ -115,10 +137,10 @@ function createHealthBars() {
 
   /** Writes one bar; returns false when the mesh is full. */
   let count = 0;
-  const write = (fill: number, own: boolean) => {
+  const write = (fill: number, look: number) => {
     mesh.setMatrixAt(count, matrix);
     values[count * 2] = Math.max(0, fill);
-    values[count * 2 + 1] = own ? 1 : 0;
+    values[count * 2 + 1] = look;
     count++;
     return count < CAPACITY;
   };
@@ -140,7 +162,7 @@ function createHealthBars() {
       const [left, max] = health.get(unit.id) ?? [1, 1];
       if (!all && left >= max && !selected.has(unit.id)) continue;
       matrix.makeTranslation(unit.x, unit.y + heightOf(unit.type) + BAR_GAP, unit.z);
-      if (!write(left / max, unit.ownerId === LOCAL_PLAYER)) return;
+      if (!write(left / max, unit.ownerId === LOCAL_PLAYER ? 1 : 0)) return;
     }
   }
 
@@ -162,7 +184,23 @@ function createHealthBars() {
         heights.getHeightAt(building.x, building.z) + lift,
         building.z,
       );
-      if (!write((max - damage) / max, building.ownerId === LOCAL_PLAYER)) return;
+      if (!write((max - damage) / max, building.ownerId === LOCAL_PLAYER ? 1 : 0)) return;
+    }
+  }
+
+  /** How far each grave's revival is, and whether it goes on. */
+  function writeGraves() {
+    const { state, heights } = useGameStore.getState();
+    for (const grave of state.graves) {
+      if (!shownAt(grave.ownerId, grave.x, grave.z)) continue;
+      matrix.makeScale(GRAVE_BAR_SCALE, 1, 1);
+      matrix.setPosition(
+        grave.x,
+        heights.getHeightAt(grave.x, grave.z) + GRAVE_BAR_HEIGHT,
+        grave.z,
+      );
+      const look = REVIVE_LOOK[reviveStatus(grave, state.units)];
+      if (!write(grave.progress / REVIVE_TICKS, look)) return;
     }
   }
 
@@ -173,6 +211,7 @@ function createHealthBars() {
       count = 0;
       writeUnits(all);
       if (count < CAPACITY) writeBuildings(all);
+      if (count < CAPACITY) writeGraves();
       mesh.count = count;
       mesh.visible = count > 0;
       if (count > 0) {

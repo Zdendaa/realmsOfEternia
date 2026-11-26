@@ -47,6 +47,8 @@ export type UnitTask =
    * until the tick `castAt` (null while still on the way), when it takes effect.
    */
   | { kind: 'cast'; ability: AbilityId; target: CastTarget | null; castAt: number | null }
+  /** Go to a fallen hero's grave and stay by it until the hero is back (non-fighters). */
+  | { kind: 'revive'; graveId: EntityId }
   /** Walk to a point, fighting every enemy met on the way. */
   | { kind: 'attackMove'; x: number; z: number };
 

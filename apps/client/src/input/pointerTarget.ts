@@ -12,7 +12,7 @@ import {
 import { Raycaster, Vector2, Vector3, type Camera } from 'three';
 import { knownBuildings } from '../render/fog/knowledge';
 import { pickBuilding } from '../render/picking/pickBuilding';
-import { unitAt } from '../render/picking/screenPick';
+import { graveAt, unitAt } from '../render/picking/screenPick';
 import { pickGround } from '../render/placement/groundPick';
 import { LOCAL_PLAYER, useGameStore } from '../state/gameStore';
 
@@ -44,6 +44,8 @@ export interface PointerTarget {
   unitId: EntityId | null;
   /** A living enemy unit drawn under the pointer (when no own unit is). */
   enemyId: EntityId | null;
+  /** An own fallen hero's grave under the pointer. */
+  graveId: EntityId | null;
   /** The building whose box the ray hits first. */
   building: BuildingInstance | null;
   /** Where the ray hits the terrain; null if it misses (sky, beyond the map). */
@@ -125,6 +127,10 @@ export function pickPointerTarget(
 
   const unitId = unitAt(ownUnitIds(), camera, rect, x, y);
   const enemyId = unitId === null ? unitAt(enemyUnitIds(), camera, rect, x, y) : null;
+  const graves = state.graves
+    .filter((g) => g.ownerId === LOCAL_PLAYER)
+    .map((g) => ({ id: g.id, x: g.x, y: heights.getHeightAt(g.x, g.z), z: g.z }));
+  const graveId = graves.length > 0 ? graveAt(graves, camera, rect, x, y) : null;
   const building = pickBuilding(ray, knownBuildings(state), heights);
   let ground: GroundTarget | null = null;
   if (pickGround(ray, heights, hit)) {
@@ -141,5 +147,5 @@ export function pickPointerTarget(
         resource !== null && remainingAmount(world, state.resourceNodes, resource.id) > 0,
     };
   }
-  return { unitId, enemyId, building, ground };
+  return { unitId, enemyId, graveId, building, ground };
 }

@@ -58,6 +58,7 @@ import type {
   DebugFortCommand,
   DebugExperienceCommand,
   UseAbilityCommand,
+  ReviveCommand,
   GatherCommand,
   MoveUnitsCommand,
   PlaceBuildingCommand,
@@ -111,6 +112,8 @@ export type CommandIssue =
   | 'noTarget'
   /** The attack target isn't an enemy of the issuer. */
   | 'notEnemy'
+  /** The issuer has no fallen hero there. */
+  | 'noGrave'
   /** The unit has no such ability. */
   | 'noSuchAbility'
   /** The hero's level doesn't unlock it yet. */
@@ -460,9 +463,14 @@ export function validateCommand(
       if (!check.ok || !isHeroId(command.unit)) return check;
       // A hero needs an owner without one of that type yet, and comes alone.
       const owner = command.owner === undefined ? issuer : command.owner;
-      const taken = owner === null || hasHero(state.units, owner, command.unit);
+      const taken = owner === null || hasHero(state, owner, command.unit);
       return taken ? fail('heroExists') : OK;
     }
+    case 'revive':
+      if (!state.graves.some((g) => g.id === command.graveId && g.ownerId === issuer)) {
+        return fail('noGrave');
+      }
+      return ownUnits(state, issuer, command.unitIds).length > 0 ? OK : fail('noUnits');
     case 'useAbility':
       return checkAbility(ctx, state, issuer, command);
     case 'debugExperience':
@@ -633,6 +641,24 @@ function useAbility(state: GameState, issuer: PlayerId, command: UseAbilityComma
       activity: goal ? 'walking' : 'idle',
       combat: freshCombat(hero),
     });
+  }
+  return { ...state, units: replaceUnits(state.units, changed) };
+}
+
+/**
+ * Fighters attack-move to the grave (revival needs the spot clear of enemies, and then
+ * they stand guard); the others walk there and stay until the hero is back.
+ */
+function revive(state: GameState, issuer: PlayerId, command: ReviveCommand): GameState {
+  const grave = state.graves.find((g) => g.id === command.graveId);
+  if (!grave) return state;
+  const units = ownUnits(state, issuer, command.unitIds);
+  const changed = sendGroup(units, grave.x, grave.z, true);
+  for (const unit of units) {
+    const sent = changed.get(unit.id);
+    if (sent && !unit.combat) {
+      changed.set(unit.id, { ...sent, task: { kind: 'revive', graveId: grave.id } });
+    }
   }
   return { ...state, units: replaceUnits(state.units, changed) };
 }
@@ -885,6 +911,8 @@ export function applyCommand(
       return { ok: true, state: debugWave(ctx, state) };
     case 'debugResources':
       return { ok: true, state: debugResources(state, issuer) };
+    case 'revive':
+      return { ok: true, state: revive(state, issuer, command) };
     case 'useAbility':
       return { ok: true, state: useAbility(state, issuer, command) };
     case 'debugExperience':

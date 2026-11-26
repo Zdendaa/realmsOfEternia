@@ -170,6 +170,16 @@ export interface DebugFortCommand {
 }
 
 /**
+ * Send units to a fallen hero's grave to revive it: fighters attack-move there, others
+ * walk there and stay. (Any own unit standing close counts, ordered or not.)
+ */
+export interface ReviveCommand {
+  type: 'revive';
+  unitIds: EntityId[];
+  graveId: EntityId;
+}
+
+/**
  * A hero uses an ability: at nothing (around itself), a point, or a building, as the
  * ability asks. It walks into range first.
  */
@@ -188,6 +198,7 @@ export interface DebugExperienceCommand {
 }
 
 export type Command =
+  | ReviveCommand
   | UseAbilityCommand
   | PlaceBuildingCommand
   | PlaceWallCommand
@@ -338,6 +349,11 @@ export function parseCommand(input: unknown): Command | null {
       return { type: 'debugWave' };
     case 'debugResources':
       return { type: 'debugResources' };
+    case 'revive': {
+      const unitIds = parseUnitIds(data.unitIds);
+      if (!unitIds || !isEntityId(data.graveId)) return null;
+      return { type: 'revive', unitIds, graveId: data.graveId };
+    }
     case 'useAbility': {
       const { unitId, ability, target } = data;
       if (!isEntityId(unitId) || !isAbilityId(ability)) return null;

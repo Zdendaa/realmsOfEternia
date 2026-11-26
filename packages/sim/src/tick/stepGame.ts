@@ -10,6 +10,7 @@ import { updateFighters } from '../combat/fighting.js';
 import { landProjectiles, type Projectile } from '../combat/projectiles.js';
 import { updateAbilities } from '../heroes/abilities.js';
 import { grantExperience } from '../heroes/heroes.js';
+import { updateGraves } from '../heroes/graves.js';
 import { progressConstruction } from '../construction/construction.js';
 import { progressRepairs } from '../construction/repair.js';
 import { progressTraining } from '../training/training.js';
@@ -158,6 +159,8 @@ export function stepGame(
   );
   const nextEntityId = waves.nextEntityId;
   const remaining = removeCorpses(units, current.tick);
+  // Fallen heroes leave graves; revivals move on.
+  const graves = updateGraves(ctx, remaining, current.graves, deaths);
   const projectiles = released.length > 0 ? [...flying, ...released] : flying;
 
   // End-screen numbers, counted as things happen.
@@ -188,6 +191,7 @@ export function stepGame(
     wavesSent: waves.wavesSent,
     lastWaveAt: waves.sentNow ? current.tick : current.lastWaveAt,
     stats,
+    graves,
     casts: magic.casts,
     reveals: magic.reveals,
     projectiles,

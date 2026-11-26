@@ -126,6 +126,14 @@ function commandSelected(element: HTMLElement, camera: Camera, x: number, y: num
   const { dispatch, heights } = useGameStore.getState();
   if (intent.kind === 'attack') {
     attackUnit(unitIds, intent.targetId);
+  } else if (intent.kind === 'revive') {
+    const { state } = useGameStore.getState();
+    const grave = state.graves.find((g) => g.id === intent.graveId);
+    const result = dispatch({ type: 'revive', unitIds: [...unitIds], graveId: intent.graveId });
+    if (result.ok && grave) {
+      const y = heights.getHeightAt(grave.x, grave.z);
+      commandFeedback.push({ kind: 'move', x: grave.x, y, z: grave.z });
+    }
   } else if (intent.kind === 'build' && target.building) {
     const site = target.building;
     const result = dispatch({ type: 'assignBuilders', unitIds: [...unitIds], siteId: site.id });

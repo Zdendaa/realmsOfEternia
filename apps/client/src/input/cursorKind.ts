@@ -7,7 +7,16 @@ import type { PointerTarget } from './pointerTarget';
 
 /** Cursor shapes over the 3D view; styled in `ui/cursors/cursors.css`. */
 export type CursorKind =
-  'default' | 'select' | 'move' | 'build' | 'blocked' | 'chop' | 'mine' | 'attack' | 'aim';
+  | 'default'
+  | 'select'
+  | 'move'
+  | 'build'
+  | 'blocked'
+  | 'chop'
+  | 'mine'
+  | 'attack'
+  | 'aim'
+  | 'revive';
 
 /** Cursor over a harvestable tree or rock while serfs are selected (only they gather). */
 const RESOURCE_CURSOR: Record<DecorationKind, CursorKind> = {
@@ -18,6 +27,7 @@ const RESOURCE_CURSOR: Record<DecorationKind, CursorKind> = {
 /** What right click would do with the current selection. */
 export type CommandIntent =
   | { kind: 'attack'; targetId: EntityId }
+  | { kind: 'revive'; graveId: EntityId }
   | { kind: 'build'; siteId: EntityId }
   | { kind: 'repair'; buildingId: EntityId }
   /** (x, z): the clicked point, sent to the sim; `destination`: where the units end up. */
@@ -53,6 +63,9 @@ export function commandIntent(target: PointerTarget, selection: SelectionKinds):
   const { fighters, serfs } = selection;
   if (selection.hitsUnits && target.enemyId !== null) {
     return { kind: 'attack', targetId: target.enemyId };
+  }
+  if (selection.units && target.graveId !== null) {
+    return { kind: 'revive', graveId: target.graveId };
   }
   if (
     fighters &&

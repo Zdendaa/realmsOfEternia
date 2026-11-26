@@ -12,7 +12,7 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 | 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ✅ Done |
 | 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ✅ Done |
 | 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ✅ Done |
-| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ⬜      |
+| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ✅ Done |
 | 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ⬜      |
 | 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜      |
 
@@ -104,6 +104,14 @@ Cooldowns are unchanged.
 - Boosts of one kind don't stack (the newest wins); a weaker, shorter slow doesn't replace a stronger one.
 - A spell's kill counts as the hero's own for experience and bounty.
 - A placeholder ring shows where an ability takes effect. The ability buttons are in the selected hero's panel; the rest of the hero panel comes in 6b.6.
+
+### As built (6b.5)
+
+- Decision 8 as written (numbers in `HERO_RULES`): the grave reveals 6 units around it; revival needs an own unit within 4 and no enemy **unit** within 8 (enemy towers and buildings don't count); 30 s, pausing but never lost; back at half health with level, experience and cooldowns; free.
+- Graves are their own list in the state, so nothing can target them. A fallen hero still counts against the one-per-type rule, and doesn't keep a player in the game.
+- The `revive` order: fighters attack-move to the grave (they clear enemies, then stand guard); serfs walk there and stay until the hero is back. Right click with units selected on an own grave (revive cursor).
+- The bar over a grave: gold while reviving, grey while it waits for an own unit, red while an enemy is near.
+- Building over a grave is allowed; the hero then rises on the nearest walkable spot.
 
 ## Key decisions (recommendation first)
 

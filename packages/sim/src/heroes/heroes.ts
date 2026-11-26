@@ -27,9 +27,14 @@ export type SpawnHeroResult =
   | { ok: true; state: GameState; unitId: EntityId }
   | { ok: false; state: GameState; issue: SpawnHeroIssue };
 
-/** Whether `owner` already has this hero (a fallen one still counts). */
-export const hasHero = (units: readonly UnitInstance[], owner: PlayerId, hero: HeroId) =>
-  units.some((u) => u.type === hero && u.ownerId === owner);
+/** Whether `owner` already has this hero (a fallen one, in its grave, still counts). */
+export const hasHero = (
+  { units, graves }: Pick<GameState, 'units' | 'graves'>,
+  owner: PlayerId,
+  hero: HeroId,
+) =>
+  units.some((u) => u.type === hero && u.ownerId === owner) ||
+  graves.some((g) => g.hero === hero && g.ownerId === owner);
 
 /**
  * Creates `hero` for `owner` at `at`. Every hero is created here, so the rule of at most
@@ -42,7 +47,7 @@ export function spawnHero(
   at: Vec2,
 ): SpawnHeroResult {
   if (!isHeroId(hero)) return { ok: false, state, issue: 'unknownHero' };
-  if (hasHero(state.units, owner, hero)) return { ok: false, state, issue: 'heroExists' };
+  if (hasHero(state, owner, hero)) return { ok: false, state, issue: 'heroExists' };
   const unitId = state.nextEntityId;
   const unit = createUnit(unitId, hero, owner, at);
   return {

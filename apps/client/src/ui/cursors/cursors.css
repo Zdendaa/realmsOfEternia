@@ -107,3 +107,16 @@
 .game-canvas canvas[data-cursor='aim'] {
   cursor: crosshair;
 }
+
+/* Revive a fallen hero: a golden ring with an arrow rising from it. */
+.game-canvas canvas[data-cursor='revive'] {
+  cursor:
+    url('./revive.svg') 32 32,
+    pointer;
+  cursor:
+    -webkit-image-set(url('./revive.svg') 2x) 16 16,
+    pointer;
+  cursor:
+    image-set(url('./revive.svg') 2x) 16 16,
+    pointer;
+}

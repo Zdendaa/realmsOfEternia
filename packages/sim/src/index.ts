@@ -18,6 +18,7 @@ export {
   type DebugFortCommand,
   type DebugExperienceCommand,
   type UseAbilityCommand,
+  type ReviveCommand,
   type DebugWaveCommand,
   type GatherCommand,
   type IssuedCommand,
@@ -177,3 +178,4 @@ export {
 } from './heroes/abilities.js';
 export { boostOf, isStunned } from './heroes/status.js';
 export type { CastTarget } from './state/units.js';
+export { REVIVE_TICKS, reviveStatus, type Grave, type ReviveStatus } from './heroes/graves.js';

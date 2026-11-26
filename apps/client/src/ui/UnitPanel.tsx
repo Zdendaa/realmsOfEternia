@@ -260,7 +260,7 @@ export function UnitPanel({ ids }: { ids: readonly number[] }) {
       ) : (
         <p className="selection-meta">
           Right-click: move · a construction site: build · a damaged building: repair · a tree or
-          rock: gather
+          rock: gather · a fallen hero’s grave: revive
         </p>
       )}
     </section>

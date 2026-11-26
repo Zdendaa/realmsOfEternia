@@ -33,6 +33,8 @@ export interface PlayerView {
   readonly ruins: readonly Ruin[];
   /** Harvested trees and rocks on explored ground. */
   readonly resourceNodes: GameState['resourceNodes'];
+  /** The player's fallen heroes, and others' graves in sight (without experience). */
+  readonly graves: GameState['graves'];
   /** The player's own casts, and others' whose area is in sight. */
   readonly casts: GameState['casts'];
   /** Scenario progress (public: the waves are announced). */
@@ -104,6 +106,11 @@ export function viewOf(world: SimWorld, state: GameState, vision: Vision): Playe
       const node = world.decorations[id];
       return node !== undefined && isExplored(vision, node.x, node.z);
     }),
+    graves: state.graves
+      .filter((g) => g.ownerId === player || isVisible(vision, g.x, g.z))
+      .map((g) =>
+        g.ownerId === player ? g : { ...g, state: { ...g.state, experience: 0, cooldowns: {} } },
+      ),
     casts: state.casts.filter((c) => c.ownerId === player || isVisible(vision, c.x, c.z)),
     wavesSent: state.wavesSent,
     lastWaveAt: state.lastWaveAt,

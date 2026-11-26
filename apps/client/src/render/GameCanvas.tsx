@@ -24,6 +24,7 @@ import { SimulationDriver } from './simulation/SimulationDriver';
 import { StatusEffects } from './towers/StatusEffects';
 import { SiegeUnits } from './units/siege/SiegeUnits';
 import { UnitFrameDriver } from './units/UnitFrameDriver';
+import { Graves } from './units/Graves';
 import { Units } from './units/Units';
 
 /** Default view: about 50° pitch, 55 units from the map center. */
@@ -73,6 +74,7 @@ export function GameCanvas() {
         <Projectiles />
         <RockShots />
       </Suspense>
+      <Graves />
       <HeroRings />
       <AbilityBursts />
       <AbilityAimPreview />

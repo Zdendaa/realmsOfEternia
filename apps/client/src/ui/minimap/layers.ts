@@ -173,6 +173,33 @@ export function drawUnits(
   }
 }
 
+/** Fallen heroes' graves: a golden cross. */
+export function drawGraves(
+  context: CanvasRenderingContext2D,
+  graves: readonly { x: number; z: number }[],
+  transform: MinimapTransform,
+  pixelRatio: number,
+): void {
+  const arm = 3.5 * pixelRatio;
+  for (const [width, color] of [
+    [3.5, '#0b0d0b'],
+    [1.75, '#f2b632'],
+  ] as const) {
+    context.strokeStyle = color;
+    context.lineWidth = width * pixelRatio;
+    context.beginPath();
+    for (const grave of graves) {
+      const x = transform.toPixelX(grave.x);
+      const y = transform.toPixelY(grave.z);
+      context.moveTo(x, y - arm);
+      context.lineTo(x, y + arm);
+      context.moveTo(x - arm * 0.75, y - arm * 0.3);
+      context.lineTo(x + arm * 0.75, y - arm * 0.3);
+    }
+    context.stroke();
+  }
+}
+
 /** Writes the fog into a vision-sized image: black unexplored, dimmed explored. */
 export function paintFog(context: CanvasRenderingContext2D, vision: Vision): void {
   const image = context.createImageData(vision.columns, vision.rows);

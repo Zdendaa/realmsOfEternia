@@ -51,6 +51,17 @@ export const HERO_RULES = {
    */
   shareRadius: 10,
   shareDivisor: 2,
+  /** A fallen hero's grave shows this far around it to its owner. */
+  graveSight: 6,
+  /**
+   * Revival: an own unit within `reviveRadius` of the grave and no enemy unit within
+   * `reviveClearRadius`, for `reviveSeconds` in all. The hero returns with
+   * `reviveHealthPercent` of its health. It costs nothing.
+   */
+  reviveRadius: 4,
+  reviveClearRadius: 8,
+  reviveSeconds: 30,
+  reviveHealthPercent: 50,
 } as const;
 
 export const isHeroId = (value: unknown): value is HeroId =>

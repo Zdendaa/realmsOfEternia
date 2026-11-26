@@ -1,4 +1,4 @@
-import { buildingSightOf, UNITS } from '@roe/game-data';
+import { buildingSightOf, HERO_RULES, UNITS } from '@roe/game-data';
 import type { EntityId, MapDefinition, PlayerId, Vec2 } from '@roe/shared';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import { isAlive } from '../state/units.js';
@@ -156,6 +156,12 @@ export function updateVision(vision: Vision, state: GameState): void {
     if (building.ownerId !== vision.player) continue;
     const cell = cellAt(vision, building.x, building.z);
     place(vision, building.id, cell, buildingSightOf(building.type), seen);
+  }
+  // A fallen hero's grave still shows its owner a little around it. (The hero's id is
+  // free for the stamp: the dead hero gives no sight.)
+  for (const grave of state.graves) {
+    if (grave.ownerId !== vision.player) continue;
+    place(vision, grave.id, cellAt(vision, grave.x, grave.z), HERO_RULES.graveSight, seen);
   }
   for (const reveal of state.reveals) {
     if (reveal.ownerId !== vision.player || state.tick > reveal.until) continue;
