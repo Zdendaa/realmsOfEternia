@@ -37,6 +37,12 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 - A catapult's rock hits only enemies. Its splash also reaches the wall segments on both sides of the one it hits, so it wears down three at once.
 - Large units and pathfinding: a ram walks through a gap one segment (2 units) wide. Paths are still planned for point-sized units, so between buildings a ram can pass a 1-unit slot, overlapping both. The clearance wasn't widened.
 
+### As built (6b.2)
+
+- **Siege Workshop:** assembled from pack pieces (scaffolding, the catapult turret, rock stack, weapon rack, timber, wheelbarrow, flag); building parts can now draw a single node of a model.
+- **Models:** the catapult's turret and arm come from the pack's catapult tower (its other two nodes), on a code-built wheeled frame; the rock is the pack's projectile. The ram is code-built and temporary. Engines are instanced, with rolling wheels, the arm and the log timed to the simulation's strike, and a tipping wreck.
+- **Dev tool:** `debugFort` raises a finished walled base (dev builds only), so sieges can be tried without a second player.
+
 ## Heroes
 
 - **Commander** (Knight model, two-handed sword): _Rally_ (nearby own units deal more damage and walk faster, level 1), _Shockwave_ (area hit with a short stun, level 3), _Last Stand_ (nearby own units take much less damage for a short time, level 5).

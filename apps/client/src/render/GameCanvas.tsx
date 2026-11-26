@@ -10,6 +10,7 @@ import { RtsCameraControls } from './camera/RtsCameraControls';
 import { HealthBars } from './combat/HealthBars';
 import { FogPass } from './fog/FogPass';
 import { Projectiles } from './combat/Projectiles';
+import { RockShots } from './combat/RockShots';
 import { CommandMarkers } from './commands/CommandMarkers';
 import { PlacementPreview } from './placement/PlacementPreview';
 import { ATMOSPHERE } from './scene/atmosphere';
@@ -18,6 +19,7 @@ import { SelectionMarkers } from './selection/SelectionMarkers';
 import { SelectionRings } from './selection/SelectionRings';
 import { SimulationDriver } from './simulation/SimulationDriver';
 import { StatusEffects } from './towers/StatusEffects';
+import { SiegeUnits } from './units/siege/SiegeUnits';
 import { UnitFrameDriver } from './units/UnitFrameDriver';
 import { Units } from './units/Units';
 
@@ -62,7 +64,11 @@ export function GameCanvas() {
       />
       <Units />
       <Suspense fallback={null}>
+        <SiegeUnits />
+      </Suspense>
+      <Suspense fallback={null}>
         <Projectiles />
+        <RockShots />
       </Suspense>
       <SelectionRings />
       <HealthBars />

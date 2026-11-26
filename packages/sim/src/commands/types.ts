@@ -151,6 +151,17 @@ export interface DebugResourcesCommand {
   type: 'debugResources';
 }
 
+/**
+ * Development only: a finished walled base with towers around (x, z) for `owner`
+ * (absent: the issuer), to try sieges against. See `DEBUG_FORT`.
+ */
+export interface DebugFortCommand {
+  type: 'debugFort';
+  x: number;
+  z: number;
+  owner?: PlayerId;
+}
+
 export type Command =
   | PlaceBuildingCommand
   | PlaceWallCommand
@@ -169,7 +180,8 @@ export type Command =
   | CancelTrainingCommand
   | DebugSpawnCommand
   | DebugWaveCommand
-  | DebugResourcesCommand;
+  | DebugResourcesCommand
+  | DebugFortCommand;
 
 /** A command together with the player who issued it, attached by the receiver. */
 export interface IssuedCommand {
@@ -296,6 +308,12 @@ export function parseCommand(input: unknown): Command | null {
       return { type: 'debugWave' };
     case 'debugResources':
       return { type: 'debugResources' };
+    case 'debugFort': {
+      const { x, z, owner } = data;
+      if (!isFiniteNumber(x) || !isFiniteNumber(z)) return null;
+      if (owner !== undefined && typeof owner !== 'string') return null;
+      return { type: 'debugFort', x, z, ...(owner === undefined ? {} : { owner }) };
+    }
     case 'debugSpawn': {
       const { unit, count, x, z, owner } = data;
       if (!isUnitKind(unit) || !isFiniteNumber(x) || !isFiniteNumber(z)) return null;

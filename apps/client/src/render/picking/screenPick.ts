@@ -1,4 +1,4 @@
-import { CHARACTER_PACK } from '@roe/game-data';
+import { CHARACTER_PACK, UNITS, type UnitKind } from '@roe/game-data';
 import type { EntityId } from '@roe/shared';
 import { Vector3, type Camera } from 'three';
 import { renderedUnits } from '../units/renderedUnits';
@@ -7,6 +7,11 @@ import { renderedUnits } from '../units/renderedUnits';
 const UNIT_CENTER_HEIGHT = 0.5 * CHARACTER_PACK.serf.height * CHARACTER_PACK.serf.scale;
 /** A click this close (px) to a unit's center selects it. */
 const CLICK_RADIUS = 18;
+/** Siege engines are much larger: their center is higher and they are easier to hit. */
+const LARGE_CENTER_HEIGHT = 1.1;
+const LARGE_CLICK_RADIUS = 34;
+
+const isLarge = (type: UnitKind) => UNITS[type].radius >= 1;
 
 const point = new Vector3();
 
@@ -21,9 +26,11 @@ interface ScreenRect {
 function unitOnScreen(id: EntityId, camera: Camera, rect: ScreenRect) {
   const unit = renderedUnits.get(id);
   if (!unit) return null;
-  point.set(unit.x, unit.y + UNIT_CENTER_HEIGHT, unit.z).project(camera);
+  const height = isLarge(unit.type) ? LARGE_CENTER_HEIGHT : UNIT_CENTER_HEIGHT;
+  point.set(unit.x, unit.y + height, unit.z).project(camera);
   if (point.z > 1 || point.z < -1) return null;
   return {
+    reach: isLarge(unit.type) ? LARGE_CLICK_RADIUS : CLICK_RADIUS,
     x: rect.left + ((point.x + 1) / 2) * rect.width,
     y: rect.top + ((1 - point.y) / 2) * rect.height,
   };
@@ -41,11 +48,12 @@ export function unitAt(
   y: number,
 ): EntityId | null {
   let best: EntityId | null = null;
-  let bestDistance = CLICK_RADIUS;
+  // The nearest relative to its own click radius.
+  let bestDistance = 1;
   for (const id of candidates) {
     const p = unitOnScreen(id, camera, rect);
     if (!p) continue;
-    const distance = Math.hypot(p.x - x, p.y - y);
+    const distance = Math.hypot(p.x - x, p.y - y) / p.reach;
     if (distance < bestDistance) {
       bestDistance = distance;
       best = id;

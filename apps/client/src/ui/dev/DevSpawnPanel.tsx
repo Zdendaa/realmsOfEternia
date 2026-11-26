@@ -8,14 +8,21 @@ import { useSettingsStore } from '../../state/settingsStore';
 
 /** The opponent the dev panel spawns for (any id other than the local player is hostile). */
 const DEV_ENEMY: PlayerId = 'enemy';
-const SOLDIERS: readonly UnitKind[] = ['swordsman', 'spearman', 'archer'];
-const COUNT = 5;
+/** What the panel spawns, and how many at a time. */
+const SPAWNS: readonly { unit: UnitKind; count: number }[] = [
+  { unit: 'swordsman', count: 5 },
+  { unit: 'spearman', count: 5 },
+  { unit: 'archer', count: 5 },
+  { unit: 'ram', count: 2 },
+  { unit: 'catapult', count: 2 },
+];
 /** Own units appear left of the camera focus, enemies to its right, facing each other. */
 const SIDE_OFFSET = 8;
 
 /**
- * Development only (mounted when `import.meta.env.DEV`): spawns soldiers at the camera
- * focus, sends the next wave and fills the stock, through dev-only commands. Production
+ * Development only (mounted when `import.meta.env.DEV`): spawns soldiers and siege
+ * engines at the camera focus, raises a walled base there, sends the next wave and
+ * fills the stock, through dev-only commands. Production
  * builds leave it out, and the server rejects the commands.
  */
 export function DevSpawnPanel() {
@@ -24,12 +31,18 @@ export function DevSpawnPanel() {
   const revealMap = useSettingsStore((s) => s.revealMap);
   const toggleRevealMap = useSettingsStore((s) => s.toggleRevealMap);
 
-  const spawn = (unit: UnitKind, owner: PlayerId | undefined) => {
+  const fort = (owner: PlayerId | undefined) => {
+    const { x, z } = cameraFocus;
+    const check = dispatch({ type: 'debugFort', x, z, ...(owner === undefined ? {} : { owner }) });
+    setMessage(check.ok ? null : check.issues.join(', '));
+  };
+
+  const spawn = (unit: UnitKind, count: number, owner: PlayerId | undefined) => {
     const side = owner === undefined ? -1 : 1;
     const check = dispatch({
       type: 'debugSpawn',
       unit,
-      count: COUNT,
+      count,
       x: Math.round(cameraFocus.x + side * SIDE_OFFSET),
       z: Math.round(cameraFocus.z),
       ...(owner === undefined ? {} : { owner }),
@@ -39,18 +52,32 @@ export function DevSpawnPanel() {
 
   return (
     <section className="hud-panel dev-panel" aria-label="Dev spawn">
-      <h2>Dev spawn ×{COUNT}</h2>
-      {SOLDIERS.map((unit) => (
+      <h2>Dev spawn</h2>
+      {SPAWNS.map(({ unit, count }) => (
         <div key={unit} className="dev-row">
-          <span>{UNITS[unit].name}</span>
-          <button type="button" onClick={() => spawn(unit, undefined)}>
+          <span>
+            {UNITS[unit].name} ×{count}
+          </span>
+          <button type="button" onClick={() => spawn(unit, count, undefined)}>
             Mine
           </button>
-          <button type="button" onClick={() => spawn(unit, DEV_ENEMY)}>
+          <button type="button" onClick={() => spawn(unit, count, DEV_ENEMY)}>
             Enemy
           </button>
         </div>
       ))}
+      <div
+        className="dev-row"
+        title="A finished stone-walled base with towers, centered on the view"
+      >
+        <span>Walled base</span>
+        <button type="button" onClick={() => fort(undefined)}>
+          Mine
+        </button>
+        <button type="button" onClick={() => fort(DEV_ENEMY)}>
+          Enemy
+        </button>
+      </div>
       <button
         type="button"
         className="dev-wave"

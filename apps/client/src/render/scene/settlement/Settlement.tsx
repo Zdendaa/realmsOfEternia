@@ -5,6 +5,7 @@ import {
   PROPS,
   tileOffsets,
   type BuildingDefinition,
+  type ModelPartPlacement,
 } from '@roe/game-data';
 import type { PlayerId } from '@roe/shared';
 import type { PlacedBuilding } from '@roe/sim';
@@ -56,8 +57,9 @@ function buildingInstances(b: OwnedBuilding): DrawnModel[] {
   });
   // Assembled buildings (the storehouse): one instance per part, in the part's model.
   if (definition.parts) {
-    return definition.parts.map((part) => ({
+    return (definition.parts as readonly ModelPartPlacement[]).map((part) => ({
       modelPath: part.modelPath,
+      node: part.node,
       instance: {
         ...at(part.x, part.z),
         y: b.y + (part.y ?? 0),
@@ -79,19 +81,17 @@ interface DrawnModel {
   modelPath: string;
   instance: ModelInstance;
   tint?: string | undefined;
+  node?: string | undefined;
 }
 
-/** Groups instances by model file and tint, so each such pair is drawn instanced once. */
+/** Groups instances by model file, node and tint, so each is drawn instanced once. */
 function groupByModel(items: readonly DrawnModel[]) {
-  const groups = new Map<
-    string,
-    { modelPath: string; tint: string | undefined; instances: ModelInstance[] }
-  >();
-  for (const { modelPath, instance, tint } of items) {
-    const key = `${modelPath}|${tint ?? ''}`;
+  const groups = new Map<string, Omit<DrawnModel, 'instance'> & { instances: ModelInstance[] }>();
+  for (const { instance, ...model } of items) {
+    const key = `${model.modelPath}|${model.node ?? ''}|${model.tint ?? ''}`;
     const group = groups.get(key);
     if (group) group.instances.push(instance);
-    else groups.set(key, { modelPath, tint, instances: [instance] });
+    else groups.set(key, { ...model, instances: [instance] });
   }
   return [...groups];
 }
@@ -115,6 +115,7 @@ export function Settlement({ buildings, props }: SettlementProps) {
           modelPath={group.modelPath}
           instances={group.instances}
           tint={group.tint}
+          node={group.node}
           skipMeshes={SKIPPED_MESHES.get(group.modelPath)}
         />
       ))}

@@ -15,6 +15,7 @@ export {
   type AttackMoveCommand,
   type Command,
   type DebugSpawnCommand,
+  type DebugFortCommand,
   type DebugWaveCommand,
   type GatherCommand,
   type IssuedCommand,

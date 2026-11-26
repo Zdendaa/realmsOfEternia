@@ -15,6 +15,15 @@ import { useSelectionStore } from '../state/selectionStore';
 const plural = (name: string) =>
   (name.endsWith('man') ? `${name.slice(0, -3)}men` : `${name}s`).toLowerCase();
 
+/** What limits an attack, for the stats ("Hits buildings only"). */
+function limits(attack: AttackDefinition) {
+  return [
+    attack.buildingsOnly && 'Hits buildings only, never units.',
+    attack.minRange !== undefined && `Can’t hit anything closer than ${attack.minRange}.`,
+    attack.splash && 'Hits everything around where its shot lands; moving units dodge.',
+  ].filter((line): line is string => typeof line === 'string');
+}
+
 const CLASS_NAMES: Record<ArmorClass, string> = {
   villager: 'villagers',
   infantry: 'infantry',
@@ -22,7 +31,7 @@ const CLASS_NAMES: Record<ArmorClass, string> = {
   building: 'buildings',
   monster: 'monsters',
   cavalry: 'cavalry',
-  siege: 'siege',
+  siege: 'siege engines',
 };
 
 /** "Strong against infantry (×1.5)" lines from an attack's bonuses. */
@@ -114,6 +123,12 @@ function UnitStats({ kind, health, max }: { kind: UnitKind; health: number; max:
         <dt>Speed</dt>
         <dd>{definition.speed}</dd>
       </dl>
+      {attack &&
+        limits(attack).map((line) => (
+          <p key={line} className="selection-meta">
+            {line}
+          </p>
+        ))}
       {lines?.strong && <p className="selection-meta">Strong against {lines.strong}</p>}
       {lines?.weak && <p className="selection-meta">Weak against {lines.weak}</p>}
     </>

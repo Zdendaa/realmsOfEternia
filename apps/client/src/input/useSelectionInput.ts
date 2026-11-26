@@ -89,7 +89,10 @@ function attackMoveSelected(
   keep: boolean,
 ) {
   const unitIds = useSelectionStore.getState().units;
-  const intent: CommandIntent = attackMoveIntent(pickPointerTarget(element, camera, x, y));
+  const intent: CommandIntent = attackMoveIntent(
+    pickPointerTarget(element, camera, x, y),
+    selectionKinds(unitIds),
+  );
   if (intent.kind === 'attack') attackUnit(unitIds, intent.targetId);
   else if (intent.kind === 'move') {
     orderToGround('attackMove', unitIds, intent, intent.destination);

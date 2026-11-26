@@ -6,6 +6,7 @@ import {
   modelPathOf,
   tileOffsets,
   type BuildingDefinition,
+  type ModelPartPlacement,
   type BuildingId,
 } from '@roe/game-data';
 import {
@@ -30,7 +31,7 @@ import { usePlacementInput } from '../../input/usePlacementInput';
 import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import { usePlacementStore } from '../../state/placementStore';
 import { lowerCrop } from '../scene/settlement/cropHeight';
-import { applyMaterialOverrides, publicUrl } from '../scene/settlement/modelAssets';
+import { applyMaterialOverrides, nodeOf, publicUrl } from '../scene/settlement/modelAssets';
 import { modelFilesOf } from '../scene/settlement/modelFiles';
 import { singleTeamMaterial, type TintUniform } from '../scene/settlement/teamColorMaterial';
 import { ownerColor } from '../units/unitColors';
@@ -169,11 +170,15 @@ function Ghost({ building, quarterTurns }: GhostProps) {
       const assembled = new Group();
       assembled.userData.modelPath = definition.modelPath;
       group.add(assembled);
-      for (const part of definition.parts) {
+      for (const part of definition.parts as readonly ModelPartPlacement[]) {
         const scene = loaded[paths.indexOf(part.modelPath)]?.scene;
         if (!scene) continue;
         applyMaterialOverrides(scene);
-        const object = scene.clone(true);
+        const source = nodeOf(scene, part.node);
+        const copy = source.clone(true);
+        // A node keeps its place within the model.
+        if (part.node) source.matrixWorld.decompose(copy.position, copy.quaternion, copy.scale);
+        const object = new Group().add(copy);
         object.position.set(part.x, part.y ?? 0, part.z);
         object.rotation.y = definition.rotationOffset + (part.rotation ?? 0);
         object.scale.setScalar(part.scale);

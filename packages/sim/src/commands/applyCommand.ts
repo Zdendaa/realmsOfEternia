@@ -42,6 +42,7 @@ import {
   moveTo,
   replaceUnits,
 } from '../units/orders.js';
+import { raiseDebugFort } from './debugFort.js';
 import { DEBUG_RESOURCES } from './types.js';
 import type {
   AssignBuildersCommand,
@@ -49,6 +50,7 @@ import type {
   AttackMoveCommand,
   Command,
   DebugSpawnCommand,
+  DebugFortCommand,
   GatherCommand,
   MoveUnitsCommand,
   PlaceBuildingCommand,
@@ -265,7 +267,7 @@ function checkCancelTraining(state: GameState, issuer: PlayerId, command: Cancel
   return command.index < queued ? OK : fail('notQueued');
 }
 
-function checkDebugSpawn(ctx: SimContext, command: DebugSpawnCommand) {
+function checkDebugSpawn(ctx: SimContext, command: DebugSpawnCommand | DebugFortCommand) {
   if (!ctx.dev) return fail('devOnly');
   return isInPlayableArea(ctx.world.map, command.x, command.z) ? OK : fail('outOfBounds');
 }
@@ -440,6 +442,8 @@ export function validateCommand(
       return checkDebugSpawn(ctx, command);
     case 'debugResources':
       return ctx.dev ? OK : fail('devOnly');
+    case 'debugFort':
+      return checkDebugSpawn(ctx, command);
     case 'debugWave':
       if (!ctx.dev) return fail('devOnly');
       return (ctx.world.map.waves?.length ?? 0) > 0 ? OK : fail('noWave');
@@ -781,5 +785,7 @@ export function applyCommand(
       return { ok: true, state: debugWave(ctx, state) };
     case 'debugResources':
       return { ok: true, state: debugResources(state, issuer) };
+    case 'debugFort':
+      return { ok: true, state: raiseDebugFort(ctx, state, command.owner ?? issuer, command) };
   }
 }

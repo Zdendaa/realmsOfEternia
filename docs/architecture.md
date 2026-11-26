@@ -226,6 +226,10 @@ What this gives you: hot reload across packages, go-to-definition that lands in 
 - One React component per file, named after the component.
 - Formatting is handled by Prettier only; ESLint does not check style.
 
+## Siege rendering
+
+`render/units/siege/` draws rams and catapults outside the character renderers: `siegeFleet.ts` keeps one instanced mesh per piece (code-built frames, wheels, ram roof and log; the pack's turret, arm and rock; pieces in the owner's color) and rewrites the instances each frame from `renderedUnitList`. `siegeMotion.ts` holds the pure timing of the arm and the log, driven by the same `attackElapsed` as the soldiers' clips, so the release and the blow fall on the simulation's strike. Catapult rocks are drawn by `combat/RockShots.tsx` (they fly to the shot's `aim`, not after a target). Model choices are in game-data `assets/siegeModels.ts`. The dev-only `debugFort` command (`commands/debugFort.ts`) raises a walled base through the same wall planning and placement rules as the player.
+
 ## Minimap
 
 `ui/minimap/` is a 2D canvas in the HTML HUD, outside the three.js scene, redrawn on a timer (`MINIMAP_REDRAW_MS`), never from the render loop. Layers, bottom up: the ground picture (made once from the shared height field, water and the terrain colorizer), paths, trees and rocks (redrawn when one runs out), buildings and walls from `knownBuildings`, the fog (a vision-sized image repainted when `Vision.version` changes), units filtered by `shownAt`, and the camera outline. It reads the same player knowledge as the 3D view, so it can't show more than the fog allows. The camera is reached through `render/camera/cameraRig.ts` (view corners and look-at), which `RtsCameraControls` registers. Ground orders from the minimap and from the 3D view share `input/groundOrders.ts`.

@@ -1,5 +1,6 @@
 import { HEXAGON_PACK } from '../assets/hexagonPack.js';
 import { MEDIEVAL_PACK } from '../assets/medievalPack.js';
+import { SIEGE_MODELS } from '../assets/siegeModels.js';
 import type { UnitKind } from '../units/definitions.js';
 import { BUILDING_SIGHT } from './sight.js';
 import type { BuildingDefinition } from './types.js';
@@ -34,6 +35,46 @@ const STOREHOUSE_PARTS = [
   { modelPath: prop('crate_long_A'), x: 1.6, z: 2.25, rotation: deg(-15), scale: H },
   { modelPath: prop('wheelbarrow'), x: 0.6, z: 1.7, rotation: deg(-35), scale: H },
   { modelPath: HEXAGON_PACK.construction.flag, x: 3.1, z: 2.6, scale: 6 },
+] as const;
+
+const T = SIEGE_MODELS.catapult.scale;
+const ROCK = SIEGE_MODELS.rock;
+/** A rock of the workshop's stack; `y` is its center (the model's origin). */
+const rock = (x: number, z: number, y: number, turn = 0) => ({
+  modelPath: ROCK.model,
+  x,
+  y,
+  z,
+  rotation: deg(turn),
+  scale: ROCK.scale,
+});
+
+/**
+ * The siege workshop yard (8 × 7, open toward +Z): a work gantry with benches, a
+ * finished catapult turret standing on the ground, a stack of catapult rocks, a weapon
+ * rack, timber, a wheelbarrow and a flag in the owner's color.
+ */
+const SIEGE_WORKSHOP_PARTS = [
+  { modelPath: HEXAGON_PACK.construction.scaffolding, x: -1.8, z: -1.35, scale: 1.9 },
+  {
+    modelPath: SIEGE_MODELS.catapult.model,
+    node: SIEGE_MODELS.catapult.turret,
+    x: 2,
+    // The node sits on top of the pack's tower, 1.4 pack units up: lowered to the ground.
+    y: -1.4 * T,
+    z: -1.3,
+    rotation: deg(-25),
+    scale: T,
+  },
+  rock(2.4, 1.5, 0.33),
+  rock(3.05, 1.6, 0.33, 70),
+  rock(2.75, 2.15, 0.33, 150),
+  rock(2.72, 1.72, 0.82, 40),
+  { modelPath: prop('weaponrack'), x: -3.1, z: 2.1, rotation: deg(25), scale: H },
+  { modelPath: prop('resource_lumber'), x: -1.1, z: 2.2, rotation: deg(-8), scale: H },
+  { modelPath: prop('resource_lumber'), x: -3.0, z: 0.9, rotation: deg(90), scale: H },
+  { modelPath: prop('wheelbarrow'), x: 0.9, z: 2.0, rotation: deg(40), scale: H },
+  { modelPath: HEXAGON_PACK.construction.flag, x: 3.6, z: 3.0, scale: 6 },
 ] as const;
 
 /** farm_plot tile spacing inside a field: its footprint plus a thin furrow. */
@@ -320,6 +361,22 @@ export const BUILDINGS = {
     buildTime: 45,
     maxBuilders: 4,
     trains: ['archer'],
+  },
+  siegeWorkshop: {
+    id: 'siegeWorkshop',
+    name: 'Siege Workshop',
+    description: 'Builds battering rams and catapults.',
+    modelPath: SIEGE_WORKSHOP_PARTS[0].modelPath,
+    parts: SIEGE_WORKSHOP_PARTS,
+    scale: H,
+    footprint: { w: 8, d: 7 },
+    yard: true,
+    rotationOffset: 0,
+    buildable: true,
+    cost: { wood: 12, stone: 8, iron: 2 },
+    buildTime: 60,
+    maxBuilders: 4,
+    trains: ['ram', 'catapult'],
   },
   palisade: {
     id: 'palisade',

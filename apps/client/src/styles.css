@@ -584,7 +584,7 @@ body,
 
 .dev-row {
   display: grid;
-  grid-template-columns: 80px auto auto;
+  grid-template-columns: 112px auto auto;
   gap: 4px;
   align-items: center;
 }

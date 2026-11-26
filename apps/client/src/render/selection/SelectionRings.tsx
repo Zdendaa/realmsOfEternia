@@ -1,4 +1,5 @@
 import { useFrame } from '@react-three/fiber';
+import { UNITS } from '@roe/game-data';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { DoubleSide, Matrix4, MeshBasicMaterial, RingGeometry, type InstancedMesh } from 'three';
 import { useSelectionStore } from '../../state/selectionStore';
@@ -7,6 +8,8 @@ import { renderedUnits } from '../units/renderedUnits';
 /** Most rings drawn at once (a player has at most 200 serfs). */
 const CAPACITY = 256;
 const matrix = new Matrix4();
+/** The unit radius the ring's own size fits. */
+const RING_UNIT_RADIUS = 0.45;
 
 /**
  * Flat rings under the selected units, one instanced mesh. Positions come from the
@@ -46,7 +49,10 @@ export function SelectionRings() {
       if (count >= CAPACITY) break;
       const unit = renderedUnits.get(id);
       if (!unit) continue;
-      mesh.setMatrixAt(count++, matrix.makeTranslation(unit.x, unit.y + 0.05, unit.z));
+      // Wider under large units (the siege engines).
+      const wide = Math.max(1, (UNITS[unit.type].radius / RING_UNIT_RADIUS) * 0.75);
+      matrix.makeScale(wide, 1, wide).setPosition(unit.x, unit.y + 0.05, unit.z);
+      mesh.setMatrixAt(count++, matrix);
     }
     mesh.count = count;
     mesh.instanceMatrix.needsUpdate = true;

@@ -17,6 +17,8 @@ export interface ModelPartPlacement {
   y?: number;
   rotation?: number;
   scale: number;
+  /** Draws only the model's node of this name (with its children); absent: all of it. */
+  node?: string;
 }
 
 /** A model repeated on a grid inside one building (e.g. a field of crop tiles). */

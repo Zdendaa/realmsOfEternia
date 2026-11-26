@@ -5,7 +5,7 @@ import { StaticInstances } from '../StaticInstances';
 import type { PlayerId } from '@roe/shared';
 import { instanceMatrix } from './instanceMatrix';
 import { tintedMaterial } from './tintedMaterial';
-import { applyMaterialOverrides, extractModelParts, publicUrl } from './modelAssets';
+import { applyMaterialOverrides, extractModelParts, nodeOf, publicUrl } from './modelAssets';
 import { isTeamColorable, teamColorMaterial, writeTeamColor } from './teamColorMaterial';
 
 /** One placement of a model: position, Y rotation (radians) and uniform scale. */
@@ -31,6 +31,8 @@ interface ModelInstancesProps {
   skipMeshes?: readonly string[];
   /** Multiplied over the model's colors (the team color stays as it is). */
   tint?: string | undefined;
+  /** Draws only this node of the model, with its children. */
+  node?: string | undefined;
 }
 
 const placementMatrix = new Matrix4();
@@ -41,17 +43,18 @@ const partMatrix = new Matrix4();
  * instanced mesh, so N copies cost as many draw calls as a single copy. Parts with the
  * Hexagon atlas take their owner's color in the team cell (roofs, banners).
  */
-export function ModelInstances({ modelPath, instances, skipMeshes, tint }: ModelInstancesProps) {
+export function ModelInstances(props: ModelInstancesProps) {
+  const { modelPath, instances, skipMeshes, tint, node } = props;
   const { scene } = useGLTF(publicUrl(modelPath), false);
 
   const parts = useMemo(() => {
     applyMaterialOverrides(scene);
-    return extractModelParts(scene, skipMeshes).map((part) => ({
+    return extractModelParts(nodeOf(scene, node), skipMeshes).map((part) => ({
       ...part,
       teamColored: isTeamColorable(part.material),
       material: teamColorMaterial(tintedMaterial(part.material, tint)),
     }));
-  }, [scene, skipMeshes, tint]);
+  }, [scene, skipMeshes, tint, node]);
 
   // Team colors per instance, for the parts that use them.
   const teamColors = useMemo(() => {

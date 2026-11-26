@@ -97,6 +97,7 @@ export function Projectiles() {
     const live = new Set<string>();
     for (const p of state.projectiles) {
       if (count >= CAPACITY) break;
+      if (p.weapon) continue; // catapult rocks: `RockShots`
       // Arrows show when their shooter or their target is in sight.
       if (!shownAt(p.ownerId, p.fromX, p.fromZ) && !renderedUnits.has(p.targetId)) continue;
       const key = keyOf(p);

@@ -11,6 +11,7 @@ export {
 } from './assets/characterPack.js';
 export { HEXAGON_PACK } from './assets/hexagonPack.js';
 export { MEDIEVAL_PACK, type MaterialOverride } from './assets/medievalPack.js';
+export { SIEGE_MODELS } from './assets/siegeModels.js';
 export {
   BUILDINGS,
   depositOf,

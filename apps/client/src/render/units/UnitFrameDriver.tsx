@@ -1,5 +1,5 @@
 import { useFrame } from '@react-three/fiber';
-import { attackOf, productionOf, type ProfessionId } from '@roe/game-data';
+import { attackOf, combatOf, productionOf, type ProfessionId } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type Decoration, type EntityId } from '@roe/shared';
 import {
   combatTicks,
@@ -16,6 +16,8 @@ import { renderedUnitList, renderedUnits, type RenderedUnit, type UnitWork } fro
 
 /** How quickly units turn toward their walking direction (per second). */
 const TURN_RATE = 12;
+/** Siege engines are heavy and turn slower. */
+const SIEGE_TURN_RATE = 4;
 
 /** A corpse starts sinking this long after death (s) and is gone below ground by removal. */
 const SINK_START = 1.8;
@@ -114,6 +116,7 @@ export function UnitFrameDriver() {
     // Rendering runs one tick behind: between the previous state (tick - 1) and this one.
     const now = state.tick - 1 + alpha;
     const turn = Math.min(1, delta * TURN_RATE);
+    const slowTurn = Math.min(1, delta * SIEGE_TURN_RATE);
     renderedUnitList.length = 0;
     for (const unit of state.units) {
       // Other players' units out of the local player's sight aren't drawn (fog of war).
@@ -148,7 +151,8 @@ export function UnitFrameDriver() {
       if (unit.activity === 'walking' && dx * dx + dz * dz > 1e-6) {
         target = Math.atan2(dx, dz);
       } else if (unit.activity === 'attacking' && unit.combat?.targetId != null) {
-        const foe = look.units.get(unit.combat.targetId);
+        const foe =
+          look.units.get(unit.combat.targetId) ?? look.buildings.get(unit.combat.targetId);
         if (foe) target = Math.atan2(foe.x - x, foe.z - z);
       } else if (unit.activity === 'working' && unit.task.kind === 'build') {
         const site = look.buildings.get(unit.task.siteId);
@@ -172,7 +176,10 @@ export function UnitFrameDriver() {
               : building;
         if (faced) target = Math.atan2(faced.x - x, faced.z - z);
       }
-      if (target !== null) r.heading += angleDelta(r.heading, target) * turn;
+      if (target !== null) {
+        const rate = combatOf(unit.type).armorClass === 'siege' ? slowTurn : turn;
+        r.heading += angleDelta(r.heading, target) * rate;
+      }
       r.x = x;
       r.z = z;
       r.deathElapsed =

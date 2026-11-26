@@ -113,7 +113,7 @@ export const UNITS = {
       },
     },
   },
-  // Siege engines (Siege Workshop). Large and slow; infantry's blows hit them double.
+  // Siege engines (built at the Siege Workshop). Large and slow; infantry's blows hit them double.
   ram: {
     id: 'ram',
     sight: 10,

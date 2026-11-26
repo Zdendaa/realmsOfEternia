@@ -30,8 +30,10 @@ export type CommandIntent =
 export interface SelectionKinds {
   /** Any own units are selected. */
   units: boolean;
-  /** Some of them fight (soldiers). */
+  /** Some of them fight (soldiers and siege engines). */
   fighters: boolean;
+  /** Some of those can hit units (rams only hit buildings). */
+  hitsUnits: boolean;
   /** Some of them are serfs: only they gather and build. */
   serfs: boolean;
 }
@@ -49,7 +51,9 @@ export interface SelectionKinds {
 export function commandIntent(target: PointerTarget, selection: SelectionKinds): CommandIntent {
   const { building, ground } = target;
   const { fighters, serfs } = selection;
-  if (fighters && target.enemyId !== null) return { kind: 'attack', targetId: target.enemyId };
+  if (selection.hitsUnits && target.enemyId !== null) {
+    return { kind: 'attack', targetId: target.enemyId };
+  }
   if (
     fighters &&
     building &&
@@ -79,8 +83,10 @@ export function commandIntent(target: PointerTarget, selection: SelectionKinds):
  * Where an attack-move (F, then left click) would go: an enemy unit under the pointer
  * is attacked directly, a reachable point is attack-moved to, anything else is blocked.
  */
-export function attackMoveIntent(target: PointerTarget): CommandIntent {
-  if (target.enemyId !== null) return { kind: 'attack', targetId: target.enemyId };
+export function attackMoveIntent(target: PointerTarget, selection: SelectionKinds): CommandIntent {
+  if (selection.hitsUnits && target.enemyId !== null) {
+    return { kind: 'attack', targetId: target.enemyId };
+  }
   const building = target.building;
   if (building && areEnemies(LOCAL_PLAYER, building.ownerId) && buildingInSight(building)) {
     return { kind: 'attack', targetId: building.id };
@@ -101,7 +107,9 @@ export function cursorFor(
   selection: SelectionKinds,
   attackMove = false,
 ): CursorKind {
-  if (attackMove) return attackMoveIntent(target).kind === 'blocked' ? 'blocked' : 'attack';
+  if (attackMove) {
+    return attackMoveIntent(target, selection).kind === 'blocked' ? 'blocked' : 'attack';
+  }
   if (target.unitId !== null) return 'select';
   if (selection.units) {
     const intent = commandIntent(target, selection);

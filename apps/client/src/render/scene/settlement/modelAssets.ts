@@ -41,6 +41,18 @@ export function isUnder(object: Object3D, names: readonly string[]): boolean {
   return false;
 }
 
+/**
+ * The node called `name` of a loaded model, placed as in the model (its world matrix
+ * includes its parents'); the whole model without a name. Throws if there is none.
+ */
+export function nodeOf(root: Object3D, name: string | undefined): Object3D {
+  if (name === undefined) return root;
+  root.updateMatrixWorld(true);
+  const node = root.getObjectByName(name);
+  if (!node) throw new Error(`Model has no node "${name}"`);
+  return node;
+}
+
 export interface ModelPart {
   geometry: BufferGeometry;
   material: Material;
