@@ -24,6 +24,7 @@ import { addStats, decideOutcomes } from '../rules/outcome.js';
 import { createUnitGrid, type UnitGrid } from '../combat/targeting.js';
 import { updateTowers } from '../combat/towers.js';
 import { applyTowerImpacts, updateEffects } from '../combat/towerImpacts.js';
+import { applySplashImpacts } from '../combat/siege.js';
 import { progressUpgrades } from '../combat/upgrades.js';
 
 export interface StepResult {
@@ -77,6 +78,12 @@ export function stepGame(
       () => (impactGrid ??= createUnitGrid(units)),
       hits,
       current.tick,
+    );
+    applySplashImpacts(
+      landed,
+      () => (impactGrid ??= createUnitGrid(units)),
+      current.buildings,
+      hits,
     );
   }
   updateEffects(units, hits, current.tick);

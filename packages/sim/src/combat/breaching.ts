@@ -1,8 +1,10 @@
+import { attackOf } from '@roe/game-data';
 import type { EntityId, Vec2 } from '@roe/shared';
 import type { SimContext } from '../context/simContext.js';
 import type { PathResult } from '../nav/astar.js';
 import { cellIndexAt, isWalkableCell, nearestWalkableCell } from '../nav/navGrid.js';
 import type { UnitInstance } from '../state/units.js';
+import { SIEGE_RULES } from './siege.js';
 
 export const BREACH_PLANNING = {
   /** Most new breach searches per tick (they cover the whole map); others wait a tick. */
@@ -25,6 +27,17 @@ const breaches = (unit: UnitInstance) =>
 function fallsShort(unit: Vec2, goal: Vec2, route: PathResult): boolean {
   const end = route.waypoints.at(-1) ?? unit;
   return (end.x - goal.x) ** 2 + (end.z - goal.z) ** 2 > BREACH_PLANNING.shortOfGoal ** 2;
+}
+
+/**
+ * How far from its goal a unit that has a target may end up and still shoot it over
+ * whatever is in between: only for units with a minimum range (catapults), which are
+ * built to fire over walls. 0 for everyone else.
+ */
+function standOff(unit: UnitInstance): number {
+  const attack = attackOf(unit.type);
+  if (attack?.minRange === undefined || (unit.combat?.targetId ?? null) === null) return 0;
+  return attack.range - SIEGE_RULES.overshootMargin;
 }
 
 /**
@@ -78,6 +91,12 @@ export function createRoutePlanner(ctx: SimContext) {
     if (!breaches(unit)) return { route: walk() };
 
     let route: PathResult | null = null;
+    const shotFrom = standOff(unit);
+    if (shotFrom > 0) {
+      route = walk();
+      const end = route.waypoints.at(-1) ?? unit;
+      if ((end.x - goal.x) ** 2 + (end.z - goal.z) ** 2 <= shotFrom ** 2) return { route };
+    }
     if (!cutOff(ctx, unit, goal)) {
       route = walk();
       if (!fallsShort(unit, goal, route)) return { route };

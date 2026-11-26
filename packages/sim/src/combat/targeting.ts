@@ -30,6 +30,8 @@ export function findTarget(
   unit: UnitInstance,
   grid: UnitGrid,
   sightRange: number,
+  /** Skips enemies whose center is closer than this (inside a minimum range). */
+  nearest = 0,
 ): UnitInstance | null {
   const candidates = grid.query({
     minX: unit.x - sightRange,
@@ -44,7 +46,7 @@ export function findTarget(
   for (const other of candidates) {
     if (!isAlive(other) || !areEnemies(unit.ownerId, other.ownerId)) continue;
     const sq = (other.x - unit.x) ** 2 + (other.z - unit.z) ** 2;
-    if (sq > maxSq) continue;
+    if (sq > maxSq || sq < nearest * nearest) continue;
     const attacking = other.combat?.targetId === unit.id;
     const better =
       best === null ||

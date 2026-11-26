@@ -30,6 +30,7 @@ import {
   retreatPoint,
   unitsUnderFire,
 } from './provocation.js';
+import { backOffPoint, findSiegeTarget, tooClose } from './siege.js';
 import { createUnitGrid, edgeDistance, findTarget, type UnitGrid } from './targeting.js';
 
 /**
@@ -124,6 +125,9 @@ export function updateFighters(
   /** An enemy unit in sight that can be walked straight up to, on the unit's scan tick. */
   const attackerAtHand = (unit: UnitInstance): UnitInstance | null => {
     if ((tick + unit.id) % COMBAT_RULES.scanEvery !== 0) return null;
+    const attack = attackOf(unit.type) as AttackDefinition;
+    // Siege weapons that can't hit units, or not up close, keep to their business.
+    if (attack.buildingsOnly || attack.minRange !== undefined) return null;
     const enemy = findTarget(unit, grid, combatOf(unit.type).sightRange ?? 0);
     return enemy && hasLineOfSight(ctx.nav, unit, enemy, unit.ownerId) ? enemy : null;
   };
@@ -146,6 +150,10 @@ export function updateFighters(
     // Which target this unit fights now.
     const current = find(combat.targetId);
     let target: Foe | null = current && areEnemies(unit.ownerId, ownerOf(current)) ? current : null;
+    // A unit it picked itself that came inside its minimum range: look for another.
+    if (target?.unit && task.kind !== 'attack' && combat.strikeAt === null) {
+      if (tooClose(attack, reachTo(unit, target))) target = null;
+    }
     if (task.kind === 'attack') {
       target = find(task.targetId);
       if (!target) {
@@ -157,6 +165,9 @@ export function updateFighters(
     } else if (task.kind !== 'idle' && task.kind !== 'attackMove') {
       target = null;
     }
+
+    // Units can't be hit by it, not even on an order.
+    if (attack.buildingsOnly && target?.unit) target = null;
 
     // Shot by a tower with nothing else to fight: go for it, or get out of its range.
     let shooter = find(combat.provokedBy)?.building ?? null;
@@ -219,11 +230,7 @@ export function updateFighters(
       (kind === 'idle' || kind === 'attackMove') &&
       (tick + unit.id) % COMBAT_RULES.scanEvery === 0
     ) {
-      // Enemy units first; enemy buildings when no unit is in sight.
-      const sight = combatOf(unit.type).sightRange ?? 0;
-      const foe = findTarget(unit, grid, sight);
-      const building = foe ? null : findBuildingTarget(unit, buildings, sight);
-      target = foe ? { unit: foe } : building ? { building } : null;
+      target = findFoe(unit, attack, grid, buildings);
       if (target && kind === 'idle' && !combat.anchor) {
         // Guards are leashed to their home spot; others to where they engaged.
         combat.anchor = combat.home ?? { x: unit.x, z: unit.z };
@@ -257,6 +264,31 @@ export function updateFighters(
   }
 }
 
+/**
+ * What an unoccupied fighter goes for on its own, within its sight. Soldiers: enemy
+ * units first, buildings (never walls) when no unit is in sight. Siege weapons:
+ * buildings first, walls included, then units if they can hit them.
+ */
+function findFoe(
+  unit: UnitInstance,
+  attack: AttackDefinition,
+  grid: UnitGrid,
+  buildings: readonly BuildingInstance[],
+): Foe | null {
+  const sight = combatOf(unit.type).sightRange ?? 0;
+  if (attack.siege) {
+    const building = findSiegeTarget(unit, attack, buildings, sight);
+    if (building) return { building };
+    if (attack.buildingsOnly) return null;
+  }
+  // Center to center: both radii (about a unit's own, twice) come on top of the range.
+  const closest = attack.minRange === undefined ? 0 : attack.minRange + 2 * UNITS[unit.type].radius;
+  const enemy = findTarget(unit, grid, sight, closest);
+  if (enemy) return { unit: enemy };
+  const building = attack.siege ? null : findBuildingTarget(unit, buildings, sight);
+  return building ? { building } : null;
+}
+
 /** Chases `target` until in reach, then attacks whenever the cooldown allows. */
 function engage(
   ctx: SimContext,
@@ -267,6 +299,17 @@ function engage(
   tick: number,
 ): void {
   const reach = reachTo(unit, target);
+  if (tooClose(attack, reach) && combat.strikeAt === null) {
+    // Back out of the minimum range (an ordered target, or a wall it has to break).
+    const away = backOffPoint(ctx, unit, attack, target.unit ?? target.building, reach);
+    const m = unit.movement;
+    if (!away) unit.movement = null;
+    else if (!m || distance(m.goal, away) > COMBAT_RULES.repathDistance) {
+      unit.movement = { ...moveTo(away), waypoints: [away] };
+    }
+    unit.activity = unit.movement ? 'walking' : 'idle';
+    return;
+  }
   if (reach <= attack.range || combat.strikeAt !== null) {
     unit.movement = null;
     if (combat.strikeAt === null && tick >= combat.readyAt) {
@@ -296,7 +339,16 @@ function strike(
   const damage = damageAgainst(attack, target.unit ? combatOf(target.unit.type) : BUILDING_COMBAT);
   if (reachTo(unit, target) > attack.range + COMBAT_RULES.strikeTolerance) return; // a miss
   const id = foeId(target);
-  if (attack.kind === 'melee') hits.add(id, damage, unit.ownerId);
+  if (attack.splash) {
+    // The shot is aimed at a spot; what it hits is decided where and when it lands.
+    const at = target.unit ?? target.building;
+    projectiles.push({
+      ...fireProjectile(unit, id, at, tick, attack.projectileSpeed ?? 1, 0),
+      weapon: unit.type,
+      aim: { x: at.x, z: at.z },
+      fromHeight: attack.launchHeight,
+    });
+  } else if (attack.kind === 'melee') hits.add(id, damage, unit.ownerId);
   else {
     const at = target.unit ?? target.building;
     projectiles.push(fireProjectile(unit, id, at, tick, attack.projectileSpeed ?? 1, damage));

@@ -56,7 +56,7 @@ export const UNITS = {
         cooldown: 1.2,
         windup: 0.5,
         range: 0.6,
-        bonus: { infantry: 1.5 },
+        bonus: { infantry: 1.5, siege: 2 },
       },
     },
   },
@@ -82,7 +82,7 @@ export const UNITS = {
         cooldown: 1.4,
         windup: 0.6,
         range: 1.2,
-        bonus: { building: 3, cavalry: 2 },
+        bonus: { building: 3, cavalry: 2, siege: 2 },
       },
     },
   },
@@ -113,6 +113,72 @@ export const UNITS = {
       },
     },
   },
+  // Siege engines (Siege Workshop). Large and slow; infantry's blows hit them double.
+  ram: {
+    id: 'ram',
+    sight: 10,
+    name: 'Battering Ram',
+    description:
+      'Breaks walls, gates, towers and buildings. Shrugs off arrows, but it cannot fight units and falls to infantry.',
+    cost: { wood: 10, iron: 3 },
+    trainTime: 30,
+    speed: 1.4,
+    radius: 1,
+    maxPerPlayer: 20,
+    controllable: true,
+    combat: {
+      health: 500,
+      // Most of an arrow's or a light tower shot's damage.
+      armor: 6,
+      armorClass: 'siege',
+      sightRange: 10,
+      // About three times a spearman's damage to buildings per second.
+      attack: {
+        kind: 'melee',
+        damage: 34,
+        cooldown: 2.5,
+        windup: 1,
+        range: 0.6,
+        bonus: { building: 4 },
+        siege: true,
+        buildingsOnly: true,
+      },
+    },
+  },
+  catapult: {
+    id: 'catapult',
+    // It sees farther than it shoots, so it needs no spotter.
+    sight: 18,
+    name: 'Catapult',
+    description:
+      'Hurls rocks from beyond the reach of every tower. Moving units dodge them; helpless up close.',
+    cost: { wood: 12, iron: 4, gold: 3 },
+    trainTime: 40,
+    speed: 1.3,
+    radius: 1,
+    maxPerPlayer: 20,
+    controllable: true,
+    combat: {
+      health: 200,
+      armor: 2,
+      armorClass: 'siege',
+      // Center to the target's edge: the range plus its own radius.
+      sightRange: 16,
+      attack: {
+        kind: 'ranged',
+        damage: 16,
+        cooldown: 6,
+        windup: 1.2,
+        range: 15,
+        minRange: 5,
+        projectileSpeed: 9,
+        launchHeight: 2,
+        splash: { radius: 1.5 },
+        bonus: { building: 10 },
+        siege: true,
+      },
+    },
+  },
   // Neutral monsters (camps, waves): never trained, never commanded by a player.
   skeletonMinion: {
     id: 'skeletonMinion',
@@ -130,7 +196,14 @@ export const UNITS = {
       armor: 0,
       armorClass: 'monster',
       sightRange: 8,
-      attack: { kind: 'melee', damage: 6, cooldown: 1.2, windup: 0.5, range: 0.6 },
+      attack: {
+        kind: 'melee',
+        damage: 6,
+        cooldown: 1.2,
+        windup: 0.5,
+        range: 0.6,
+        bonus: { siege: 2 },
+      },
     },
   },
   skeletonWarrior: {
@@ -149,7 +222,14 @@ export const UNITS = {
       armor: 2,
       armorClass: 'monster',
       sightRange: 8,
-      attack: { kind: 'melee', damage: 10, cooldown: 1.4, windup: 0.6, range: 0.7 },
+      attack: {
+        kind: 'melee',
+        damage: 10,
+        cooldown: 1.4,
+        windup: 0.6,
+        range: 0.7,
+        bonus: { siege: 2 },
+      },
     },
   },
   skeletonArcher: {

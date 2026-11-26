@@ -1,5 +1,5 @@
 import { SIMULATION_TICK_RATE, type EntityId, type PlayerId, type Vec2 } from '@roe/shared';
-import type { BuildingId } from '@roe/game-data';
+import type { BuildingId, UnitKind } from '@roe/game-data';
 import type { UnitInstance } from '../state/units.js';
 import type { Hits } from './damage.js';
 
@@ -20,7 +20,12 @@ export interface Projectile {
   fromHeight?: number;
   /** The tower type that shot it: decides its effects on impact and its look. */
   source?: BuildingId;
-  /** Where the target stood at release (splash shots whose target is gone burst there). */
+  /** The unit kind that fired a splash shot (a catapult's rock): decides what it hits. */
+  weapon?: UnitKind;
+  /**
+   * Where the target stood at release. A catapult's rock lands there; a tower's splash
+   * shot whose target is gone bursts there.
+   */
   aim?: Vec2;
   firedAt: number;
   impactAt: number;

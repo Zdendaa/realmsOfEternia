@@ -9,6 +9,7 @@ import {
   upgradesOf,
   type BuildingId,
   type ResourceAmounts,
+  attackOf,
 } from '@roe/game-data';
 import { areEnemies } from '../combat/hostility.js';
 import { sendWave } from '../combat/waves.js';
@@ -101,6 +102,8 @@ export type CommandIssue =
   | 'noTarget'
   /** The attack target isn't an enemy of the issuer. */
   | 'notEnemy'
+  /** None of the addressed units can hit the target (rams only hit buildings). */
+  | 'cannotAttack'
   /** A development command sent to a simulation that doesn't accept them. */
   | 'devOnly'
   /** The building doesn't train that unit. */
@@ -214,7 +217,9 @@ function checkAttack(ctx: SimContext, state: GameState, issuer: PlayerId, comman
     if (!seen) return fail('notVisible');
   }
   const fighters = ownUnits(state, issuer, command.unitIds).filter((u) => u.combat);
-  return fighters.length === 0 ? fail('noUnits') : OK;
+  if (fighters.length === 0) return fail('noUnits');
+  const targetIsUnit = unit !== undefined && isAlive(unit);
+  return targetIsUnit && !fighters.some((u) => hitsUnits(u)) ? fail('cannotAttack') : OK;
 }
 
 function checkAttackMove(
@@ -546,11 +551,23 @@ function moveUnits(state: GameState, issuer: PlayerId, command: MoveUnitsCommand
   return { ...state, units: replaceUnits(state.units, changed) };
 }
 
+const hitsUnits = (unit: UnitInstance) => !attackOf(unit.type)?.buildingsOnly;
+
+/**
+ * Fighters take the target. Ordered at a unit, the ones that can't hit units (rams)
+ * attack-move to where it stands instead, so they come along.
+ */
 function attack(state: GameState, issuer: PlayerId, command: AttackCommand): GameState {
   const changed = new Map<EntityId, UnitInstance>();
-  for (const unit of ownUnits(state, issuer, command.unitIds)) {
+  const units = ownUnits(state, issuer, command.unitIds);
+  const target = state.units.find((u) => u.id === command.targetId);
+  if (target) {
+    const escorts = units.filter((u) => u.combat && !hitsUnits(u));
+    for (const [id, unit] of sendGroup(escorts, target.x, target.z, true)) changed.set(id, unit);
+  }
+  for (const unit of units) {
     const combat = freshCombat(unit);
-    if (!combat) continue;
+    if (!combat || changed.has(unit.id)) continue;
     changed.set(unit.id, {
       ...unit,
       task: { kind: 'attack', targetId: command.targetId },

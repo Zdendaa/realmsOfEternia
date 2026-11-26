@@ -1,4 +1,4 @@
-import { UNITS } from '@roe/game-data';
+import { combatOf, UNITS } from '@roe/game-data';
 import type { SimContext } from '../context/simContext.js';
 import { isWalkable } from '../nav/navGrid.js';
 import { isAlive, type UnitInstance } from '../state/units.js';
@@ -10,7 +10,9 @@ export const SEPARATION_RULES = {
   maxPush: 0.25,
   /** Working units hold their spot: they take only this share of a push. */
   workingWeight: 0.15,
-  /** Spatial hash cell size; must be at least the largest unit diameter. */
+  /** Siege engines are heavy: they take only this share of a push from lighter units. */
+  siegeWeight: 0.25,
+  /** Spatial hash cell size. Larger units widen the neighbour search as needed. */
   cellSize: 1,
 } as const;
 
@@ -37,9 +39,11 @@ const cellKey = (cx: number, cz: number) => (cx + 32768) * 65536 + (cz + 32768);
 export function separateUnits(ctx: SimContext, units: UnitInstance[]): void {
   const size = SEPARATION_RULES.cellSize;
   const cells = new Map<number, number[]>();
+  let largest = 0;
   units.forEach((u, i) => {
     // The dead lie where they fell: they neither push nor get pushed.
     if (!isAlive(u)) return;
+    largest = Math.max(largest, UNITS[u.type].radius);
     const key = cellKey(Math.floor(u.x / size), Math.floor(u.z / size));
     const list = cells.get(key);
     if (list) list.push(i);
@@ -48,15 +52,19 @@ export function separateUnits(ctx: SimContext, units: UnitInstance[]): void {
 
   const pushX = new Float64Array(units.length);
   const pushZ = new Float64Array(units.length);
-  const weight = (u: UnitInstance) =>
-    u.activity === 'working' ? SEPARATION_RULES.workingWeight : 1;
+  const weight = (u: UnitInstance) => {
+    if (u.activity === 'working') return SEPARATION_RULES.workingWeight;
+    return combatOf(u.type).armorClass === 'siege' ? SEPARATION_RULES.siegeWeight : 1;
+  };
 
   units.forEach((a, i) => {
     if (!isAlive(a)) return;
     const cx = Math.floor(a.x / size);
     const cz = Math.floor(a.z / size);
-    for (let ox = -1; ox <= 1; ox++) {
-      for (let oz = -1; oz <= 1; oz++) {
+    // Every cell that can hold a unit overlapping this one.
+    const reach = Math.ceil((UNITS[a.type].radius + largest) / size);
+    for (let ox = -reach; ox <= reach; ox++) {
+      for (let oz = -reach; oz <= reach; oz++) {
         for (const j of cells.get(cellKey(cx + ox, cz + oz)) ?? []) {
           if (j <= i) continue;
           const b = units[j] as UnitInstance;

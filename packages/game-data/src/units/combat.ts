@@ -1,7 +1,7 @@
 /**
  * What a unit or building counts as when it is hit. Attacks name bonuses per class, so
- * counters are data: swordsmen beat infantry, spearmen break buildings. `cavalry` and
- * `siege` are reserved for Phase 6b.
+ * counters are data: swordsmen beat infantry, spearmen break buildings, infantry breaks
+ * siege engines. `cavalry` is reserved for 6b.7.
  */
 export type ArmorClass =
   'villager' | 'infantry' | 'ranged' | 'building' | 'monster' | 'cavalry' | 'siege';
@@ -22,8 +22,25 @@ export interface AttackDefinition {
   range: number;
   /** Damage multipliers by the target's armor class (1 when absent). */
   bonus?: Readonly<Partial<Record<ArmorClass, number>>>;
-  /** Arrow flight speed in world units per second (ranged only). */
+  /** Shot flight speed in world units per second (ranged only). */
   projectileSpeed?: number;
+  /**
+   * A siege weapon: on its own it goes for enemy buildings first (towers, then the
+   * nearest, walls and gates included, which other units leave alone) and only then for
+   * units.
+   */
+  siege?: boolean;
+  /** It can't hit units at all, and never fights back against them. */
+  buildingsOnly?: boolean;
+  /** Nothing closer than this (edge to edge) can be hit. */
+  minRange?: number;
+  /**
+   * The shot flies to where the target was at release and hits every enemy unit and
+   * building within `radius` of that spot, so units that move away dodge it.
+   */
+  splash?: { radius: number };
+  /** Height above the ground the shot leaves from (rendering). */
+  launchHeight?: number;
 }
 
 export interface CombatStats {

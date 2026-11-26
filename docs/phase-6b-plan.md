@@ -6,15 +6,15 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 
 ## Milestones
 
-| #    | Scope                                                                                                                           | Status |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ⬜     |
-| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ⬜     |
-| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ⬜     |
-| 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ⬜     |
-| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ⬜     |
-| 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ⬜     |
-| 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜     |
+| #    | Scope                                                                                                                           | Status  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ✅ Done |
+| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ⬜      |
+| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ⬜      |
+| 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ⬜      |
+| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ⬜      |
+| 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ⬜      |
+| 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜      |
 
 ## Units
 
@@ -22,6 +22,20 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 - **Catapult:** range 15, beyond every tower (11–13), so it can break towers safely; minimum range 5. A slow shot that lands where the target was, with splash, so moving units can dodge it. Low damage against units.
 - Both are larger units (radius about 1) with their own armor class, `siege` (already reserved), and pick walls as targets on their own, which ordinary soldiers don't.
 - **Cavalry ("Knight on horse"):** fast (speed 4.5, infantry 2.2), high health, strong against archers and siege engines. Spearmen already deal 2× damage to cavalry.
+
+### As built (6b.1)
+
+|                 | Ram                                  | Catapult                                                                                  |
+| --------------- | ------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Health / armor  | 500 / 6                              | 200 / 2                                                                                   |
+| Speed / radius  | 1.4 / 1                              | 1.3 / 1                                                                                   |
+| Attack          | 34 every 2.5 s, ×4 against buildings | 16 every 6 s, ×10 against buildings; range 15, minimum 5, splash radius 1.5, rock speed 9 |
+| Cost / training | 10 wood, 3 iron / 30 s               | 12 wood, 4 iron, 3 gold / 40 s                                                            |
+
+- Simulated: a ram breaks a stone wall segment (1,400 health) in 26.9 s; a catapult destroys a stone tower (1,200) in 45 s without being hit.
+- Arrows and wooden tower shots do 2 damage to a ram. Swords, spears and skeleton blades hit siege engines double.
+- A catapult's rock hits only enemies. Its splash also reaches the wall segments on both sides of the one it hits, so it wears down three at once.
+- Large units and pathfinding: a ram walks through a gap one segment (2 units) wide. Paths are still planned for point-sized units, so between buildings a ram can pass a 1-unit slot, overlapping both. The clearance wasn't widened.
 
 ## Heroes
 
