@@ -6,15 +6,15 @@ Cavalry, the siege weapons that answer walls, gates and towers (rams and catapul
 
 ## Milestones
 
-| #    | Scope                                                                                                                           | Status  |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ✅ Done |
-| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ✅ Done |
-| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ✅ Done |
-| 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ✅ Done |
-| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ✅ Done |
-| 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ✅ Done |
-| 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⬜      |
+| #    | Scope                                                                                                                           | Status                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 6b.1 | Siege in the sim: ram and catapult stats, a `siege` armor class, wall targeting, the catapult's minimum range and splash, tests | ✅ Done                                          |
+| 6b.2 | Siege Workshop, siege models (catapult from the Hexagon pack, temporary ram) and their animations. **Browser review**           | ✅ Done                                          |
+| 6b.3 | Heroes in the sim: hero units, `startingHeroes` on the map, experience, levels 1–5, stats per level, tests                      | ✅ Done                                          |
+| 6b.4 | Abilities: data-driven effects, the `useAbility` command, the Commander's and the Archmage's abilities, tests                   | ✅ Done                                          |
+| 6b.5 | Fallen heroes: grave, revival by nearby own units, revive cursor and order. **Browser review**                                  | ✅ Done                                          |
+| 6b.6 | Hero panel (abilities, cooldowns, experience, hotkeys), balance tests, performance, docs                                        | ✅ Done                                          |
+| 6b.7 | Cavalry: knight on horse, Stable, mounted rider drawing. Needs the horse asset. **Browser review**                              | ⏸ Deferred until a free horse model is available |
 
 ## Units
 
