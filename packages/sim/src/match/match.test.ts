@@ -107,9 +107,9 @@ describe('the skirmish map', () => {
     for (const slot of world.slots) {
       const near = (p: Vec2, r: number) => Math.hypot(p.x - slot.x, p.z - slot.z) <= r;
       const count = (kind: string) =>
-        world.decorations.filter((d) => d.kind === kind && near(d, 70)).length;
-      expect(count('tree')).toBeGreaterThan(40);
-      expect(count('rock')).toBeGreaterThanOrEqual(3);
+        world.decorations.filter((d) => d.kind === kind && near(d, 52)).length;
+      expect(count('tree')).toBeGreaterThanOrEqual(80);
+      expect(count('rock')).toBeGreaterThanOrEqual(8);
       expect(
         world.deposits
           .filter((d) => near(d, 55))

@@ -36,6 +36,7 @@ const CAMERA_START: [number, number, number] = [HOME.x + 25, 42, HOME.z + 25];
 /** Root of the 3D viewport. Owns the renderer, camera and scene graph. */
 export function GameCanvas() {
   const showStats = useSettingsStore((s) => s.showStats);
+  const watchSeat = useSettingsStore((s) => s.watchSeat);
   const simWorld = useGameStore((s) => s.world);
   const heights = useGameStore((s) => s.heights);
   const buildings = useGameStore((s) => s.state.buildings);
@@ -88,7 +89,8 @@ export function GameCanvas() {
       <CommandMarkers />
       <PlacementPreview />
       <RtsCameraControls bounds={world.map.size / 2} start={HOME} heights={heights} />
-      <FogPass />
+      {/* Rebuilt when the dev inspector switches whose fog is drawn. */}
+      <FogPass key={watchSeat ?? 'local'} />
       {showStats && <Stats className="fps-stats" />}
     </Canvas>
   );

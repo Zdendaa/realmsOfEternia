@@ -140,5 +140,31 @@ export function scatterDecorations(map: MapDefinition, options: ScatterOptions =
     }
   }
 
+  for (const grove of map.groves ?? []) {
+    const grid = createSpacingGrid(grove.minSpacing);
+    const reach = grove.radius + grove.minSpacing;
+    for (const d of result) {
+      if (Math.hypot(d.x - grove.x, d.z - grove.z) <= reach) grid.add(d.x, d.z);
+    }
+    let placed = 0;
+    for (let attempt = 0; attempt < grove.count * 40 && placed < grove.count; attempt++) {
+      const x = grove.x + randomRange(rng, -grove.radius, grove.radius);
+      const z = grove.z + randomRange(rng, -grove.radius, grove.radius);
+      if (Math.hypot(x - grove.x, z - grove.z) > grove.radius || isBlocked(x, z)) continue;
+      if (water.isWater(x, z, WATER_MARGIN) || !grid.isFree(x, z)) continue;
+      grid.add(x, z);
+      result.push({
+        id: result.length,
+        kind: grove.kind,
+        x,
+        y: heights.getHeightAt(x, z),
+        z,
+        rotation: randomRange(rng, 0, Math.PI * 2),
+        scale: randomRange(rng, grove.minScale, grove.maxScale),
+      });
+      placed++;
+    }
+  }
+
   return result;
 }

@@ -16,7 +16,8 @@ import {
   type PlayerId,
 } from '@roe/shared';
 import type { Teams } from '../combat/hostility.js';
-import { teamsOf, type MatchSetup } from '../match/setup.js';
+import { aiPlayersOf, teamsOf, type MatchSetup } from '../match/setup.js';
+import type { AiPlayers } from '../ai/state.js';
 import type { Projectile } from '../combat/projectiles.js';
 import type { TowerCooldowns } from '../combat/towers.js';
 import type { TowerUpgrades } from '../combat/upgrades.js';
@@ -83,6 +84,8 @@ export interface GameState {
   readonly tick: number;
   /** Who is allied with whom; a player without an entry stands alone. */
   readonly teams: Teams;
+  /** The computer players' memories, by player. Changes when one gives a command. */
+  readonly ai: AiPlayers;
   /** Changes only when buildings are placed or finished, never for progress. */
   readonly buildings: readonly BuildingInstance[];
   /** Construction progress by site (building) id. Changes every tick while serfs build. */
@@ -191,6 +194,7 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     }
   }
   const teams = setup ? teamsOf(setup) : {};
+  const ai = setup ? aiPlayersOf(setup) : {};
   // Production buildings of an owned starting settlement come with their workers
   // (housing permitting, like any other).
   nextEntityId = hireWorkers(teams, buildings, units, nextEntityId);
@@ -208,6 +212,7 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
   const initial: GameState = {
     tick: 0,
     teams,
+    ai,
     buildings,
     construction: {},
     units,

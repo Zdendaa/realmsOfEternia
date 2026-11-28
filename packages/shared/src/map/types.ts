@@ -15,6 +15,22 @@ export interface DecorationRule {
   minSpacing: number;
 }
 
+/**
+ * A hand-placed cluster of trees or rocks around (x, z), so that a map can give every
+ * start the same wood and stone. Placed after the scattered rules, by the same blocking
+ * rules, so a spot that is taken gets fewer.
+ */
+export interface GroveDefinition {
+  kind: DecorationKind;
+  x: number;
+  z: number;
+  radius: number;
+  count: number;
+  minScale: number;
+  maxScale: number;
+  minSpacing: number;
+}
+
 export interface TerrainSettings {
   /** Maximum hill height above the lowlands, in world units. */
   hillHeight: number;
@@ -159,6 +175,7 @@ export interface MapDefinition {
    */
   objective?: 'clearMonsters';
   decorations: readonly DecorationRule[];
+  groves?: readonly GroveDefinition[];
 }
 
 export interface Decoration {

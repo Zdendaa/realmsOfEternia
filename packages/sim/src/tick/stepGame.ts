@@ -1,5 +1,6 @@
 import { isWall } from '@roe/game-data';
 import type { EntityId } from '@roe/shared';
+import { recordDecisions, thinkAi, type AiCommand } from '../ai/think.js';
 import { applyCommand, type CommandResult } from '../commands/applyCommand.js';
 import type { IssuedCommand } from '../commands/types.js';
 import { applyBuildingHits } from '../combat/buildings.js';
@@ -34,13 +35,16 @@ export interface StepResult {
   state: GameState;
   /** One result per issued command, in order. */
   results: CommandResult[];
+  /** The commands the computer players gave on this tick, in the order applied. */
+  ai: (AiCommand & { result: CommandResult })[];
 }
 
 /**
  * Advances the game by one fixed tick (`SIMULATION_TICK_MS`). Client and server call
  * exactly this with the same commands in the same order and get the same state.
  *
- * Order: commands → arrows landing → behavior (serfs: tasks, gathering, deliveries;
+ * Order: computer players think (from the state as it came in) → commands → their commands →
+ * arrows landing → behavior (serfs: tasks, gathering, deliveries;
  * workers: harvesting, farming; fighters: targets, chases, strikes) → the tick's damage
  * and deaths (units; then buildings, which fall into ruins with their workers) → route invalidation → path planning → walking → separation → construction
  * and repair work → workers for production buildings that have none (housing permitting) → trained
@@ -56,14 +60,21 @@ export function stepGame(
   syncContext(ctx, state);
   const navVersion = ctx.nav.version;
 
+  // The computer players decide from the state as the tick begins, before anyone's
+  // commands change it.
+  const thought = thinkAi(ctx, state);
+
   let current = state;
-  const results: CommandResult[] = [];
-  for (const { issuer, command } of commands) {
+  const apply = ({ issuer, command }: IssuedCommand): CommandResult => {
     const result = applyCommand(ctx, current, issuer, command);
-    results.push(result);
     current = result.state;
     syncContext(ctx, current);
-  }
+    return result;
+  };
+  const results = commands.map(apply);
+  const ai = thought.map((given) => ({ ...given, result: apply(given) }));
+  const memories = recordDecisions(current.ai, state.tick, ai);
+  if (memories !== current.ai) current = { ...current, ai: memories };
 
   // Working copies: units are shallow-copied once per tick and mutated in place below.
   const units = current.units.map((u) => ({ ...u }));
@@ -214,5 +225,5 @@ export function stepGame(
   const decided = { ...next, outcome: decideOutcomes(ctx.world, current, next) };
   syncContext(ctx, decided);
   for (const vision of ctx.visions.values()) updateVision(vision, decided);
-  return { state: decided, results };
+  return { state: decided, results, ai };
 }

@@ -33,6 +33,8 @@ function createPainter(canvas: HTMLCanvasElement, pixelRatio: number) {
   let terrainNodes: unknown = null;
   let fog: ReturnType<typeof offscreen> | null = null;
   let fogVersion = -1;
+  /** The vision painted last: the dev inspector can switch to another player's. */
+  let fogOf: unknown = null;
 
   return () => {
     const { state } = useGameStore.getState();
@@ -53,7 +55,8 @@ function createPainter(canvas: HTMLCanvasElement, pixelRatio: number) {
     const vision = localVision();
     if (vision && !useSettingsStore.getState().revealMap) {
       fog ??= offscreen(vision.columns, vision.rows);
-      if (fogVersion !== vision.version) {
+      if (fogOf !== vision || fogVersion !== vision.version) {
+        fogOf = vision;
         fogVersion = vision.version;
         paintFog(fog.context, vision);
       }

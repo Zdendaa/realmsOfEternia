@@ -1,6 +1,7 @@
 import { GameCanvas } from './render/GameCanvas';
 import { AimHint } from './ui/AimHint';
 import { ConstructionMenu } from './ui/ConstructionMenu';
+import { AiInspector } from './ui/dev/AiInspector';
 import { DevSpawnPanel } from './ui/dev/DevSpawnPanel';
 import { HeroStrip } from './ui/heroes/HeroStrip';
 import { Hud } from './ui/Hud';
@@ -26,6 +27,7 @@ export function App() {
       <WaveAlert />
       <OutcomeOverlay />
       {import.meta.env.DEV && <DevSpawnPanel />}
+      {import.meta.env.DEV && <AiInspector />}
     </div>
   );
 }

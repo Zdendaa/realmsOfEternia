@@ -8,6 +8,8 @@ import {
   type SettlementLayout,
 } from '@roe/game-data';
 import { MAX_PLAYERS, startSlotsOf, type MapDefinition, type PlayerId } from '@roe/shared';
+import { mixSeed } from '../ai/schedule.js';
+import type { AiPlayers } from '../ai/state.js';
 import { MONSTER_PLAYER, type Teams } from '../combat/hostility.js';
 import { createInitialState, type GameState } from '../state/gameState.js';
 import { createWorld, type SimWorld } from '../world/createWorld.js';
@@ -65,6 +67,19 @@ export function matchSetupIssue(map: MapDefinition, setup: MatchSetup): string |
 
 export const teamsOf = (setup: MatchSetup): Teams =>
   Object.fromEntries(setup.seats.map((seat) => [seat.player, seat.team]));
+
+/** A fresh memory for every computer player of the match. */
+export function aiPlayersOf(setup: MatchSetup): AiPlayers {
+  let order = 0;
+  return Object.fromEntries(
+    setup.seats.flatMap(({ player, slot, controller }) => {
+      if (controller.kind !== 'ai') return [];
+      const { difficulty, personality } = controller;
+      const seed = mixSeed(setup.seed, slot);
+      return [[player, { difficulty, personality, seed, order: order++, log: [] }]];
+    }),
+  );
+}
 
 export interface Match {
   world: SimWorld;

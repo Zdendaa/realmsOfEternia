@@ -895,3 +895,55 @@ body,
   gap: 4px;
   margin-bottom: 8px;
 }
+
+/* Development-only AI inspector, under the hero strip. */
+.dev-ai {
+  top: 250px;
+  right: 12px;
+  width: 270px;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  font-size: 11px;
+}
+
+.dev-ai summary {
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.dev-ai-entry {
+  margin-top: 8px;
+}
+
+.dev-ai-entry header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dev-ai-entry header button {
+  margin-left: auto;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dev-ai-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.dev-ai-entry p {
+  margin: 2px 0;
+}
+
+.dev-ai-entry ol {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  opacity: 0.75;
+}
+
+.dev-ai-entry li.is-refused {
+  color: #e88;
+}

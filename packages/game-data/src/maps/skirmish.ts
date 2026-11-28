@@ -1,4 +1,10 @@
-import type { CampDefinition, DepositDefinition, MapDefinition, Vec2 } from '@roe/shared';
+import type {
+  CampDefinition,
+  DepositDefinition,
+  GroveDefinition,
+  MapDefinition,
+  Vec2,
+} from '@roe/shared';
 import { toSlotPoint, turnPoint, type QuarterTurns } from '@roe/shared';
 
 /** A start in a corner, the village turned to face the middle of the map. */
@@ -51,6 +57,26 @@ const homeCamps: CampDefinition[] = SLOTS.flatMap((slot) => [
   },
 ]);
 
+/**
+ * Each start's own wood and stone, the same for everyone (in the village's coordinates):
+ * two groves behind and beside the village and a quarry on its other side.
+ */
+const HOME_GROVES = [
+  { kind: 'tree', x: -18, z: -38, radius: 11, count: 60 },
+  { kind: 'tree', x: -40, z: 13, radius: 10, count: 50 },
+  { kind: 'rock', x: 31, z: -22, radius: 7, count: 10 },
+] as const;
+
+const groves: GroveDefinition[] = SLOTS.flatMap((slot) =>
+  HOME_GROVES.map((grove) => ({
+    ...grove,
+    ...toSlotPoint(slot, grove),
+    minScale: grove.kind === 'tree' ? 0.5 : 0.8,
+    maxScale: grove.kind === 'tree' ? 0.9 : 1.4,
+    minSpacing: grove.kind === 'tree' ? 1.7 : 2.6,
+  })),
+);
+
 /** The lakes, one between each two neighbouring corners. */
 const lakes = ([0, 1, 2, 3] as const).map((turn) => ({
   ...turnPoint({ x: 0, z: -64 }, turn),
@@ -92,6 +118,7 @@ export const SKIRMISH_MAP = {
       ],
     },
   ],
+  groves,
   decorations: [
     {
       kind: 'tree',

@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-28._
 
-**Current state:** Phase 7 (fortifications, see [phase-7-plan.md](phase-7-plan.md)) is **done** (accepted 2026-11-26): walls drawn with the mouse, gates, breaching, self-firing towers, tower upgrades, and balance and performance work (7.1–7.7). A minimap was added before Phase 6b. In progress: siege (6b.1, 6b.2) and heroes in the sim (6b.3) are done; abilities (6b.4, with mouse aiming and stronger numbers after a playtest), fallen heroes (6b.5) and the hero panel, balance tests and performance (6b.6) are done (accepted 2026-11-26), and the camps and the wave were made harder so that the heroes need soldiers. 6b.7 (cavalry) is **deferred** until a free horse model is available. In progress: AI opponents (Phase 8, see [phase-ai-plan.md](phase-ai-plan.md), approved 2026-11-28). AI.1 (match setup for 2–4 players: teams, shared ally vision, team victory, the Four Corners map) is done. Phase 6b (siege weapons, heroes, cavalry last; see [phase-6b-plan.md](phase-6b-plan.md), approved 2026-11-26). Before it, Phase 6c (fog of war and win/lose, see [phase-6c-plan.md](phase-6c-plan.md)) was finished: vision in the simulation (6c.1), drawn fog of war (6c.2), attacks that need sight and filtered player views (6c.3) and victory and defeat with an end screen (6c.4). Before it, Phase 6 (military and combat) was finished, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy, can send the next wave at once and adds 50 of every resource.
+**Current state:** Phase 7 (fortifications, see [phase-7-plan.md](phase-7-plan.md)) is **done** (accepted 2026-11-26): walls drawn with the mouse, gates, breaching, self-firing towers, tower upgrades, and balance and performance work (7.1–7.7). A minimap was added before Phase 6b. In progress: siege (6b.1, 6b.2) and heroes in the sim (6b.3) are done; abilities (6b.4, with mouse aiming and stronger numbers after a playtest), fallen heroes (6b.5) and the hero panel, balance tests and performance (6b.6) are done (accepted 2026-11-26), and the camps and the wave were made harder so that the heroes need soldiers. 6b.7 (cavalry) is **deferred** until a free horse model is available. In progress: AI opponents (Phase 8, see [phase-ai-plan.md](phase-ai-plan.md), approved 2026-11-28). AI.1 (match setup for 2–4 players: teams, shared ally vision, team victory, the Four Corners map) and AI.2 (the AI framework; computer players recruit serfs and gather) are done and **waiting for review** before AI.3. Phase 6b (siege weapons, heroes, cavalry last; see [phase-6b-plan.md](phase-6b-plan.md), approved 2026-11-26). Before it, Phase 6c (fog of war and win/lose, see [phase-6c-plan.md](phase-6c-plan.md)) was finished: vision in the simulation (6c.1), drawn fog of war (6c.2), attacks that need sight and filtered player views (6c.3) and victory and defeat with an end screen (6c.4). Before it, Phase 6 (military and combat) was finished, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy, can send the next wave at once and adds 50 of every resource.
 
 ## Phases
 
@@ -55,6 +55,7 @@ _Last updated: 2026-11-28._
 | 6b    | Siege, heroes, cavalry: see [phase-6b-plan.md](phase-6b-plan.md)                  | ✅ Done (6b.7 cavalry deferred) |
 | 6b.7  | Cavalry: deferred until a free horse model is available                           | ⏸ Deferred                      |
 | AI.1  | Match setup for 2–4 players: start slots, teams, ally vision, Four Corners map    | ✅ Done                         |
+| AI.2  | AI framework: memory in state, think schedule, fair knowledge, serfs, inspector   | In review                       |
 | AI    | AI opponents: see [phase-ai-plan.md](phase-ai-plan.md)                            | 🔨                              |
 
 ## What works today
@@ -111,6 +112,14 @@ _Last updated: 2026-11-28._
 - **Repair:** serfs repair any damaged, finished own building, walls, gates and towers included: right-click it with serfs selected (hammer cursor), or select it and press **Repair**, which sends the nearest idle serfs. Each serf restores 5 health a second, up to the building's builder limit. A repair from nearly destroyed costs 25% of the build cost (less damage, less, rounded per resource, so walls and light damage are free; the Town Hall is always free), paid as the work goes; without the resources the serfs wait.
 
 ## Known limitations
+
+### Computer players (AI.2)
+
+- They only recruit serfs and gather wood and stone: they build nothing, produce no new food (recruiting stops when the starting food is spent, or at the personality's serf count) and never fight. Economy comes with AI.3, the army with AI.4.
+- Trees and rocks within 45 units of their Town Hall are known to them even out of sight; once those run out their serfs stand idle (expansion is AI.3).
+- The difficulty changes only how often they act and how many commands they give; with this little to do, all three play almost alike.
+- The building-spot finder is tested but no behavior uses it yet. It checks spots with the real placement rules, which also see hidden enemy buildings near the base.
+- The server (`MatchRoom`) doesn't seat computer players yet.
 
 ### Rendering
 

@@ -10,9 +10,15 @@ import {
 import { LOCAL_PLAYER, useGameStore } from '../../state/gameStore';
 import { useSettingsStore } from '../../state/settingsStore';
 
-/** The local player's vision (fog of war), or null if the context keeps none. */
+/**
+ * Whose eyes the map is drawn through: the local player's, or in dev builds a watched
+ * computer player's. Orders and panels stay the local player's either way.
+ */
+const viewer = () => useSettingsStore.getState().watchSeat ?? LOCAL_PLAYER;
+
+/** The viewer's vision (fog of war), or null if the context keeps none. */
 export const localVision = (): Vision | null =>
-  useGameStore.getState().ctx.visions.get(LOCAL_PLAYER) ?? null;
+  useGameStore.getState().ctx.visions.get(viewer()) ?? null;
 
 /** True when the fog is off for rendering (dev "Reveal map"), or there is no vision. */
 const revealed = (vision: Vision | null) =>
@@ -20,7 +26,7 @@ const revealed = (vision: Vision | null) =>
 
 /** Whether the local player may see a thing of `owner` at (x, z) right now. */
 export function shownAt(owner: string | null, x: number, z: number): boolean {
-  if (owner === LOCAL_PLAYER) return true;
+  if (owner === viewer()) return true;
   const vision = localVision();
   return revealed(vision) || isVisible(vision as Vision, x, z);
 }
@@ -30,7 +36,7 @@ export function shownAt(owner: string | null, x: number, z: number): boolean {
  * can't be attacked, so the attack cursor needs this.
  */
 export function buildingInSight(building: BuildingInstance): boolean {
-  if (building.ownerId === LOCAL_PLAYER) return true;
+  if (building.ownerId === viewer()) return true;
   const vision = localVision();
   return revealed(vision) || buildingSeen(vision as Vision, building);
 }
@@ -45,8 +51,9 @@ let cache: {
   buildings: readonly BuildingInstance[] | null;
   version: number;
   reveal: boolean;
+  viewer: string;
   known: readonly BuildingInstance[];
-} = { buildings: null, version: -1, reveal: false, known: [] };
+} = { buildings: null, version: -1, reveal: false, viewer: LOCAL_PLAYER, known: [] };
 
 /**
  * The buildings the local player knows: their own as they are, and everyone else\'s as
@@ -58,17 +65,23 @@ export function knownBuildings(state: GameState): readonly BuildingInstance[] {
   const vision = localVision();
   const reveal = revealed(vision);
   const version = vision?.version ?? 0;
-  if (cache.buildings === state.buildings && cache.version === version && cache.reveal === reveal) {
+  const eyes = viewer();
+  if (
+    cache.buildings === state.buildings &&
+    cache.version === version &&
+    cache.reveal === reveal &&
+    cache.viewer === eyes
+  ) {
     return cache.known;
   }
   let known: readonly BuildingInstance[];
   if (reveal || !vision) known = state.buildings;
   else {
-    const own = state.buildings.filter((b) => b.ownerId === LOCAL_PLAYER);
+    const own = state.buildings.filter((b) => b.ownerId === eyes);
     const seen = [...vision.lastSeen.values()].sort((a, b) => a.id - b.id);
     known = [...own, ...seen];
   }
-  cache = { buildings: state.buildings, version, reveal, known };
+  cache = { buildings: state.buildings, version, reveal, viewer: eyes, known };
   return known;
 }
 

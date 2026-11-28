@@ -73,6 +73,7 @@ export {
   type AiDifficultyId,
   type AiPersonalityDefinition,
   type AiPersonalityId,
+  type GatheredResource,
 } from './match/ai.js';
 export {
   PROTOTYPE_SETTLEMENT,

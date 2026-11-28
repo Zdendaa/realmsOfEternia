@@ -10,15 +10,16 @@ const MATCHES: readonly { name: string; query: string }[] = [
 
 /** Development only: starts another match by reloading the page with its URL. */
 export function DevMatchPicker() {
+  const { search } = window.location;
+  const custom = !MATCHES.some((m) => m.query === search);
   return (
     <label className="dev-match">
       Match
       <select
-        value={
-          MATCHES.some((m) => m.query === window.location.search) ? window.location.search : ''
-        }
+        value={search}
         onChange={(event) => window.location.assign(window.location.pathname + event.target.value)}
       >
+        {custom && <option value={search}>Custom (from the URL)</option>}
         {MATCHES.map((match) => (
           <option key={match.query} value={match.query}>
             {match.name}
