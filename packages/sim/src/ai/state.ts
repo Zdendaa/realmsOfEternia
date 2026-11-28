@@ -1,5 +1,5 @@
 import type { AiDifficultyId, AiPersonalityId, BuildingId } from '@roe/game-data';
-import type { PlayerId, Vec2 } from '@roe/shared';
+import type { EntityId, PlayerId, Vec2 } from '@roe/shared';
 import type { CommandIssue } from '../commands/applyCommand.js';
 
 /** How many of its latest decisions a computer player remembers (for the inspector). */
@@ -22,6 +22,48 @@ export type AiDanger = Vec2 & { at: number };
  * around, a mine can go there) or `held`. A deposit it never saw has no entry.
  */
 export type AiDeposit = 'clear' | 'held';
+
+/** An enemy building as it last saw it. */
+export interface AiSighting extends Vec2 {
+  id: EntityId;
+  owner: PlayerId;
+  type: BuildingId;
+}
+
+/** One expedition of its army: against the guards of a deposit, or against a player. */
+export interface AiMission {
+  kind: 'camp' | 'raid';
+  /** Waiting at the rally point, on the way (and fighting), or coming home. */
+  stage: 'gather' | 'march' | 'retreat';
+  target: Vec2;
+  /** The points still to march by, the target last (`route.ts`). */
+  legs: readonly Vec2[];
+  /** The deposit it is clearing (`camp`). */
+  deposit: number | null;
+  units: readonly EntityId[];
+  /** Its strength as it set out. */
+  strength: number;
+  /** Where the army is heading on this hop. */
+  hop: Vec2;
+  /** Tick the stage began, and tick of the latest hop. */
+  stageAt: number;
+  hopAt: number;
+  /** The enemy it has turned everyone on. */
+  focus: EntityId | null;
+}
+
+export interface AiArmy {
+  mission: AiMission | null;
+  /** Whether its base is under attack right now. */
+  defending: boolean;
+  /** Attacks on players it has sent. */
+  raids: number;
+  /** How often each deposit's guards have beaten it off. */
+  failed: Readonly<Record<number, number>>;
+  /** The soldier looking for the enemy, and the points it has still to pass. */
+  scout: { unit: EntityId; legs: readonly Vec2[] } | null;
+  scoutedAt: number | null;
+}
 
 /** The building it wants next, and what it waits for. */
 export interface AiGoal {
@@ -61,6 +103,13 @@ export interface AiState {
   dangers: readonly AiDanger[];
   /** By index into the map's deposits. */
   deposits: Readonly<Record<number, AiDeposit>>;
+  /** What guarded each deposit when it last saw guards there (strength). */
+  guards: Readonly<Record<number, number>>;
+  /** Enemy buildings it has seen and not seen gone, by id order. */
+  sightings: readonly AiSighting[];
+  /** Start positions (indices into the map's) it has had in sight. */
+  visited: readonly number[];
+  army: AiArmy;
 }
 
 export type AiPlayers = Readonly<Record<PlayerId, AiState>>;
@@ -77,4 +126,8 @@ export const freshAiState = (
   noRoom: {},
   dangers: [],
   deposits: {},
+  guards: {},
+  sightings: [],
+  visited: [],
+  army: { mission: null, defending: false, raids: 0, failed: {}, scout: null, scoutedAt: null },
 });

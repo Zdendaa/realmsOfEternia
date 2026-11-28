@@ -6,16 +6,15 @@ import {
   housingOf,
   isWall,
   productionOf,
-  RESOURCE_IDS,
   type BuildingId,
-  type ResourceCost,
 } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type EntityId, type Vec2 } from '@roe/shared';
 import { repairCost } from '../construction/repair.js';
 import { canAfford } from '../economy/stock.js';
 import type { BuildingInstance } from '../state/gameState.js';
 import type { UnitInstance } from '../state/units.js';
-import { depositAt } from './deposits.js';
+import { affords, spend } from './budget.js';
+import { depositAt, lacksSource } from './deposits.js';
 import type { AiKnowledge } from './knowledge.js';
 import type { AiProposal, ManagerInput } from './manager.js';
 import { isDangerous } from './memory.js';
@@ -74,17 +73,24 @@ function repairs(input: ManagerInput): AiProposal[] {
   });
 }
 
-/** Keeps every construction site manned (busy serfs never take up a site on their own). */
+/**
+ * Keeps every construction site manned (busy serfs never take up a site on their own),
+ * with no more than `builderShare` of its serfs building at once.
+ */
 function builders(input: ManagerInput): AiProposal[] {
   const { knowledge, difficulty } = input;
+  const serfs = knowledge.units.filter((u) => u.type === 'serf');
+  const building = serfs.filter((u) => u.task.kind === 'build' || u.task.kind === 'deliver');
+  let spare = Math.ceil(serfs.length * AI_RULES.builderShare) - building.length;
   return knowledge.buildings.flatMap((site): AiProposal[] => {
     if (site.status !== 'construction' || underThreat(input, site)) return [];
     const there = knowledge.units.filter(
       (u) => (u.task.kind === 'build' || u.task.kind === 'deliver') && u.task.siteId === site.id,
     ).length;
     const wanted = Math.min(BUILDINGS[site.type].maxBuilders, difficulty.buildersPerSite);
-    const unitIds = takeSerfs(input, site, wanted - there);
+    const unitIds = takeSerfs(input, site, Math.min(wanted - there, spare));
     if (unitIds.length === 0) return [];
+    spare -= unitIds.length;
     return [
       {
         command: { type: 'assignBuilders', unitIds, siteId: site.id },
@@ -142,6 +148,8 @@ export function nextInBuildOrder(input: ManagerInput): BuildingId | null {
     if ((owned.get(building) ?? 0) >= wanted) continue;
     if ((memory.noRoom[building] ?? 0) > knowledge.tick) continue;
     if (depositOf(building) && !hasOpenDeposit(input, building)) continue;
+    // Saving up for what it has no way to come by would stop everything behind it.
+    if (lacksSource(knowledge, BUILDINGS[building].cost)) continue;
     return building;
   }
   return null;
@@ -156,10 +164,6 @@ function needsHouse({ knowledge, memory }: ManagerInput): boolean {
   const { capacity, used } = knowledge.population;
   return capacity + coming - used < AI_RULES.freeHousing;
 }
-
-/** What it lacks of `cost`, as far as it can come by it by waiting. */
-const affordable = (knowledge: AiKnowledge, cost: ResourceCost) =>
-  RESOURCE_IDS.every((id) => (cost[id] ?? 0) <= knowledge.stock[id]);
 
 export interface BasePlan {
   proposals: AiProposal[];
@@ -188,7 +192,7 @@ export function manageBase(input: ManagerInput): BasePlan {
   ).length;
   const pause = difficulty.buildPauseSeconds * SIMULATION_TICK_RATE;
   let waiting: AiGoal['waiting'] = null;
-  if (!affordable(knowledge, BUILDINGS[building].cost)) waiting = 'resources';
+  if (!affords(input.budget, BUILDINGS[building].cost)) waiting = 'resources';
   // A house doesn't wait its turn: without places nothing else can be staffed.
   else if (!house && sites >= difficulty.maxSites) waiting = 'sites';
   else if (!house && builtAt !== null && knowledge.tick < builtAt + pause) waiting = 'pause';
@@ -205,6 +209,7 @@ export function manageBase(input: ManagerInput): BasePlan {
     const retry = knowledge.tick + AI_RULES.retrySeconds * SIMULATION_TICK_RATE;
     return { ...idle, memory: { ...idle.memory, noRoom: { ...noRoom, [building]: retry } } };
   }
+  spend(input.budget, BUILDINGS[building].cost);
   proposals.push({ command: search.spot, note: `build ${nameOf(building)}` });
   return {
     proposals,

@@ -4,6 +4,7 @@ import {
   RESOURCE_IDS,
   SKIRMISH_MAP,
   SKIRMISH_SETTLEMENT,
+  UNITS,
   type ResourceAmounts,
   type ResourceCost,
 } from '@roe/game-data';
@@ -212,9 +213,12 @@ describe('serfs', () => {
     for (const player of AI_PLAYERS) {
       const own = serfs(played.state, player);
       expect(own.length).toBeGreaterThan(serfs(match().state, player).length);
+      // (Which of the two they are on at any one moment depends on what it is short of.)
       const kinds = new Set(
-        own.flatMap((u) =>
-          u.task.kind === 'gather' ? [played.world.decorations[u.task.nodeId]?.kind] : [],
+        played.given.flatMap(({ issuer, command: { command } }) =>
+          issuer === player && command.type === 'gather'
+            ? [played.world.decorations[command.nodeId]?.kind]
+            : [],
         ),
       );
       expect(kinds).toEqual(new Set(['tree', 'rock']));
@@ -226,10 +230,15 @@ describe('serfs', () => {
   it('gathers far more than it started with, spent or not', () => {
     const before = match().state.stocks;
     for (const player of AI_PLAYERS) {
-      // What it has, and what it paid for the buildings it started.
+      // What it has, and what it paid for the buildings it started and units it trained.
       const spent = played.given.reduce((sum, { issuer, command: { command } }) => {
-        if (issuer !== player || command.type !== 'placeBuilding') return sum;
-        const cost: ResourceCost = BUILDINGS[command.building].cost;
+        if (issuer !== player) return sum;
+        const cost: ResourceCost =
+          command.type === 'placeBuilding'
+            ? BUILDINGS[command.building].cost
+            : command.type === 'trainUnit'
+              ? UNITS[command.unit].cost
+              : {};
         return sum + (cost.wood ?? 0) + (cost.stone ?? 0);
       }, 0);
       const stock = played.state.stocks[player];

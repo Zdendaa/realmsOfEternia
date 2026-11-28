@@ -1,6 +1,7 @@
 import type { AiDifficultyDefinition, AiPersonalityDefinition, BuildingId } from '@roe/game-data';
 import type { EntityId, Rng } from '@roe/shared';
 import type { Command } from '../commands/types.js';
+import type { Budget } from './budget.js';
 import type { SpotOptions, SpotSearch } from './buildingSpot.js';
 import type { AiKnowledge } from './knowledge.js';
 import type { AiState } from './state.js';
@@ -23,4 +24,6 @@ export interface ManagerInput {
   findSpot: (building: BuildingId, options: SpotOptions, from: number) => SpotSearch;
   /** Serfs already given a job in this decision. */
   claimed: Set<EntityId>;
+  /** What no manager of this decision has spent yet. */
+  budget: Budget;
 }

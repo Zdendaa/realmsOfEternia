@@ -68,6 +68,7 @@ export {
   AI_DIFFICULTIES,
   AI_RULES,
   AI_PERSONALITIES,
+  AI_UNIT_STRENGTH,
   isAiDifficultyId,
   isAiPersonalityId,
   type AiDifficultyDefinition,
@@ -75,6 +76,8 @@ export {
   type AiPersonalityDefinition,
   type AiPersonalityId,
   type GatheredResource,
+  type SiegeKind,
+  type SoldierKind,
 } from './match/ai.js';
 export {
   PROTOTYPE_SETTLEMENT,

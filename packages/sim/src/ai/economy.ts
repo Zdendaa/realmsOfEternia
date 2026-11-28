@@ -8,8 +8,8 @@ import {
 } from '@roe/game-data';
 import { clamp, type Decoration, type DecorationKind, type EntityId } from '@roe/shared';
 import { hasFreeHousing } from '../economy/population.js';
-import { canAfford } from '../economy/stock.js';
 import type { UnitInstance } from '../state/units.js';
+import { affords, spend } from './budget.js';
 import { HOME_RADIUS } from './knowledge.js';
 import type { AiProposal, ManagerInput } from './manager.js';
 import { isUnsafe } from './memory.js';
@@ -32,7 +32,7 @@ export const serfTarget = ({ personality, difficulty }: ManagerInput) =>
 
 /** Recruits a serf while it has fewer than it wants and can house and pay one. */
 function recruit(input: ManagerInput): AiProposal | null {
-  const { townHall, units, population, stock, buildings } = input.knowledge;
+  const { townHall, units, population, buildings } = input.knowledge;
   if (!townHall) return null;
   const serfs = units.filter((u) => u.type === 'serf').length;
   const target = serfTarget(input);
@@ -42,8 +42,9 @@ function recruit(input: ManagerInput): AiProposal | null {
     ? AI_RULES.mineFoodReserve
     : 0;
   const food = (UNITS.serf.cost as ResourceCost).food ?? 0;
-  if (!hasFreeHousing(population) || !canAfford(stock, UNITS.serf.cost)) return null;
-  if (stock.food - food < reserve) return null;
+  if (!hasFreeHousing(population) || !affords(input.budget, UNITS.serf.cost)) return null;
+  if (input.budget.food - food < reserve) return null;
+  spend(input.budget, UNITS.serf.cost);
   return {
     command: { type: 'recruitSerf', buildingId: townHall.id },
     note: `recruit serf ${serfs + 1}/${target}`,

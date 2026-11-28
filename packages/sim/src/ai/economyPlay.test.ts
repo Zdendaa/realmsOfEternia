@@ -19,6 +19,7 @@ import { createUnit } from '../state/units.js';
 import { stepGame } from '../tick/stepGame.js';
 import { findBuildingSpot, searchBuildingSpot, SPOT_RULES } from './buildingSpot.js';
 import type { AiKnowledge } from './knowledge.js';
+import { depositAt } from './deposits.js';
 import { isUnsafe, observe } from './memory.js';
 import { freshAiState } from './state.js';
 
@@ -53,7 +54,7 @@ function play(setup: MatchSetup, map: MapDefinition = SKIRMISH_MAP) {
   const ctx: SimContext = createSimContext(world, first);
   let state = first;
   const refused: string[] = [];
-  const built: { player: PlayerId; type: string; tick: number }[] = [];
+  const built: { player: PlayerId; type: string; tick: number; onClear: boolean }[] = [];
   return {
     world,
     ctx,
@@ -72,7 +73,14 @@ function play(setup: MatchSetup, map: MapDefinition = SKIRMISH_MAP) {
         for (const { issuer, command, result: outcome } of result.ai) {
           if (!outcome.ok) refused.push(`${issuer} ${command.type} ${outcome.check.issues}`);
           else if (command.type === 'placeBuilding') {
-            built.push({ player: issuer, type: command.building, tick: state.tick });
+            const deposit = depositAt(world.deposits, command);
+            built.push({
+              player: issuer,
+              type: command.building,
+              tick: state.tick,
+              // What it remembered of the deposit as it gave the order.
+              onClear: result.state.ai[issuer]?.deposits[deposit] === 'clear',
+            });
           }
         }
         state = result.state;
@@ -103,21 +111,23 @@ describe('Normal economy targets', () => {
       expect(complete(at5, player, 'bakery'), player).toBeGreaterThanOrEqual(1);
       expect(complete(at5, player, 'quarry'), player).toBeGreaterThanOrEqual(1);
       expect(complete(at5, player, 'field'), player).toBeGreaterThanOrEqual(3);
-      expect(stock(at5, player).food, player).toBeGreaterThanOrEqual(20);
+      expect(complete(at5, player, 'archeryRange'), player).toBe(1);
+      expect(at5.stats[player]?.soldiersTrained, player).toBeGreaterThanOrEqual(5);
       const serfs = at5.units.filter((u) => u.ownerId === player && u.type === 'serf');
       expect(serfs.length, player).toBeGreaterThanOrEqual(13);
     }
   });
 
-  it('has grown it and has stock to spare within ten', () => {
+  it('has grown it, with ore and soldiers, within ten', () => {
     for (const player of PLAYERS) {
       expect(complete(at10, player, 'field'), player).toBeGreaterThanOrEqual(4);
       expect(complete(at10, player, 'mill'), player).toBeGreaterThanOrEqual(1);
       expect(complete(at10, player, 'storehouse'), player).toBeGreaterThanOrEqual(1);
       expect(complete(at10, player, 'lumbermill'), player).toBeGreaterThanOrEqual(1);
-      expect(stock(at10, player).food, player).toBeGreaterThanOrEqual(60);
-      expect(stock(at10, player).wood, player).toBeGreaterThanOrEqual(30);
-      expect(stock(at10, player).stone, player).toBeGreaterThanOrEqual(30);
+      expect(complete(at10, player, 'ironMine'), player).toBe(1);
+      expect(at10.stats[player]?.soldiersTrained, player).toBeGreaterThanOrEqual(8);
+      // Its soldiers eat into the stock, but it never runs dry.
+      expect(stock(at10, player).food, player).toBeGreaterThanOrEqual(15);
     }
   });
 
@@ -132,8 +142,10 @@ describe('Normal economy targets', () => {
     }
   });
 
-  it('builds no mine on a deposit it has never seen', () => {
-    expect(match.built.filter((b) => b.type.endsWith('Mine'))).toEqual([]);
+  it('builds mines only on deposits it has seen unguarded', () => {
+    const mines = match.built.filter((b) => b.type.endsWith('Mine'));
+    expect(mines.length).toBeGreaterThan(0);
+    for (const mine of mines) expect(mine.onClear, `${mine.player} ${mine.type}`).toBe(true);
   });
 
   it('puts every lumbermill and quarry where there is something to harvest', () => {
@@ -150,6 +162,29 @@ describe('Normal economy targets', () => {
   });
 });
 
+describe('builders', () => {
+  it('are never ordered beyond their share of the serfs, even on Hard', () => {
+    const match = play(setupOf('hard', ['balanced', 'aggressive', 'defensive']));
+    let orders = 0;
+    for (let i = 0; i < minutes(6); i++) {
+      // (Idle serfs also take up sites near them by themselves: a rule of the game.)
+      const before = match.state;
+      const given = stepGame(match.ctx, before);
+      for (const { issuer, command } of given.ai) {
+        if (command.type !== 'assignBuilders') continue;
+        const serfs = before.units.filter((u) => u.ownerId === issuer && u.type === 'serf');
+        const busy = serfs.filter((u) => u.task.kind === 'build' || u.task.kind === 'deliver');
+        expect(busy.length + command.unitIds.length, issuer).toBeLessThanOrEqual(
+          Math.ceil(serfs.length * AI_RULES.builderShare),
+        );
+        orders++;
+      }
+      match.state = given.state;
+    }
+    expect(orders).toBeGreaterThan(10);
+  });
+});
+
 describe('personalities and difficulty', () => {
   it('grows an economy whatever the personality', () => {
     const match = play(setupOf('normal', ['balanced', 'aggressive', 'defensive']));
@@ -157,7 +192,15 @@ describe('personalities and difficulty', () => {
     PLAYERS.forEach((player) => {
       expect(complete(match.state, player, 'bakery'), player).toBeGreaterThanOrEqual(1);
       expect(complete(match.state, player, 'quarry'), player).toBeGreaterThanOrEqual(1);
-      expect(stock(match.state, player).food, player).toBeGreaterThanOrEqual(50);
+      expect(complete(match.state, player, 'field'), player).toBeGreaterThanOrEqual(3);
+      // The opening five archers: trained, or paid for and on their way.
+      const queued = Object.entries(match.state.training)
+        .filter(([id]) =>
+          match.state.buildings.some((b) => b.id === Number(id) && b.ownerId === player),
+        )
+        .reduce((sum, [, training]) => sum + training.queue.length, 0);
+      const trained = match.state.stats[player]?.soldiersTrained ?? 0;
+      expect(trained + queued, player).toBeGreaterThanOrEqual(5);
     });
     expect(match.refused).toEqual([]);
   });
@@ -252,8 +295,11 @@ describe('mines', () => {
     for (const player of PLAYERS) {
       expect(complete(match.state, player, 'ironMine'), player).toBe(1);
       expect(complete(match.state, player, 'goldMine'), player).toBe(1);
-      expect(stock(match.state, player).iron, player).toBeGreaterThan(0);
-      expect(stock(match.state, player).gold, player).toBeGreaterThan(5);
+      // Soldiers that take iron: there is none without the mine.
+      const mined = match.state.units.some(
+        (u) => u.ownerId === player && (u.type === 'swordsman' || u.type === 'spearman'),
+      );
+      expect(mined || stock(match.state, player).iron > 0, player).toBe(true);
     }
     expect(match.refused).toEqual([]);
   });
@@ -268,6 +314,9 @@ describe('what it remembers', () => {
       tick,
       enemyUnits: enemies.map(monster),
       deposits: DEPOSITS,
+      otherBuildings: [],
+      startSlots: [],
+      isEnemy: () => true,
       sees: () => seen,
     }) as unknown as AiKnowledge;
   const blank = freshAiState({

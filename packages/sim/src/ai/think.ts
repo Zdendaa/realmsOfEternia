@@ -4,9 +4,11 @@ import type { CommandResult } from '../commands/applyCommand.js';
 import type { IssuedCommand } from '../commands/types.js';
 import type { SimContext } from '../context/simContext.js';
 import type { GameState } from '../state/gameState.js';
+import { manageArmy } from './army.js';
 import { manageBase } from './base.js';
 import { searchBuildingSpot, SPOT_RULES } from './buildingSpot.js';
 import { manageEconomy } from './economy.js';
+import { manageMilitary } from './military.js';
 import { aiKnowledge } from './knowledge.js';
 import type { ManagerInput } from './manager.js';
 import { observe } from './memory.js';
@@ -28,6 +30,10 @@ export interface AiThoughts {
 const unchangedOr = (before: AiState, after: AiState) =>
   before.dangers === after.dangers &&
   before.deposits === after.deposits &&
+  before.guards === after.guards &&
+  before.sightings === after.sightings &&
+  before.visited === after.visited &&
+  before.army === after.army &&
   before.builtAt === after.builtAt &&
   before.noRoom === after.noRoom &&
   before.search === after.search &&
@@ -49,12 +55,16 @@ function decide(ctx: SimContext, state: GameState, player: PlayerId, ai: AiState
     findSpot: (building, options, from) =>
       searchBuildingSpot(ctx, state, player, building, options, from, SPOT_RULES.perDecision),
     claimed: new Set(),
+    budget: { ...knowledge.stock },
   };
-  // Managers in order of importance; the base one's plan also guides the gathering.
+  // Managers in order of importance, spending from one budget; the base one's plan also
+  // guides the gathering and the training.
+  const army = manageArmy(input);
   const base = manageBase(input);
-  const memory: AiState = { ...input.memory, ...base.memory };
+  const memory: AiState = { ...input.memory, ...army.memory, ...base.memory };
   const economy = manageEconomy({ ...input, memory });
-  const proposals = [...base.proposals, ...economy];
+  const military = manageMilitary({ ...input, memory });
+  const proposals = [...army.proposals, ...base.proposals, ...economy, ...military];
   const commands = proposals
     .slice(0, difficulty.commandsPerThink)
     .map(({ command, note }): AiCommand => ({ issuer: player, command, note }));

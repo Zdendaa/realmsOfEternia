@@ -2,7 +2,7 @@
 
 _Last updated: 2026-11-28._
 
-**Current state:** Phase 7 (fortifications, see [phase-7-plan.md](phase-7-plan.md)) is **done** (accepted 2026-11-26): walls drawn with the mouse, gates, breaching, self-firing towers, tower upgrades, and balance and performance work (7.1–7.7). A minimap was added before Phase 6b. In progress: siege (6b.1, 6b.2) and heroes in the sim (6b.3) are done; abilities (6b.4, with mouse aiming and stronger numbers after a playtest), fallen heroes (6b.5) and the hero panel, balance tests and performance (6b.6) are done (accepted 2026-11-26), and the camps and the wave were made harder so that the heroes need soldiers. 6b.7 (cavalry) is **deferred** until a free horse model is available. In progress: AI opponents (Phase 8, see [phase-ai-plan.md](phase-ai-plan.md), approved 2026-11-28). AI.1 (match setup for 2–4 players: teams, shared ally vision, team victory, the Four Corners map) and AI.2 (the AI framework) are done (reviewed 2026-11-28). AI.3 (the AI’s economy and base) is done and **waiting for review** before AI.4. Phase 6b (siege weapons, heroes, cavalry last; see [phase-6b-plan.md](phase-6b-plan.md), approved 2026-11-26). Before it, Phase 6c (fog of war and win/lose, see [phase-6c-plan.md](phase-6c-plan.md)) was finished: vision in the simulation (6c.1), drawn fog of war (6c.2), attacks that need sight and filtered player views (6c.3) and victory and defeat with an end screen (6c.4). Before it, Phase 6 (military and combat) was finished, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy, can send the next wave at once and adds 50 of every resource.
+**Current state:** Phase 7 (fortifications, see [phase-7-plan.md](phase-7-plan.md)) is **done** (accepted 2026-11-26): walls drawn with the mouse, gates, breaching, self-firing towers, tower upgrades, and balance and performance work (7.1–7.7). A minimap was added before Phase 6b. In progress: siege (6b.1, 6b.2) and heroes in the sim (6b.3) are done; abilities (6b.4, with mouse aiming and stronger numbers after a playtest), fallen heroes (6b.5) and the hero panel, balance tests and performance (6b.6) are done (accepted 2026-11-26), and the camps and the wave were made harder so that the heroes need soldiers. 6b.7 (cavalry) is **deferred** until a free horse model is available. In progress: AI opponents (Phase 8, see [phase-ai-plan.md](phase-ai-plan.md), approved 2026-11-28). AI.1 (match setup for 2–4 players: teams, shared ally vision, team victory, the Four Corners map) and AI.2 (the AI framework) are done (reviewed 2026-11-28). AI.3 (the AI’s economy and base) is done (reviewed 2026-11-28). AI.4 (the AI’s military) is done and **waiting for review** before AI.5. Phase 6b (siege weapons, heroes, cavalry last; see [phase-6b-plan.md](phase-6b-plan.md), approved 2026-11-26). Before it, Phase 6c (fog of war and win/lose, see [phase-6c-plan.md](phase-6c-plan.md)) was finished: vision in the simulation (6c.1), drawn fog of war (6c.2), attacks that need sight and filtered player views (6c.3) and victory and defeat with an end screen (6c.4). Before it, Phase 6 (military and combat) was finished, see [phase-6-plan.md](phase-6-plan.md): combat in the simulation (6.1), soldiers with weapons and timed attack animations (6.2), barracks and archery range with training (6.3), attack commands, attack-move, stop, health bars and the unit panel (6.4), buildings that take damage and fall into ruins (6.5), skeleton camps guarding the ore deposits (6.6) and a scripted skeleton wave after eight minutes (6.7). Phase 5 (economy, with the depth part 5b) is done: see [phase-5-plan.md](phase-5-plan.md) and [phase-5b-plan.md](phase-5b-plan.md). In a dev build (`npx pnpm@10 dev`) the Dev spawn panel adds soldiers for you or an enemy, can send the next wave at once and adds 50 of every resource.
 
 ## Phases
 
@@ -56,7 +56,8 @@ _Last updated: 2026-11-28._
 | 6b.7  | Cavalry: deferred until a free horse model is available                           | ⏸ Deferred                      |
 | AI.1  | Match setup for 2–4 players: start slots, teams, ally vision, Four Corners map    | ✅ Done                         |
 | AI.2  | AI framework: memory in state, think schedule, fair knowledge, serfs, inspector   | ✅ Done                         |
-| AI.3  | AI economy and base: build orders, housing, food chain, mines, rebuilding         | In review                       |
+| AI.3  | AI economy and base: build orders, housing, food chain, mines, rebuilding         | ✅ Done                         |
+| AI.4  | AI military: training, defense, scouting, camps, attacks, siege, towers           | In review                       |
 | AI    | AI opponents: see [phase-ai-plan.md](phase-ai-plan.md)                            | 🔨                              |
 
 ## What works today
@@ -114,15 +115,18 @@ _Last updated: 2026-11-28._
 
 ## Known limitations
 
-### Computer players (AI.3)
+### Computer players (AI.4)
 
-- They build up an economy and keep it standing, but never train soldiers or fight, and their heroes stand still (AI.4 and AI.5). Their food, wood and stone pile up for lack of anything to spend them on.
-- **Mines need a cleared deposit, which they can't bring about yet.** A mine is built only on a deposit the AI has seen with no enemy near, and nothing of its own goes to look or clears a camp before AI.4. In a normal match they therefore build none.
-- They know the trees and rocks within 70 units of their Town Hall, in sight or not, and gather nowhere farther. They keep 18 units away from every deposit they haven't seen clear.
-- Quarries, lumbermills and other buildings far from the Town Hall go up slowly: builders carry one unit of material per trip from the nearest storage, 3–4 minutes for a distant site with Easy's two builders. The same rule applies to a human.
-- They don't flee: a serf under attack keeps working, and a site or damaged building is left alone only while enemies are near it.
-- They never use walls, towers, the market or the well, and don't rebuild a lost Town Hall (it can't be built).
-- The building-spot finder checks spots with the real placement rules, which also see hidden enemy buildings near the base.
+- **Heroes march with the army as ordinary fighters.** They use no abilities, aren't treated with more care, and a fallen hero isn't revived on purpose (only if its own units happen to stand by the grave). That is AI.5.
+- **AI against AI rarely ends.** In 40-minute headless matches of three computer players, none had eliminated another (an idle human was beaten after 23–31 minutes). Making matches decisive is part of AI.6.
+- **Difficulty is not yet proven to order them.** Easy, Normal and Hard differ in pace, size and behavior, but no tournament has measured that Hard beats Easy (AI.6).
+- **A lost opening hurts for long.** Without an iron mine or gold, an AI that loses its army at its first camp has only bounties to rebuild from. With nothing more to come it attacks again with what it has.
+- Fights are simple: no positioning or kiting; the army marches as one group, and there is one expedition at a time. A defense sends everyone at home at the nearest attacker. Serfs don't flee.
+- It reckons strength from fixed values per unit and health; counters count only in what Hard trains.
+- Long marches keep to a square ring between the edge deposits and the middle: made for Four Corners; another map shape may need other routes.
+- It builds towers but never walls or gates, and upgrades towers only as the Defensive kind (to stone).
+- It gathers within 70 units of its Town Hall only, and never rebuilds a lost Town Hall.
+- Distant sites go up slowly (material is carried one unit per trip), the same as for a human.
 - The server (`MatchRoom`) doesn't seat computer players yet.
 
 ### Rendering

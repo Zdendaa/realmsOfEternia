@@ -1,6 +1,13 @@
-import { AI_DIFFICULTIES, AI_PERSONALITIES, BUILDINGS, PLAYER_COLORS } from '@roe/game-data';
+import {
+  AI_DIFFICULTIES,
+  AI_PERSONALITIES,
+  AI_UNIT_STRENGTH,
+  BUILDINGS,
+  PLAYER_COLORS,
+  UNITS,
+} from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type PlayerId } from '@roe/shared';
-import { stockOf, type AiState, type GameState } from '@roe/sim';
+import { isAlive, maxHealthOf, stockOf, type AiState, type GameState } from '@roe/sim';
 import { cameraRig } from '../../render/camera/cameraRig';
 import { useGameStore } from '../../state/gameStore';
 import { seatOf } from '../../state/matchConfig';
@@ -43,6 +50,41 @@ function memoryLine(ai: AiState): string {
     ([i, what]) => `${deposits[Number(i)]?.kind} ${what}`,
   );
   return `Deposits: ${seen.join(', ') || 'none seen'} · dangers: ${ai.dangers.length}`;
+}
+
+/** Its soldiers by kind, with what they are worth in a fight. */
+function armyLine(state: GameState, player: PlayerId): string {
+  const soldiers = state.units.filter(
+    (u) => u.ownerId === player && isAlive(u) && u.combat && UNITS[u.type].controllable,
+  );
+  const kinds = new Map<string, number>();
+  for (const unit of soldiers) {
+    kinds.set(UNITS[unit.type].name, (kinds.get(UNITS[unit.type].name) ?? 0) + 1);
+  }
+  const strength = soldiers.reduce(
+    (sum, u) => sum + (AI_UNIT_STRENGTH[u.type] * u.health) / maxHealthOf(u),
+    0,
+  );
+  const parts = [...kinds].map(([name, n]) => `${n} ${name.toLowerCase()}`);
+  return `Army (${Math.round(strength)}): ${parts.join(', ') || 'none'}`;
+}
+
+const STAGES = { gather: 'gathering', march: 'marching', retreat: 'retreating' } as const;
+
+/** What its army is doing: defending, on an expedition, scouting or waiting. */
+function missionLine({ army, sightings }: AiState): string {
+  const parts: string[] = [];
+  if (army.defending) parts.push('defending the base');
+  const { mission } = army;
+  if (mission) {
+    const { x, z } = mission.target;
+    const what = mission.kind === 'camp' ? 'camp' : 'enemy';
+    parts.push(
+      `${STAGES[mission.stage]}: ${mission.units.length} vs ${what} at ${Math.round(x)}, ${Math.round(z)}`,
+    );
+  }
+  if (army.scout) parts.push('scout out');
+  return `${parts.join(' · ') || 'at home'} · attacks ${army.raids} · enemy buildings known ${sightings.length}`;
 }
 
 /** Its serfs by what they are doing. */
@@ -95,6 +137,8 @@ function AiEntry({ player, ai }: { player: PlayerId; ai: AiState }) {
         {stock.flour} · iron {stock.iron} · gold {stock.gold}
       </p>
       <p>{serfLine(state, player)}</p>
+      <p>{armyLine(state, player)}</p>
+      <p>{missionLine(ai)}</p>
       <p>{goalLine(ai)}</p>
       <p>{siteLine(state, player)}</p>
       <p>{memoryLine(ai)}</p>

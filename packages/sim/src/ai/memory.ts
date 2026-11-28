@@ -1,15 +1,18 @@
 import { AI_RULES } from '@roe/game-data';
-import { SIMULATION_TICK_RATE, type DepositDefinition, type Vec2 } from '@roe/shared';
+import {
+  SIMULATION_TICK_RATE,
+  type DepositDefinition,
+  type EntityId,
+  type Vec2,
+} from '@roe/shared';
 import type { AiKnowledge } from './knowledge.js';
-import type { AiDanger, AiDeposit, AiState } from './state.js';
+import type { AiDanger, AiDeposit, AiSighting, AiState } from './state.js';
+import { totalStrength, within } from './strength.js';
 
 /** Sightings closer together than this are one danger. */
 const SAME_DANGER = 8;
 /** Serfs and buildings stay this far from a deposit it hasn't seen unguarded. */
 export const GUARDED_DEPOSIT_RADIUS = 18;
-
-const within = (a: Vec2, b: Vec2, radius: number) =>
-  (a.x - b.x) ** 2 + (a.z - b.z) ** 2 <= radius * radius;
 
 /** Whether `point` is near a place it remembers enemies at. */
 export const isDangerous = (ai: Pick<AiState, 'dangers'>, point: Vec2) =>
@@ -72,9 +75,67 @@ function rememberDeposits(ai: AiState, knowledge: AiKnowledge): AiState['deposit
   return next ?? ai.deposits;
 }
 
+/**
+ * The guards it saw at each deposit the last time any were in sight, so a camp it has
+ * thinned out counts for what is left of it.
+ */
+function rememberGuards(ai: AiState, knowledge: AiKnowledge): AiState['guards'] {
+  let next: Record<number, number> | null = null;
+  knowledge.deposits.forEach((deposit, i) => {
+    if (!knowledge.sees(deposit)) return;
+    const there = knowledge.enemyUnits.filter((u) => within(u, deposit, GUARDED_DEPOSIT_RADIUS));
+    const strength = Math.ceil(totalStrength(there));
+    if (strength === 0 || strength === (next ?? ai.guards)[i]) return;
+    next ??= { ...ai.guards };
+    next[i] = strength;
+  });
+  return next ?? ai.guards;
+}
+
+/**
+ * Enemy buildings: those in sight are added or brought up to date; a remembered one is
+ * dropped when its spot is in sight and it is gone.
+ */
+function rememberBuildings(ai: AiState, knowledge: AiKnowledge): readonly AiSighting[] {
+  const seen = new Map<EntityId, AiSighting>();
+  for (const b of knowledge.otherBuildings) {
+    if (b.ownerId === null || !knowledge.isEnemy(b.ownerId)) continue;
+    seen.set(b.id, { id: b.id, owner: b.ownerId, type: b.type, x: b.x, z: b.z });
+  }
+  let changed = false;
+  const next: AiSighting[] = [];
+  for (const old of ai.sightings) {
+    const now = seen.get(old.id);
+    seen.delete(old.id);
+    // A defeated player's leftovers are forgotten.
+    if (!knowledge.isEnemy(old.owner)) changed = true;
+    else if (now) {
+      changed ||= now.type !== old.type;
+      next.push(now.type === old.type ? old : now);
+    } else if (knowledge.sees(old)) changed = true;
+    else next.push(old);
+  }
+  if (seen.size === 0) return changed ? next : ai.sightings;
+  return [...next, ...seen.values()].sort((a, b) => a.id - b.id);
+}
+
+/** The start positions it has had in sight. */
+function rememberVisits(ai: AiState, knowledge: AiKnowledge): AiState['visited'] {
+  const fresh = knowledge.startSlots.flatMap((slot, i) =>
+    !ai.visited.includes(i) && knowledge.sees(slot) ? [i] : [],
+  );
+  return fresh.length > 0 ? [...ai.visited, ...fresh] : ai.visited;
+}
+
 /** The memory after looking at `knowledge`; the same object when nothing new was learned. */
 export function observe(ai: AiState, knowledge: AiKnowledge): AiState {
-  const dangers = rememberDangers(ai, knowledge);
-  const deposits = rememberDeposits(ai, knowledge);
-  return dangers === ai.dangers && deposits === ai.deposits ? ai : { ...ai, dangers, deposits };
+  const next = {
+    dangers: rememberDangers(ai, knowledge),
+    deposits: rememberDeposits(ai, knowledge),
+    guards: rememberGuards(ai, knowledge),
+    sightings: rememberBuildings(ai, knowledge),
+    visited: rememberVisits(ai, knowledge),
+  };
+  const same = Object.entries(next).every(([key, value]) => ai[key as keyof AiState] === value);
+  return same ? ai : { ...ai, ...next };
 }

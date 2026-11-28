@@ -1,9 +1,10 @@
-import { AI_RULES, depositOf, productionOf, type BuildingId } from '@roe/game-data';
+import { AI_RULES, depositOf, productionOf, towerOf, type BuildingId } from '@roe/game-data';
 import type { Decoration, DecorationKind, Vec2 } from '@roe/shared';
 import type { SpotOptions, SpotSearch } from './buildingSpot.js';
 import { depositAt } from './deposits.js';
 import type { ManagerInput } from './manager.js';
 import { isUnsafe } from './memory.js';
+import { rallyPoint } from './targets.js';
 
 /** How far from its starting point a search for an ordinary building goes. */
 const SEARCH_RADIUS = 45;
@@ -69,6 +70,11 @@ export function siteFor(input: ManagerInput, building: BuildingId, from: number)
       },
     };
     return findSpot(building, options, from);
+  }
+  if (towerOf(building)) {
+    // On the side the enemy comes from: toward the middle of the map.
+    const near = rallyPoint(hall, AI_RULES.towerLine.distance);
+    return findSpot(building, { near, radius: AI_RULES.towerLine.radius, accept: isSafe }, from);
   }
   const production = productionOf(building);
   if (production?.kind === 'harvest') {

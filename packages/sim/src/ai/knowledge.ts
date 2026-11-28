@@ -1,6 +1,13 @@
 import { AI_RULES } from '@roe/game-data';
-import type { Decoration, DecorationKind, DepositDefinition, PlayerId, Vec2 } from '@roe/shared';
-import { areAllies } from '../combat/hostility.js';
+import {
+  startSlotsOf,
+  type Decoration,
+  type DecorationKind,
+  type DepositDefinition,
+  type PlayerId,
+  type Vec2,
+} from '@roe/shared';
+import { areAllies, areEnemies } from '../combat/hostility.js';
 import { ensureVision, type SimContext } from '../context/simContext.js';
 import { populationOf, type Population } from '../economy/population.js';
 import { stockOf } from '../economy/stock.js';
@@ -42,6 +49,16 @@ export interface AiKnowledge {
   readonly buildingDamage: GameState['buildingDamage'];
   /** The map's ore deposits (map knowledge: who guards them is not). */
   readonly deposits: readonly DepositDefinition[];
+  readonly mapSize: number;
+  /** The map's start positions (map knowledge: who holds them is not). */
+  readonly startSlots: readonly Vec2[];
+  /** Its training queues and tower upgrades. */
+  readonly training: GameState['training'];
+  readonly upgrades: GameState['upgrades'];
+  /** Whether `owner` is an enemy still in the game (monsters are). */
+  readonly isEnemy: (owner: PlayerId | null) => boolean;
+  /** The point `distance` along the way its units would walk from `from` to `to`. */
+  readonly alongRoute: (from: Vec2, to: Vec2, distance: number) => Vec2;
   /** Whether (x, z) is in its side's sight right now. */
   readonly sees: (point: Vec2) => boolean;
   /** The kind of tree or rock with decoration id `id` (map knowledge). */
@@ -59,6 +76,18 @@ export interface AiKnowledge {
     accept?: (node: Decoration) => boolean,
   ) => Decoration[];
 }
+
+/** The entries of `records` that belong to one of `buildings`. */
+const pickOwn = <T>(
+  records: Readonly<Record<number, T>>,
+  buildings: readonly BuildingInstance[],
+): Readonly<Record<number, T>> =>
+  Object.fromEntries(
+    buildings.flatMap((b) => {
+      const record = records[b.id];
+      return record === undefined ? [] : [[b.id, record]];
+    }),
+  );
 
 /**
  * `player`'s knowledge of `state`. Only what is in sight now is taken from the fog of
@@ -106,6 +135,31 @@ export function aiKnowledge(ctx: SimContext, state: GameState, player: PlayerId)
     construction: view.construction,
     buildingDamage: view.buildingDamage,
     deposits: ctx.world.deposits,
+    mapSize: ctx.world.map.size,
+    startSlots: startSlotsOf(ctx.world.map),
+    training: view.training,
+    upgrades: pickOwn(view.upgrades, buildings),
+    isEnemy: (owner) =>
+      owner !== null &&
+      state.outcome[owner]?.result !== 'lost' &&
+      areEnemies(state.teams, player, owner),
+    alongRoute: (from, to, distance) => {
+      if (Math.hypot(to.x - from.x, to.z - from.z) <= distance) return { x: to.x, z: to.z };
+      const route = ctx.paths.findPath(from, to, { passer: player });
+      let at: Vec2 = from;
+      let left = distance;
+      for (const point of route.waypoints) {
+        const step = Math.hypot(point.x - at.x, point.z - at.z);
+        if (step >= left) {
+          const share = left / step;
+          return { x: at.x + (point.x - at.x) * share, z: at.z + (point.z - at.z) * share };
+        }
+        left -= step;
+        at = point;
+      }
+      // No way that long (cut off by walls): straight for the target, to break through.
+      return { x: to.x, z: to.z };
+    },
     sees: (point) => isVisible(vision, point.x, point.z),
     nodeKind: (id) => nodeById(ctx.world, id)?.kind,
     nodesAround: (kind, center, radius, limit, accept = () => true) => {
