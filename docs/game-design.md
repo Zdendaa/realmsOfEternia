@@ -153,7 +153,7 @@ Research costs resources and time, and unlocks new buildings, new and stronger u
 
 Categories: **economy, military, defense, magic.**
 
-Planned for Phase 8 (Building upgrades and technologies), after military and fortifications:
+Planned for Phase 9 (Building upgrades and technologies), after military and fortifications:
 
 - **Research building:** a school / university (Settlers 5 style) where research happens.
 - **Unlocks:** buildings, units and upgrades are unlocked by research.
@@ -197,9 +197,11 @@ Work proceeds one milestone at a time.
 | 5     | Economy                            | ✅ Completed |
 | 6     | Military and combat                | ✅ Completed |
 | 6c    | Fog of war                         | ✅ Completed |
-| 7     | Fortifications                     | In review    |
-| 8     | Building upgrades and technologies | Planned      |
-| 9     | AI                                 | Planned      |
+| 7     | Fortifications                     | ✅ Completed |
+| 6b    | Siege weapons and heroes           | ✅ Completed |
+| –     | Cavalry (6b.7)                     | Deferred     |
+| 8     | AI opponents                       | In progress  |
+| 9     | Building upgrades and technologies | Planned      |
 | 10    | Multiplayer                        | Planned      |
 | 11    | Polish and release                 | Planned      |
 
@@ -235,13 +237,13 @@ Explored, visible and unexplored areas, sight ranges per unit and building, last
 
 Wall placement and drawing, gates, towers, castle construction, tower targeting and shooting, destructible walls. After military, because towers need enemies to shoot at and walls need attackers to hold back.
 
-### Phase 8 – Building upgrades and technologies
+### Phase 8 – AI
+
+Computer opponents that build an economy and a base, train soldiers, use heroes and attack in waves, with difficulty levels and personalities; 2–4 player matches with teams, and hooks for missions. Moved ahead of upgrades and technologies on 2026-11-28 (see [phase-ai-plan.md](phase-ai-plan.md)).
+
+### Phase 9 – Building upgrades and technologies
 
 Three upgrade levels with visual architectural changes, the research system, unlockable units and buildings.
-
-### Phase 9 – AI
-
-Neutral enemies, AI opponents with resource management, army building, attacks and defense.
 
 ### Phase 10 – Multiplayer
 

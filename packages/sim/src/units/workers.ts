@@ -4,7 +4,7 @@ import type { EconomyDraft } from '../economy/draft.js';
 import { housingCapacity, populationUsed } from '../economy/population.js';
 import type { BuildingInstance } from '../state/gameState.js';
 import { createUnit, IDLE, isAlive, type UnitInstance, type WorkPhase } from '../state/units.js';
-import { areEnemies } from '../combat/hostility.js';
+import { areEnemies, type Teams } from '../combat/hostility.js';
 import { workerDoor } from './production/common.js';
 import { updateFarmer } from './production/farm.js';
 import { updateHarvester } from './production/harvest.js';
@@ -36,6 +36,7 @@ export const employsWorker = (building: BuildingInstance) =>
  * are appended to `units`; returns the next free entity id.
  */
 export function hireWorkers(
+  teams: Teams,
   buildings: readonly BuildingInstance[],
   units: UnitInstance[],
   nextEntityId: EntityId,
@@ -55,7 +56,7 @@ export function hireWorkers(
   for (const building of buildings) {
     if (!employsWorker(building) || staffed.has(building.id)) continue;
     const owner = building.ownerId as PlayerId; // employsWorker: owned
-    if (enemiesNear(building, owner, units)) continue;
+    if (enemiesNear(teams, building, owner, units)) continue;
     const free =
       freeHousing.get(owner) ?? housingCapacity(buildings, owner) - populationUsed(units, owner);
     if (free <= 0) {
@@ -75,12 +76,17 @@ const UNDER_ATTACK_RADIUS = 15;
  * Whether a living enemy unit is near `building`: its replacement worker then stays
  * inside, so a building under attack can't keep sending out free workers.
  */
-function enemiesNear(building: BuildingInstance, owner: PlayerId, units: readonly UnitInstance[]) {
+function enemiesNear(
+  teams: Teams,
+  building: BuildingInstance,
+  owner: PlayerId,
+  units: readonly UnitInstance[],
+) {
   const max = UNDER_ATTACK_RADIUS * UNDER_ATTACK_RADIUS;
   return units.some(
     (u) =>
       isAlive(u) &&
-      areEnemies(owner, u.ownerId) &&
+      areEnemies(teams, owner, u.ownerId) &&
       (u.x - building.x) ** 2 + (u.z - building.z) ** 2 <= max,
   );
 }

@@ -6,6 +6,7 @@ import { cameraFocus } from '../../render/camera/cameraFocus';
 import { useGameStore } from '../../state/gameStore';
 import { useSelectionStore } from '../../state/selectionStore';
 import { useSettingsStore } from '../../state/settingsStore';
+import { DevMatchPicker } from './DevMatchPicker';
 
 /** The opponent the dev panel spawns for (any id other than the local player is hostile). */
 const DEV_ENEMY: PlayerId = 'enemy';
@@ -59,6 +60,7 @@ export function DevSpawnPanel() {
   return (
     <section className="hud-panel dev-panel" aria-label="Dev spawn">
       <h2>Dev spawn</h2>
+      <DevMatchPicker />
       {SPAWNS.map(({ unit, count }) => (
         <div key={unit} className="dev-row">
           <span>

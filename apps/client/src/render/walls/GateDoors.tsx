@@ -2,14 +2,16 @@ import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { BUILDINGS, type BuildingDefinition, type BuildingId } from '@roe/game-data';
 import type { EntityId, PlayerId } from '@roe/shared';
+import { areAllies } from '@roe/sim';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { InstancedMesh, Matrix4, Vector3 } from 'three';
 import type { ModelInstance } from '../scene/settlement/ModelInstances';
+import { useGameStore } from '../../state/gameStore';
 import { instanceMatrix } from '../scene/settlement/instanceMatrix';
 import { extractModelParts, publicUrl } from '../scene/settlement/modelAssets';
 import { renderedUnitList } from '../units/renderedUnits';
 
-/** The doors swing open while one of the owner's units is this close to the gate. */
+/** The doors swing open while a unit of the owner's side is this close to the gate. */
 const OPEN_DISTANCE = 3;
 /** How fast the doors swing (share of the full angle per second). */
 const SWING_SPEED = 3.5;
@@ -35,7 +37,7 @@ const wantsOpen = (gate: DrawnGate) =>
   gate.complete &&
   renderedUnitList.some(
     (u) =>
-      u.ownerId === gate.ownerId &&
+      areAllies(useGameStore.getState().state.teams, gate.ownerId, u.ownerId) &&
       u.deathElapsed === null &&
       (u.x - gate.x) ** 2 + (u.z - gate.z) ** 2 < OPEN_DISTANCE ** 2,
   );

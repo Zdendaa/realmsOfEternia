@@ -1,7 +1,7 @@
 import { MapControls } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { clamp, type HeightField } from '@roe/shared';
-import { useEffect, useRef, type ComponentRef } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { MOUSE, Vector3, type Camera } from 'three';
 import { usePointerTracker, type PointerTrack } from '../../input/usePointerTracker';
 import { usePressedKeys } from '../../input/usePressedKeys';
@@ -85,6 +85,8 @@ function edgeAxis(pointer: PointerTrack): { x: number; z: number } {
 interface RtsCameraControlsProps {
   /** Half-size of the area the camera focus point may move within. */
   bounds: number;
+  /** Where the camera looks when the game starts. */
+  start: { x: number; z: number };
   /** Terrain height lookup; the focus point stays on the ground. */
   heights: HeightField;
 }
@@ -94,7 +96,9 @@ interface RtsCameraControlsProps {
  * WASD + arrow key panning and optional screen-edge panning relative to the view direction,
  * the focus point is clamped to the map and follows the terrain height.
  */
-export function RtsCameraControls({ bounds, heights }: RtsCameraControlsProps) {
+export function RtsCameraControls({ bounds, start, heights }: RtsCameraControlsProps) {
+  // Kept stable, so the controls take it once and the player's panning stays.
+  const [startTarget] = useState((): [number, number, number] => [start.x, 0, start.z]);
   const controlsRef = useRef<MapControlsImpl>(null);
   const keys = usePressedKeys();
   const pointer = usePointerTracker();
@@ -172,6 +176,7 @@ export function RtsCameraControls({ bounds, heights }: RtsCameraControlsProps) {
     <MapControls
       ref={controlsRef}
       makeDefault
+      target={startTarget}
       mouseButtons={MOUSE_BUTTONS}
       enableDamping
       dampingFactor={0.12}

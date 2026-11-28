@@ -64,7 +64,10 @@ const houseNW = place('house', -13, -3, 30);
 const mill = place('mill', -19, 11, 90);
 const lumbermill = place('lumbermill', 1.5, -24, 90);
 
-/** Hand-authored starting settlement in the flat center of PROTOTYPE_MAP. */
+/**
+ * Hand-authored starting settlement, in its own coordinates: a map's start slot places and
+ * turns it (PROTOTYPE_MAP: unturned, in the flat center).
+ */
 export const PROTOTYPE_SETTLEMENT: SettlementLayout = {
   buildings: [
     townHall,
@@ -104,4 +107,30 @@ export const PROTOTYPE_SETTLEMENT: SettlementLayout = {
     perBuilding: { min: 2, max: 4 },
   },
   startingSerfs: 5,
+};
+
+/** The paths of PROTOTYPE_SETTLEMENT that stay inside the village. */
+const [gatePath, , , ...lanes] = PROTOTYPE_SETTLEMENT.paths as [
+  Vec2[],
+  Vec2[],
+  Vec2[],
+  ...Vec2[][],
+];
+
+/**
+ * The same village for SKIRMISH_MAP: instead of the two roads to the map edges, one road
+ * from the square toward the middle of the map, which lies diagonally ahead of it.
+ */
+export const SKIRMISH_SETTLEMENT: SettlementLayout = {
+  ...PROTOTYPE_SETTLEMENT,
+  paths: [
+    gatePath,
+    // Square → market → north-east house → lumbermill.
+    [square, door(market), v(6, -14), door(lumbermill)],
+    // Square → south-east and south houses.
+    [square, v(4.3, 7), door(houseS)],
+    ...lanes,
+    // The road to the middle.
+    [square, v(12, 6), v(24, 19), v(42, 40), v(66, 69), v(97, 97)],
+  ],
 };

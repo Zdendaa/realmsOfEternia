@@ -207,7 +207,7 @@ export interface BuildingDefinition {
    */
   rotationOffset: number;
   /**
-   * Research that unlocks it (a research id). Reserved for the technology tree (Phase 8);
+   * Research that unlocks it (a research id). Reserved for the technology tree (Phase 9);
    * nothing reads it yet.
    */
   requires?: string;

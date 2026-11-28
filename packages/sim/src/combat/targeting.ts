@@ -1,6 +1,6 @@
 import { createPointGrid, type PointGrid } from '../spatial/pointGrid.js';
 import { isAlive, type UnitInstance } from '../state/units.js';
-import { areEnemies } from './hostility.js';
+import { areEnemies, type Teams } from './hostility.js';
 
 /** Cell size of the per-tick unit grid; about a typical sight range. */
 const GRID_CELL = 8;
@@ -27,6 +27,7 @@ export function edgeDistance(
  * on every machine. Null when no enemy is in sight.
  */
 export function findTarget(
+  teams: Teams,
   unit: UnitInstance,
   grid: UnitGrid,
   sightRange: number,
@@ -44,7 +45,7 @@ export function findTarget(
   let bestAttacking = false;
   let bestSq = Infinity;
   for (const other of candidates) {
-    if (!isAlive(other) || !areEnemies(unit.ownerId, other.ownerId)) continue;
+    if (!isAlive(other) || !areEnemies(teams, unit.ownerId, other.ownerId)) continue;
     const sq = (other.x - unit.x) ** 2 + (other.z - unit.z) ** 2;
     if (sq > maxSq || sq < nearest * nearest) continue;
     const attacking = other.combat?.targetId === unit.id;

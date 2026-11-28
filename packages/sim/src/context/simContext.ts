@@ -12,6 +12,7 @@ import {
   type Passer,
 } from '../nav/navGrid.js';
 import { createRegionCache, type Regions } from '../nav/regions.js';
+import type { Teams } from '../combat/hostility.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import type { NodeAmounts } from '../state/resourceNodes.js';
 import { createStateHeights, flattens } from '../state/stateHeights.js';
@@ -33,6 +34,8 @@ export interface SimContext {
   readonly paths: PathFinder;
   /** The nav grid's connected regions for a passer, recomputed after the grid changes. */
   readonly regions: (passer: Passer) => Regions;
+  /** The teams of the synced state. */
+  teams: Teams;
   /** The buildings array the context was last synced with. */
   buildings: readonly BuildingInstance[];
   /** The resource node amounts the context was last synced with. */
@@ -112,12 +115,14 @@ export function createSimContext(
   const depleted = new Set(depletedIds(state.resourceNodes));
   const nav = createNavGrid(world, (id) => depleted.has(id));
   stampBuildings(nav, buildingStamps(state.buildings));
+  nav.teams = state.teams;
   return {
     world,
     heights: createStateHeights(world, state),
     nav,
     paths: createPathFinder(nav),
     regions: createRegionCache(nav),
+    teams: state.teams,
     buildings: state.buildings,
     resourceNodes: state.resourceNodes,
     depleted,
@@ -165,6 +170,11 @@ function syncResourceNodes(ctx: SimContext, state: GameState): void {
  * Returns true if the buildings changed.
  */
 export function syncContext(ctx: SimContext, state: GameState): boolean {
+  if (ctx.teams !== state.teams) {
+    ctx.teams = state.teams;
+    ctx.nav.teams = state.teams;
+    ctx.nav.version++;
+  }
   syncResourceNodes(ctx, state);
   if (ctx.buildings === state.buildings) return false;
   const previous = ctx.buildings;

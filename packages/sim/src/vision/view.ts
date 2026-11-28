@@ -1,4 +1,5 @@
 import type { EntityId, PlayerId } from '@roe/shared';
+import { areAllies } from '../combat/hostility.js';
 import type { Projectile } from '../combat/projectiles.js';
 import type { BuildingInstance, GameState, Ruin } from '../state/gameState.js';
 import type { UnitInstance } from '../state/units.js';
@@ -14,11 +15,15 @@ import { buildingSeen, isExplored, isVisible, type Vision } from './vision.js';
 export interface PlayerView {
   readonly player: PlayerId;
   readonly tick: number;
-  /** The player's units, and other players' (and monsters') units in sight. */
+  readonly teams: GameState['teams'];
+  /** The player's and allies' units, and others' (and monsters') units in sight. */
   readonly units: readonly UnitInstance[];
   /** The player's buildings, and everyone else's as last seen (current while in sight). */
   readonly buildings: readonly BuildingInstance[];
-  /** Construction progress, training queues and fields of the player's own buildings only. */
+  /**
+   * Construction progress, fields and upgrades of the player's and allies' buildings;
+   * training queues of the player's own only.
+   */
   readonly construction: GameState['construction'];
   readonly training: GameState['training'];
   readonly fields: GameState['fields'];
@@ -72,11 +77,14 @@ const pick = <T>(record: Readonly<Record<EntityId, T>>, keep: (id: EntityId) => 
  */
 export function viewOf(world: SimWorld, state: GameState, vision: Vision): PlayerView {
   const player = vision.player;
+  const allied = (owner: PlayerId | null) => areAllies(state.teams, player, owner);
   const units = state.units
-    .filter((u) => u.ownerId === player || isVisible(vision, u.x, u.z))
-    .map((u) => (u.ownerId === player ? u : seenFromOutside(u)));
+    .filter((u) => allied(u.ownerId) || isVisible(vision, u.x, u.z))
+    .map((u) => (allied(u.ownerId) ? u : seenFromOutside(u)));
   const own = state.buildings.filter((b) => b.ownerId === player);
   const ownIds = new Set(own.map((b) => b.id));
+  /** The player's and its allies' buildings: their inner state is shared. */
+  const alliedIds = new Set(state.buildings.filter((b) => allied(b.ownerId)).map((b) => b.id));
   const others = [...vision.lastSeen.values()].sort((a, b) => a.id - b.id);
   const visibleBuildings = new Set(
     state.buildings.filter((b) => !ownIds.has(b.id) && buildingSeen(vision, b)).map((b) => b.id),
@@ -88,11 +96,15 @@ export function viewOf(world: SimWorld, state: GameState, vision: Vision): Playe
     tick: state.tick,
     units,
     buildings: [...own, ...others],
-    construction: pick(state.construction, (id) => ownIds.has(id)),
+    teams: state.teams,
+    construction: pick(state.construction, (id) => alliedIds.has(id)),
     training: pick(state.training, (id) => ownIds.has(id)),
-    fields: pick(state.fields, (id) => ownIds.has(id)),
-    upgrades: pick(state.upgrades, (id) => ownIds.has(id)),
-    buildingDamage: pick(state.buildingDamage, (id) => ownIds.has(id) || visibleBuildings.has(id)),
+    fields: pick(state.fields, (id) => alliedIds.has(id)),
+    upgrades: pick(state.upgrades, (id) => alliedIds.has(id)),
+    buildingDamage: pick(
+      state.buildingDamage,
+      (id) => alliedIds.has(id) || visibleBuildings.has(id),
+    ),
     stocks: stock ? { [player]: stock } : {},
     projectiles: state.projectiles.filter(
       (p) =>
@@ -107,11 +119,11 @@ export function viewOf(world: SimWorld, state: GameState, vision: Vision): Playe
       return node !== undefined && isExplored(vision, node.x, node.z);
     }),
     graves: state.graves
-      .filter((g) => g.ownerId === player || isVisible(vision, g.x, g.z))
+      .filter((g) => allied(g.ownerId) || isVisible(vision, g.x, g.z))
       .map((g) =>
-        g.ownerId === player ? g : { ...g, state: { ...g.state, experience: 0, cooldowns: {} } },
+        allied(g.ownerId) ? g : { ...g, state: { ...g.state, experience: 0, cooldowns: {} } },
       ),
-    casts: state.casts.filter((c) => c.ownerId === player || isVisible(vision, c.x, c.z)),
+    casts: state.casts.filter((c) => allied(c.ownerId) || isVisible(vision, c.x, c.z)),
     wavesSent: state.wavesSent,
     lastWaveAt: state.lastWaveAt,
   };

@@ -62,8 +62,21 @@ export {
 } from './resources/definitions.js';
 export { GATHER_RULES, RESOURCE_NODES, type ResourceNodeDefinition } from './resources/nodes.js';
 export { PROTOTYPE_MAP } from './maps/prototype.js';
+export { SKIRMISH_MAP } from './maps/skirmish.js';
+export { PLAYER_COLOR_IDS, PLAYER_COLORS, type PlayerColorId } from './match/colors.js';
+export {
+  AI_DIFFICULTIES,
+  AI_PERSONALITIES,
+  isAiDifficultyId,
+  isAiPersonalityId,
+  type AiDifficultyDefinition,
+  type AiDifficultyId,
+  type AiPersonalityDefinition,
+  type AiPersonalityId,
+} from './match/ai.js';
 export {
   PROTOTYPE_SETTLEMENT,
+  SKIRMISH_SETTLEMENT,
   type BuildingPlacement,
   type SettlementLayout,
 } from './maps/prototypeSettlement.js';

@@ -27,7 +27,7 @@ function useHeroes() {
       .filter((g) => g.ownerId === LOCAL_PLAYER)
       .map((g) => {
         const percent = Math.floor((100 * g.progress) / REVIVE_TICKS);
-        const status = reviveStatus(g, state.units);
+        const status = reviveStatus(state.teams, g, state.units);
         const { level, experience } = g.state;
         return [g.id, g.hero, level, experience, 0, 1, status, percent].join();
       });

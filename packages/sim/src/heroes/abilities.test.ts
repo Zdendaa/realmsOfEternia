@@ -44,7 +44,10 @@ const experienceFor = (level: number) => HERO_RULES.levelExperience[level - 1] ?
 
 /** The flat map: alice has one hero of `type` at (0, 20), at `level`. */
 function game(type: HeroId = 'commander', level = 5) {
-  const map = { ...FLAT_MAP, startingHeroes: [{ player: 0, hero: type, x: 0, z: 20 }] };
+  const map = {
+    ...FLAT_MAP,
+    startSlots: [{ x: 0, z: 0, quarterTurns: 0 as const, heroes: [{ hero: type, x: 0, z: 20 }] }],
+  };
   const world = createWorld(map, { ...TOWN, startingSerfs: 0 });
   const initial = createInitialState(world, { owner: 'alice' });
   const ctx = createSimContext(world, initial, { dev: true, visions: ['alice'] });

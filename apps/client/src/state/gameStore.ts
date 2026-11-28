@@ -1,9 +1,7 @@
-import { PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT } from '@roe/game-data';
-import type { HeightField, PlayerId } from '@roe/shared';
+import type { HeightField } from '@roe/shared';
 import {
-  createInitialState,
+  createMatch,
   createSimContext,
-  createWorld,
   stepGame,
   validateCommand,
   type Command,
@@ -14,12 +12,9 @@ import {
   type SimWorld,
 } from '@roe/sim';
 import { create } from 'zustand';
+import { LOCAL_PLAYER, MATCH } from './matchConfig';
 
-/**
- * The local player's id. In multiplayer the server attaches the real player from the
- * network session; commands themselves never carry it.
- */
-export const LOCAL_PLAYER: PlayerId = 'local';
+export { LOCAL_PLAYER };
 
 /**
  * Simulation state on the client. Commands are validated immediately (for UI feedback)
@@ -45,9 +40,7 @@ interface GameStore {
   advance: () => void;
 }
 
-const world = createWorld(PROTOTYPE_MAP, PROTOTYPE_SETTLEMENT);
-// Single player for now: the starting settlement belongs to the local player.
-const initialState = createInitialState(world, { owner: LOCAL_PLAYER });
+const { world, state: initialState } = createMatch(MATCH.map, MATCH.settlement, MATCH.setup);
 // Dev builds accept dev-only commands (the spawn panel); production and the server never do.
 const ctx = createSimContext(world, initialState, {
   dev: import.meta.env.DEV,

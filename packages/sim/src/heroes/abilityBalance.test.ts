@@ -29,7 +29,10 @@ const seconds = (s: number) => Math.round(s * SIMULATION_TICK_RATE);
 
 /** A hero of `type` at (0, 20) at the level that unlocks what is measured. */
 function fight(type: HeroId, level: number) {
-  const map = { ...FLAT_MAP, startingHeroes: [{ player: 0, hero: type, x: 0, z: 20 }] };
+  const map = {
+    ...FLAT_MAP,
+    startSlots: [{ x: 0, z: 0, quarterTurns: 0 as const, heroes: [{ hero: type, x: 0, z: 20 }] }],
+  };
   const world = createWorld(map, { ...TOWN, startingSerfs: 0 });
   const initial = createInitialState(world, { owner: 'alice' });
   const ctx = createSimContext(world, initial, { dev: true });

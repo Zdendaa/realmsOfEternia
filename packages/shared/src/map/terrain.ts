@@ -1,5 +1,6 @@
 import { fractalNoise2D, smoothstep, valueNoise2D } from '../noise.js';
 import { carveLakes, resolveLakes } from './water.js';
+import { startSlotsOf } from './startSlots.js';
 import type { MapDefinition } from './types.js';
 
 /** Seed offsets so each noise layer is independent. */
@@ -27,8 +28,8 @@ function distanceFromCenter(x: number, z: number): number {
  * client mesh, unit and building placement, and the server all agree without sending
  * terrain data over the network.
  *
- * Layout, from the center outward: flat settlement plateau, rolling hills in the
- * playable area, then mountains rising across the border ring and continuing beyond.
+ * Layout: rolling hills in the playable area with a flat plateau at every start slot, then
+ * mountains rising across the border ring and continuing beyond.
  */
 /**
  * The final terrain: natural height field with lakes carved in. Everything that samples
@@ -56,14 +57,21 @@ export function createBaseHeightField(map: MapDefinition): HeightField {
     return mountainHeight * (0.4 + 0.6 * smoothstep(0.3, 0.75, n));
   };
 
-  // The settlement plateau sits at the natural ground level of the map center.
-  const settlementLevel = hills(0, 0);
+  // Each settlement plateau sits at the natural ground level of its center.
+  const plateaus = startSlotsOf(map).map(({ x, z }) => ({ x, z, level: hills(x, z) }));
 
   return {
     getHeightAt(x, z) {
       const fromCenter = distanceFromCenter(x, z);
-      const toSettlement = smoothstep(halfSize, halfSize + blend, fromCenter);
-      const ground = settlementLevel + (hills(x, z) - settlementLevel) * toSettlement;
+      // Plateaus never overlap, so at most one shapes the ground here.
+      let ground = hills(x, z);
+      for (const plateau of plateaus) {
+        const away = distanceFromCenter(x - plateau.x, z - plateau.z);
+        if (away >= halfSize + blend) continue;
+        const toSettlement = smoothstep(halfSize, halfSize + blend, away);
+        ground = plateau.level + (ground - plateau.level) * toSettlement;
+        break;
+      }
 
       const jitter = (valueNoise2D(map.seed + BORDER_JITTER_SEED, x / 30, z / 30) - 0.5) * 2;
       const intoBorder = fromCenter - playableHalf + jitter * BORDER_JITTER;
@@ -75,10 +83,12 @@ export function createBaseHeightField(map: MapDefinition): HeightField {
   };
 }
 
-/** True if (x, z) lies inside the settlement area including its blend band. */
+/** True if (x, z) lies inside a settlement plateau including its blend band. */
 export function isInSettlementArea(map: MapDefinition, x: number, z: number): boolean {
   const reach = map.settlement.halfSize + map.settlement.blend;
-  return Math.abs(x) < reach && Math.abs(z) < reach;
+  return startSlotsOf(map).some(
+    (slot) => Math.abs(x - slot.x) < reach && Math.abs(z - slot.z) < reach,
+  );
 }
 
 /** True if (x, z) lies inside the playable square. */

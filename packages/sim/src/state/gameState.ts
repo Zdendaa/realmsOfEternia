@@ -8,7 +8,15 @@ import {
   type ResourceAmounts,
   type ResourceId,
 } from '@roe/game-data';
-import type { EntityId, Footprint, PlacedFootprint, PlayerId } from '@roe/shared';
+import {
+  toSlotPoint,
+  type EntityId,
+  type Footprint,
+  type PlacedFootprint,
+  type PlayerId,
+} from '@roe/shared';
+import type { Teams } from '../combat/hostility.js';
+import { teamsOf, type MatchSetup } from '../match/setup.js';
 import type { Projectile } from '../combat/projectiles.js';
 import type { TowerCooldowns } from '../combat/towers.js';
 import type { TowerUpgrades } from '../combat/upgrades.js';
@@ -73,6 +81,8 @@ export interface Ruin {
 export interface GameState {
   /** Number of simulation ticks run so far. */
   readonly tick: number;
+  /** Who is allied with whom; a player without an entry stands alone. */
+  readonly teams: Teams;
   /** Changes only when buildings are placed or finished, never for progress. */
   readonly buildings: readonly BuildingInstance[];
   /** Construction progress by site (building) id. Changes every tick while serfs build. */
@@ -130,14 +140,15 @@ export interface GameState {
 }
 
 export interface InitialStateOptions {
+  /** A match: every seat gets its start slot's settlement, its team and a stock. */
+  setup?: MatchSetup;
   /**
-   * Owner of the starting settlement and its serfs. The client gives it to the local
-   * player; the server keeps it neutral until matches have start positions.
+   * Without a setup: owner of the settlement in the first start slot (absent: neutral).
    */
   owner?: PlayerId | null;
   /**
-   * Further players who start with a stock (the owner always gets one). Matches with
-   * start positions will list every player here.
+   * Without a setup: further players who start with a stock, holding the next slots
+   * (the owner always gets one).
    */
   players?: readonly PlayerId[];
   /** Starting stock of every listed player; defaults to `STARTING_RESOURCES`. */
@@ -145,11 +156,15 @@ export interface InitialStateOptions {
 }
 
 /**
- * The starting settlement becomes the first building instances (ids 1..n), followed by
- * the starting serfs next to the first Town Hall. Its fields start ripe.
+ * The starting settlements become the first building instances (ids 1..n), followed by
+ * each one's starting serfs next to its first Town Hall. Their fields start ripe.
  */
 export function createInitialState(world: SimWorld, options: InitialStateOptions = {}): GameState {
-  const owner = options.owner ?? null;
+  const { setup } = options;
+  /** The player holding each start slot. */
+  const holders: (PlayerId | null | undefined)[] = [];
+  if (setup) for (const seat of setup.seats) holders[seat.slot] = seat.player;
+  else holders.push(options.owner ?? null, ...(options.players ?? []));
   const buildings = world.buildings.map((b, i): BuildingInstance => {
     const type = b.definition.id;
     if (!isBuildingId(type)) throw new Error(`Unknown building type "${type}"`);
@@ -159,35 +174,40 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
       x: b.x,
       z: b.z,
       rotation: b.rotation,
-      ownerId: owner,
+      ownerId: holders[b.slot] ?? null,
       status: 'complete',
     };
   });
 
   let nextEntityId = buildings.length + 1;
-  const townHall = buildings.find((b) => b.type === 'townHall');
   const units: UnitInstance[] = [];
-  if (townHall) {
+  for (const slot of world.slots) {
+    const townHall = buildings.find(
+      (b, i) => b.type === 'townHall' && world.buildings[i]?.slot === slot.index,
+    );
+    if (!townHall) continue;
     for (let i = 0; i < world.startingSerfs; i++) {
-      units.push(createUnit(nextEntityId++, 'serf', owner, spawnPoint(townHall, i)));
+      units.push(createUnit(nextEntityId++, 'serf', townHall.ownerId, spawnPoint(townHall, i)));
     }
   }
+  const teams = setup ? teamsOf(setup) : {};
   // Production buildings of an owned starting settlement come with their workers
   // (housing permitting, like any other).
-  nextEntityId = hireWorkers(buildings, units, nextEntityId);
+  nextEntityId = hireWorkers(teams, buildings, units, nextEntityId);
   // Monster camps guard their spots from the start.
   const camps = spawnCamps(world.map.camps ?? [], nextEntityId);
   units.push(...camps.units);
   nextEntityId = camps.nextEntityId;
 
   const resources = options.resources ?? STARTING_RESOURCES;
-  const stockHolders = [...(owner !== null ? [owner] : []), ...(options.players ?? [])];
+  const stockHolders = holders.filter((p): p is PlayerId => typeof p === 'string');
   const stocks = Object.fromEntries(stockHolders.map((player) => [player, { ...resources }]));
   const fields = Object.fromEntries(
     buildings.filter((b) => productionOf(b.type)?.kind === 'farm').map((b) => [b.id, RIPE_FIELD]),
   );
   const initial: GameState = {
     tick: 0,
+    teams,
     buildings,
     construction: {},
     units,
@@ -209,11 +229,14 @@ export function createInitialState(world: SimWorld, options: InitialStateOptions
     reveals: [],
     nextEntityId,
   };
-  // The map's heroes for each start slot that has a player.
-  const slots = [owner, ...(options.players ?? [])];
-  return (world.map.startingHeroes ?? []).reduce((state, start) => {
-    const player = slots[start.player];
-    return player ? spawnHero(state, start.hero, player, start).state : state;
+  // Each slot's heroes, for the player holding it.
+  return world.slots.reduce((withHeroes, slot) => {
+    const player = holders[slot.index];
+    if (!player) return withHeroes;
+    return (slot.heroes ?? []).reduce(
+      (state, start) => spawnHero(state, start.hero, player, toSlotPoint(slot, start)).state,
+      withHeroes,
+    );
   }, initial);
 }
 

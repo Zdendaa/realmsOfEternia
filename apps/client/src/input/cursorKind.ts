@@ -70,7 +70,7 @@ export function commandIntent(target: PointerTarget, selection: SelectionKinds):
   if (
     fighters &&
     building &&
-    areEnemies(LOCAL_PLAYER, building.ownerId) &&
+    areEnemies(useGameStore.getState().state.teams, LOCAL_PLAYER, building.ownerId) &&
     buildingInSight(building)
   ) {
     return { kind: 'attack', targetId: building.id };
@@ -101,7 +101,8 @@ export function attackMoveIntent(target: PointerTarget, selection: SelectionKind
     return { kind: 'attack', targetId: target.enemyId };
   }
   const building = target.building;
-  if (building && areEnemies(LOCAL_PLAYER, building.ownerId) && buildingInSight(building)) {
+  const { teams } = useGameStore.getState().state;
+  if (building && areEnemies(teams, LOCAL_PLAYER, building.ownerId) && buildingInSight(building)) {
     return { kind: 'attack', targetId: building.id };
   }
   const ground = target.ground;

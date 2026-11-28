@@ -119,7 +119,7 @@ export function judgeAim(
     const problem = (issue && PROBLEMS[issue]) ?? 'Can’t cast there';
     return { ...at, target, ok: false, problem };
   }
-  const reachable = castInRange(hero, ability, target, state.buildings);
+  const reachable = castInRange(state.teams, hero, ability, target, state.buildings);
   return { ...at, target, ok: reachable, problem: reachable ? null : 'Out of range' };
 }
 

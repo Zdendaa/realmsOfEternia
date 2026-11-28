@@ -16,7 +16,7 @@ import { toPlacedFootprint, type BuildingInstance } from '../state/gameState.js'
 import { isAlive, type UnitInstance } from '../state/units.js';
 import { buildingReach } from './buildings.js';
 import type { Hits } from './damage.js';
-import { areEnemies } from './hostility.js';
+import { areEnemies, type Teams } from './hostility.js';
 import type { Projectile } from './projectiles.js';
 import type { UnitGrid } from './targeting.js';
 
@@ -55,6 +55,7 @@ export const tooClose = (attack: AttackDefinition, reach: number) =>
  * Buildings inside its minimum range are passed over.
  */
 export function findSiegeTarget(
+  teams: Teams,
   unit: UnitInstance,
   attack: AttackDefinition,
   buildings: readonly BuildingInstance[],
@@ -65,7 +66,7 @@ export function findSiegeTarget(
   let bestTower = false;
   let bestDistance = Infinity;
   for (const building of buildings) {
-    if (!areEnemies(unit.ownerId, building.ownerId)) continue;
+    if (!areEnemies(teams, unit.ownerId, building.ownerId)) continue;
     const distance = distanceToFootprint(toPlacedFootprint(building), unit.x, unit.z);
     if (distance > sightRange || tooClose(attack, distance - radius)) continue;
     const tower = towerOf(building.type) !== undefined;
@@ -121,6 +122,7 @@ export function backOffPoint(
  * original target is still there. The shooter's own side is not harmed.
  */
 export function applySplashImpacts(
+  teams: Teams,
   landed: readonly Projectile[],
   grid: () => UnitGrid,
   buildings: readonly BuildingInstance[],
@@ -137,13 +139,13 @@ export function applySplashImpacts(
       minZ: z - radius,
       maxZ: z + radius,
     })) {
-      if (!isAlive(unit) || !areEnemies(p.ownerId, unit.ownerId)) continue;
+      if (!isAlive(unit) || !areEnemies(teams, p.ownerId, unit.ownerId)) continue;
       if ((unit.x - x) ** 2 + (unit.z - z) ** 2 > radius * radius) continue;
       const damage = scaled(damageAgainst(attack, combatOf(unit.type)), p.boost ?? 1);
       hits.add(unit.id, damage, p.ownerId, p.attackerId);
     }
     for (const building of buildings) {
-      if (!areEnemies(p.ownerId, building.ownerId)) continue;
+      if (!areEnemies(teams, p.ownerId, building.ownerId)) continue;
       if (buildingReach(p.aim, radius, building) > 0) continue;
       const damage = scaled(damageAgainst(attack, BUILDING_COMBAT), p.boost ?? 1);
       hits.add(building.id, damage, p.ownerId, p.attackerId);

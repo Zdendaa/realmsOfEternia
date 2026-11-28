@@ -5,6 +5,7 @@ import {
   distanceToPolyline,
   entrancePoint,
   randomRange,
+  toSlotPoint,
   type HeightField,
   type MapDefinition,
   type Vec2,
@@ -121,7 +122,10 @@ function scatterProps(
 /** Adds the cosmetic layers (props, worn ground, grass and flowers) to a simulation world. */
 export function decorateWorld(world: SimWorld, settlement: SettlementLayout): ClientWorld {
   const { map, heights, buildings, paths, water } = world;
-  const wornPatches = createWornPatches(buildings, settlement.squares);
+  const squares = world.slots.flatMap((slot) =>
+    settlement.squares.map((square) => ({ ...toSlotPoint(slot, square), radius: square.radius })),
+  );
+  const wornPatches = createWornPatches(buildings, squares);
   const groundCover = createGroundCover({
     map,
     heights,

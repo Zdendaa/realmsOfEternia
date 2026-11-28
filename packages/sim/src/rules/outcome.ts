@@ -36,12 +36,27 @@ export function addStats(
   };
 }
 
+/** The sides of the match: each team's players, and every teamless player on their own. */
+function sidesOf(state: GameState): PlayerId[][] {
+  const sides = new Map<string, PlayerId[]>();
+  for (const player of Object.keys(state.stocks)) {
+    const team = state.teams[player];
+    const key = team === undefined ? `player:${player}` : `team:${team}`;
+    const side = sides.get(key);
+    if (side) side.push(player);
+    else sides.set(key, [player]);
+  }
+  return [...sides.values()];
+}
+
 /**
- * Decides the game for every player with a stock who isn't decided yet: **lost** when
- * they had a Town Hall and have none left (checked first), **won** when they have a Town
- * Hall and the map's objective is met (`clearMonsters`: every wave sent and no living
- * monster, on a map that has camps or waves). Outcomes never change once set. Returns the
- * same object when nothing was decided.
+ * Decides the game for every player with a stock who isn't decided yet, side by side (a
+ * team, or a player alone): **lost** when the side had a Town Hall and has none left
+ * (checked first); **won** when the side has a Town Hall and either every other side has
+ * lost, or the map's objective is met (`clearMonsters`: every wave sent and no living
+ * monster, on a map that has camps or waves). A player whose own Town Hall fell plays on
+ * while an ally's stands. Outcomes never change once set. Returns the same object when
+ * nothing was decided.
  */
 export function decideOutcomes(
   world: SimWorld,
@@ -49,8 +64,23 @@ export function decideOutcomes(
   next: GameState,
 ): Readonly<Record<PlayerId, Outcome>> {
   let outcome: Record<PlayerId, Outcome> | null = null;
-  const hasTownHall = (state: GameState, player: PlayerId) =>
-    state.buildings.some((b) => b.type === 'townHall' && b.ownerId === player);
+  const current = () => outcome ?? next.outcome;
+  const decide = (side: readonly PlayerId[], result: Outcome['result']) => {
+    for (const player of side) {
+      if (current()[player]) continue;
+      outcome ??= { ...next.outcome };
+      outcome[player] = { result, at: previous.tick };
+    }
+  };
+  const hasTownHall = (state: GameState, side: readonly PlayerId[]) =>
+    state.buildings.some(
+      (b) => b.type === 'townHall' && b.ownerId !== null && side.includes(b.ownerId),
+    );
+  const sides = sidesOf(next);
+  for (const side of sides) {
+    if (hasTownHall(previous, side) && !hasTownHall(next, side)) decide(side, 'lost');
+  }
+
   // A map without camps or waves has nothing to clear, so it can't be won this way.
   const hasMonsters = (world.map.camps?.length ?? 0) + (world.map.waves?.length ?? 0) > 0;
   const objectiveMet =
@@ -58,18 +88,11 @@ export function decideOutcomes(
     hasMonsters &&
     next.wavesSent >= (world.map.waves?.length ?? 0) &&
     !next.units.some((u) => u.ownerId === MONSTER_PLAYER && isAlive(u));
-  for (const player of Object.keys(next.stocks)) {
-    if (next.outcome[player]) continue;
-    let decided: Outcome | null = null;
-    if (hasTownHall(previous, player) && !hasTownHall(next, player)) {
-      decided = { result: 'lost', at: previous.tick };
-    } else if (objectiveMet && hasTownHall(next, player)) {
-      decided = { result: 'won', at: previous.tick };
-    }
-    if (decided) {
-      outcome ??= { ...next.outcome };
-      outcome[player] = decided;
-    }
+  const lost = (side: readonly PlayerId[]) => side.every((p) => current()[p]?.result === 'lost');
+  const standing = sides.filter((side) => !lost(side));
+  const lastOne = sides.length > 1 && standing.length === 1;
+  for (const side of standing) {
+    if ((objectiveMet || lastOne) && hasTownHall(next, side)) decide(side, 'won');
   }
-  return outcome ?? next.outcome;
+  return current();
 }

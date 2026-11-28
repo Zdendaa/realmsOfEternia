@@ -1,6 +1,6 @@
 import { HERO_RULES, type HeroId, isHeroId } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type EntityId, type PlayerId } from '@roe/shared';
-import { areEnemies } from '../combat/hostility.js';
+import { areEnemies, type Teams } from '../combat/hostility.js';
 import type { SimContext } from '../context/simContext.js';
 import { nearestWalkablePoint } from '../nav/navGrid.js';
 import { createUnit, IDLE, isAlive, type HeroState, type UnitInstance } from '../state/units.js';
@@ -30,14 +30,18 @@ export const REVIVE_TICKS = HERO_RULES.reviveSeconds * SIMULATION_TICK_RATE;
 /** How a revival stands: under way, waiting for an own unit, or held up by enemies. */
 export type ReviveStatus = 'reviving' | 'noUnit' | 'contested';
 
-export function reviveStatus(grave: Grave, units: readonly UnitInstance[]): ReviveStatus {
+export function reviveStatus(
+  teams: Teams,
+  grave: Grave,
+  units: readonly UnitInstance[],
+): ReviveStatus {
   const near = HERO_RULES.reviveRadius ** 2;
   const clear = HERO_RULES.reviveClearRadius ** 2;
   let helper = false;
   for (const unit of units) {
     if (!isAlive(unit)) continue;
     const distance = (unit.x - grave.x) ** 2 + (unit.z - grave.z) ** 2;
-    if (distance <= clear && areEnemies(grave.ownerId, unit.ownerId)) return 'contested';
+    if (distance <= clear && areEnemies(teams, grave.ownerId, unit.ownerId)) return 'contested';
     if (distance <= near && unit.ownerId === grave.ownerId) helper = true;
   }
   return helper ? 'reviving' : 'noUnit';
@@ -85,7 +89,7 @@ export function updateGraves(
   const graves: Grave[] = [];
   const back: UnitInstance[] = [];
   for (const grave of current) {
-    if (reviveStatus(grave, units) !== 'reviving') {
+    if (reviveStatus(ctx.teams, grave, units) !== 'reviving') {
       graves.push(grave);
       continue;
     }

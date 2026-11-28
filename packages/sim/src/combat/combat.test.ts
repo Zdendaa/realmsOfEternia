@@ -90,10 +90,10 @@ describe('damage and counters', () => {
   });
 
   it('treats different owners as enemies and neutral as nobody’s enemy', () => {
-    expect(areEnemies('alice', 'bob')).toBe(true);
-    expect(areEnemies('alice', 'alice')).toBe(false);
-    expect(areEnemies('alice', null)).toBe(false);
-    expect(areEnemies(null, null)).toBe(false);
+    expect(areEnemies({}, 'alice', 'bob')).toBe(true);
+    expect(areEnemies({}, 'alice', 'alice')).toBe(false);
+    expect(areEnemies({}, 'alice', null)).toBe(false);
+    expect(areEnemies({}, null, null)).toBe(false);
   });
 
   it('gives every unit its health; only soldiers get a combat state', () => {

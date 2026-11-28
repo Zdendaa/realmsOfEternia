@@ -77,7 +77,8 @@ function pickCast(
         let best: UnitInstance | null = null;
         let most = 0;
         for (const foe of foes) {
-          if (!castInRange(hero, ability, { x: foe.x, z: foe.z }, state.buildings)) continue;
+          if (!castInRange(state.teams, hero, ability, { x: foe.x, z: foe.z }, state.buildings))
+            continue;
           const caught = near(foe, definition.radius, foes).length;
           if (caught > most) {
             best = foe;

@@ -1,5 +1,6 @@
 import { buildingSightOf, HERO_RULES, UNITS } from '@roe/game-data';
 import type { EntityId, MapDefinition, PlayerId, Vec2 } from '@roe/shared';
+import { areAllies } from '../combat/hostility.js';
 import { toPlacedFootprint, type BuildingInstance, type GameState } from '../state/gameState.js';
 import { isAlive } from '../state/units.js';
 
@@ -140,31 +141,32 @@ export const buildingSeen = (vision: Vision, building: BuildingInstance) =>
   footprintPoints(building).some((p) => isVisible(vision, p.x, p.z));
 
 /**
- * Brings the vision in line with `state`: the player's living units and buildings
- * (construction sites too) stamp their sight; units that died or moved to another cell
+ * Brings the vision in line with `state`: the living units and buildings of the player
+ * and its allies (construction sites too) stamp their sight; units that died or moved to another cell
  * are re-stamped or removed; other players' buildings in sight are remembered as they
  * are now, and remembered ones whose spot is in sight but that no longer stand are
  * forgotten.
  */
 export function updateVision(vision: Vision, state: GameState): void {
   const seen = new Set<EntityId>();
+  const shares = (owner: PlayerId | null) => areAllies(state.teams, vision.player, owner);
   for (const unit of state.units) {
-    if (unit.ownerId !== vision.player || !isAlive(unit)) continue;
+    if (!shares(unit.ownerId) || !isAlive(unit)) continue;
     place(vision, unit.id, cellAt(vision, unit.x, unit.z), UNITS[unit.type].sight, seen);
   }
   for (const building of state.buildings) {
-    if (building.ownerId !== vision.player) continue;
+    if (!shares(building.ownerId)) continue;
     const cell = cellAt(vision, building.x, building.z);
     place(vision, building.id, cell, buildingSightOf(building.type), seen);
   }
   // A fallen hero's grave still shows its owner a little around it. (The hero's id is
   // free for the stamp: the dead hero gives no sight.)
   for (const grave of state.graves) {
-    if (grave.ownerId !== vision.player) continue;
+    if (!shares(grave.ownerId)) continue;
     place(vision, grave.id, cellAt(vision, grave.x, grave.z), HERO_RULES.graveSight, seen);
   }
   for (const reveal of state.reveals) {
-    if (reveal.ownerId !== vision.player || state.tick > reveal.until) continue;
+    if (!shares(reveal.ownerId) || state.tick > reveal.until) continue;
     place(vision, reveal.id, cellAt(vision, reveal.x, reveal.z), reveal.radius, seen);
   }
   if (vision.stamps.size > seen.size) {
@@ -182,6 +184,9 @@ export function updateVision(vision: Vision, state: GameState): void {
     if (buildingSeen(vision, building)) vision.lastSeen.set(building.id, building);
   }
   for (const [id, building] of vision.lastSeen) {
-    if (!standing.has(id) && buildingSeen(vision, building)) vision.lastSeen.delete(id);
+    // An ally's losses are known at once.
+    if (!standing.has(id) && (shares(building.ownerId) || buildingSeen(vision, building))) {
+      vision.lastSeen.delete(id);
+    }
   }
 }

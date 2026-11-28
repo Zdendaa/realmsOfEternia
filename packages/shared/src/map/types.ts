@@ -22,7 +22,7 @@ export interface TerrainSettings {
   hillScale: number;
 }
 
-/** Square area at the map center that is kept flat and free of decorations. */
+/** The size of the square, flat, tree-free plateau at every start slot. */
 export interface SettlementArea {
   /** Half the side length of the flat square (20 → 40×40 units). */
   halfSize: number;
@@ -109,17 +109,31 @@ export interface WaterSettings {
 
 /** A hero a player starts the match with. */
 export interface StartingHeroDefinition {
-  /** The player's start slot (0: the owner of the starting settlement). */
-  player: number;
   /** A game-data hero id; unknown ones are skipped, like camps' unknown units. */
   hero: string;
+  /** In the starting settlement's own coordinates (before its slot turns it). */
   x: number;
   z: number;
 }
 
+/** Quarter turns around the vertical axis (90° steps, the sense of three.js `rotation.y`). */
+export type QuarterTurns = 0 | 1 | 2 | 3;
+
+/**
+ * One player's start position: the starting settlement is built around (x, z), turned by
+ * `quarterTurns`, on its own flat plateau.
+ */
+export interface StartSlotDefinition {
+  x: number;
+  z: number;
+  quarterTurns: QuarterTurns;
+  /** Heroes of the player in this slot: each map or mission can give others, or none. */
+  heroes?: readonly StartingHeroDefinition[];
+}
+
 export interface MapDefinition {
-  /** Heroes players start with: each map or mission can give others, or none. */
-  startingHeroes?: readonly StartingHeroDefinition[];
+  /** Start positions, by slot number. Absent: one slot at the center, without heroes. */
+  startSlots?: readonly StartSlotDefinition[];
   id: string;
   name: string;
   /** Width and depth of the square playable area, in world units. Centered at the origin. */

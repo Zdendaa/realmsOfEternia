@@ -35,7 +35,10 @@ const SKIPPED_MESHES = new Map(
 );
 
 /** A complete building to draw, with its id (model variant) and owner (roof color). */
-export type OwnedBuilding = PlacedBuilding & { id: number; ownerId: PlayerId | null };
+export type OwnedBuilding = Omit<PlacedBuilding, 'slot'> & {
+  id: number;
+  ownerId: PlayerId | null;
+};
 
 interface SettlementProps {
   buildings: readonly OwnedBuilding[];

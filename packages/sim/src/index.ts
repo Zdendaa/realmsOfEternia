@@ -42,7 +42,16 @@ export {
 } from './training/training.js';
 export { approachPoint, buildingMaxHealth } from './combat/buildings.js';
 export { combatTicks } from './combat/fighting.js';
-export { areEnemies, MONSTER_PLAYER } from './combat/hostility.js';
+export { areAllies, areEnemies, MONSTER_PLAYER, type Teams } from './combat/hostility.js';
+export {
+  createMatch,
+  matchSetupIssue,
+  teamsOf,
+  type Match,
+  type MatchSetup,
+  type SeatController,
+  type SeatSetup,
+} from './match/setup.js';
 export { waveTick } from './combat/waves.js';
 export type { Projectile } from './combat/projectiles.js';
 export { workSlots } from './construction/workSlots.js';
@@ -129,6 +138,7 @@ export {
   inBounds,
   type Bounds,
   type PlacedBuilding,
+  type WorldSlot,
   type SimWorld,
 } from './world/createWorld.js';
 export {

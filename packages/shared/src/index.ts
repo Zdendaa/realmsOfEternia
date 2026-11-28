@@ -11,3 +11,4 @@ export * from './map/buildable.js';
 export * from './map/flatten.js';
 export * from './map/footprintGeometry.js';
 export * from './map/decorations.js';
+export * from './map/startSlots.js';

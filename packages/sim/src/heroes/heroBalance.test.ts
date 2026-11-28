@@ -53,7 +53,10 @@ function game(map: MapDefinition, layout: SettlementLayout) {
 
 /** One hero alone against a group that marches on it, no abilities. */
 function duel(hero: HeroId, level: number, foe: UnitKind, count: number) {
-  const map = { ...FLAT_MAP, startingHeroes: [{ player: 0, hero, x: 0, z: 20 }] };
+  const map = {
+    ...FLAT_MAP,
+    startSlots: [{ x: 0, z: 0, quarterTurns: 0 as const, heroes: [{ hero, x: 0, z: 20 }] }],
+  };
   const g = game(map, { ...TOWN, startingSerfs: 0 });
   const [id = 0] = g.heroes().map((u) => u.id);
   const experience = HERO_RULES.levelExperience[level - 1] ?? 0;

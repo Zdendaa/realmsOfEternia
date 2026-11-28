@@ -3,7 +3,7 @@ import { SIMULATION_TICK_RATE, type EntityId } from '@roe/shared';
 import { applySlow, expireStatus } from '../heroes/status.js';
 import { isAlive, type UnitInstance } from '../state/units.js';
 import type { Hits } from './damage.js';
-import { areEnemies } from './hostility.js';
+import { areEnemies, type Teams } from './hostility.js';
 import type { Projectile } from './projectiles.js';
 import type { UnitGrid } from './targeting.js';
 
@@ -23,6 +23,7 @@ const ticks = (seconds: number) => Math.round(seconds * SIMULATION_TICK_RATE);
  * Mutates the unit working copies.
  */
 export function applyTowerImpacts(
+  teams: Teams,
   landed: readonly Projectile[],
   byId: () => ReadonlyMap<EntityId, UnitInstance>,
   grid: () => UnitGrid,
@@ -47,7 +48,7 @@ export function applyTowerImpacts(
       minZ: center.z - radius,
       maxZ: center.z + radius,
     })) {
-      if (!isAlive(unit) || !areEnemies(p.ownerId, unit.ownerId)) continue;
+      if (!isAlive(unit) || !areEnemies(teams, p.ownerId, unit.ownerId)) continue;
       if ((unit.x - center.x) ** 2 + (unit.z - center.z) ** 2 > radius * radius) continue;
       hits.add(unit.id, towerDamage(tower.attack, unit), p.ownerId, p.attackerId);
       if (tower.burn) {

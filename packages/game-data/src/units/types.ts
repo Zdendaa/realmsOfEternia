@@ -22,7 +22,7 @@ export interface UnitDefinition {
   /** Hard upper limit of this unit type per player; housing usually limits first. */
   maxPerPlayer: number;
   /**
-   * Research that unlocks it (a research id). Reserved for the technology tree (Phase 8);
+   * Research that unlocks it (a research id). Reserved for the technology tree (Phase 9);
    * nothing reads it yet.
    */
   requires?: string;

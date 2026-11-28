@@ -13,7 +13,7 @@ import {
 import type { EntityId, PlayerId, Vec2 } from '@roe/shared';
 import type { GameState } from '../state/gameState.js';
 import { createUnit, isAlive, type HeroState, type UnitInstance } from '../state/units.js';
-import { areEnemies } from '../combat/hostility.js';
+import { areEnemies, type Teams } from '../combat/hostility.js';
 
 /**
  * Heroes: the one way to create them, their levels, and the experience they earn.
@@ -117,13 +117,17 @@ export interface Death {
  * gets all of it for a kill of its own, and a share for its side's kills close by.
  * Several heroes each get their own. Mutates the working copies.
  */
-export function grantExperience(units: UnitInstance[], deaths: readonly Death[]): void {
+export function grantExperience(
+  teams: Teams,
+  units: UnitInstance[],
+  deaths: readonly Death[],
+): void {
   if (deaths.length === 0) return;
   const heroes = units.filter((u) => u.hero && isAlive(u));
   if (heroes.length === 0) return;
   const reach = HERO_RULES.shareRadius ** 2;
   for (const { victim, killer, killerId } of deaths) {
-    if (!areEnemies(killer, victim.ownerId)) continue;
+    if (!areEnemies(teams, killer, victim.ownerId)) continue;
     const worth = experienceWorth(victim.type);
     for (const hero of heroes) {
       if (hero.ownerId !== killer) continue;

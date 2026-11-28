@@ -9,7 +9,7 @@ import {
 } from '../state/gameState.js';
 import { IDLE, isAlive, type UnitInstance } from '../state/units.js';
 import type { Hits } from './damage.js';
-import { areEnemies } from './hostility.js';
+import { areEnemies, type Teams } from './hostility.js';
 
 /** How far beyond a building's edge a unit stands when it walks up to attack. */
 const APPROACH_GAP = 0.6;
@@ -68,6 +68,7 @@ export function approachPoint(unit: Vec2, building: BuildingInstance): Vec2 {
  * gates are never picked: they are attacked on order, or when they block the way.
  */
 export function findBuildingTarget(
+  teams: Teams,
   unit: UnitInstance,
   buildings: readonly BuildingInstance[],
   sightRange: number,
@@ -75,7 +76,7 @@ export function findBuildingTarget(
   let best: BuildingInstance | null = null;
   let bestDistance = Infinity;
   for (const building of buildings) {
-    if (!areEnemies(unit.ownerId, building.ownerId) || isWall(building.type)) continue;
+    if (!areEnemies(teams, unit.ownerId, building.ownerId) || isWall(building.type)) continue;
     const distance = distanceToFootprint(toPlacedFootprint(building), unit.x, unit.z);
     if (distance > sightRange) continue;
     if (distance < bestDistance || (distance === bestDistance && best && building.id < best.id)) {

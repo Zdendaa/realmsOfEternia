@@ -23,7 +23,7 @@ import { boostOf, isStunned, scaled } from '../heroes/status.js';
 import { moveTo } from '../units/orders.js';
 import { approachPoint, buildingReach, findBuildingTarget } from './buildings.js';
 import type { Hits } from './damage.js';
-import { areEnemies } from './hostility.js';
+import { areEnemies, type Teams } from './hostility.js';
 import { fireProjectile, type Projectile } from './projectiles.js';
 import {
   createReachCheck,
@@ -130,7 +130,7 @@ export function updateFighters(
     const attack = attackOf(unit.type) as AttackDefinition;
     // Siege weapons that can't hit units, or not up close, keep to their business.
     if (attack.buildingsOnly || attack.minRange !== undefined) return null;
-    const enemy = findTarget(unit, grid, combatOf(unit.type).sightRange ?? 0);
+    const enemy = findTarget(ctx.teams, unit, grid, combatOf(unit.type).sightRange ?? 0);
     return enemy && hasLineOfSight(ctx.nav, unit, enemy, unit.ownerId) ? enemy : null;
   };
 
@@ -160,7 +160,8 @@ export function updateFighters(
 
     // Which target this unit fights now.
     const current = find(combat.targetId);
-    let target: Foe | null = current && areEnemies(unit.ownerId, ownerOf(current)) ? current : null;
+    let target: Foe | null =
+      current && areEnemies(ctx.teams, unit.ownerId, ownerOf(current)) ? current : null;
     // A unit it picked itself that came inside its minimum range: look for another.
     if (target?.unit && task.kind !== 'attack' && combat.strikeAt === null) {
       if (tooClose(attack, reachTo(unit, target))) target = null;
@@ -241,7 +242,7 @@ export function updateFighters(
       (kind === 'idle' || kind === 'attackMove') &&
       (tick + unit.id) % COMBAT_RULES.scanEvery === 0
     ) {
-      target = findFoe(unit, attack, grid, buildings);
+      target = findFoe(ctx.teams, unit, attack, grid, buildings);
       if (target && kind === 'idle' && !combat.anchor) {
         // Guards are leashed to their home spot; others to where they engaged.
         combat.anchor = combat.home ?? { x: unit.x, z: unit.z };
@@ -281,6 +282,7 @@ export function updateFighters(
  * buildings first, walls included, then units if they can hit them.
  */
 function findFoe(
+  teams: Teams,
   unit: UnitInstance,
   attack: AttackDefinition,
   grid: UnitGrid,
@@ -288,15 +290,15 @@ function findFoe(
 ): Foe | null {
   const sight = combatOf(unit.type).sightRange ?? 0;
   if (attack.siege) {
-    const building = findSiegeTarget(unit, attack, buildings, sight);
+    const building = findSiegeTarget(teams, unit, attack, buildings, sight);
     if (building) return { building };
     if (attack.buildingsOnly) return null;
   }
   // Center to center: both radii (about a unit's own, twice) come on top of the range.
   const closest = attack.minRange === undefined ? 0 : attack.minRange + 2 * UNITS[unit.type].radius;
-  const enemy = findTarget(unit, grid, sight, closest);
+  const enemy = findTarget(teams, unit, grid, sight, closest);
   if (enemy) return { unit: enemy };
-  const building = attack.siege ? null : findBuildingTarget(unit, buildings, sight);
+  const building = attack.siege ? null : findBuildingTarget(teams, unit, buildings, sight);
   return building ? { building } : null;
 }
 

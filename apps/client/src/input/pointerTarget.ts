@@ -69,11 +69,12 @@ export const ownUnitIds = (): EntityId[] =>
     .map((u) => u.id);
 
 /** Living units of the local player's enemies (what attacks can target). */
-export const enemyUnitIds = (): EntityId[] =>
-  useGameStore
-    .getState()
-    .state.units.filter((u) => isAlive(u) && areEnemies(LOCAL_PLAYER, u.ownerId))
+export function enemyUnitIds(): EntityId[] {
+  const { units, teams } = useGameStore.getState().state;
+  return units
+    .filter((u) => isAlive(u) && areEnemies(teams, LOCAL_PLAYER, u.ownerId))
     .map((u) => u.id);
+}
 
 /**
  * Where units ordered to (x, z) end up: the point when walkable, else the nearest

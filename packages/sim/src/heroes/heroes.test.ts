@@ -27,12 +27,20 @@ import { levelFor, maxHealthOf, spawnHero, unitAttack } from './heroes.js';
 
 const MAP: MapDefinition = {
   ...FLAT_MAP,
-  startingHeroes: [
-    { player: 0, hero: 'commander', x: 4, z: 14 },
-    { player: 0, hero: 'archmage', x: 6, z: 14 },
-    // Skipped: no such hero, and a slot nobody holds.
-    { player: 0, hero: 'necromancer', x: 8, z: 14 },
-    { player: 3, hero: 'pathfinder', x: 10, z: 14 },
+  startSlots: [
+    {
+      x: 0,
+      z: 0,
+      quarterTurns: 0,
+      heroes: [
+        { hero: 'commander', x: 4, z: 14 },
+        { hero: 'archmage', x: 6, z: 14 },
+        // Skipped: no such hero.
+        { hero: 'necromancer', x: 8, z: 14 },
+      ],
+    },
+    // Skipped: a slot nobody holds.
+    { x: -40, z: -40, quarterTurns: 0, heroes: [{ hero: 'pathfinder', x: 10, z: 14 }] },
   ],
 };
 
@@ -45,11 +53,11 @@ function must<T>(value: T | undefined | null): T {
 /** The flat map with just one starting hero at (x, z). */
 const only = (hero: string, x: number, z: number): MapDefinition => ({
   ...FLAT_MAP,
-  startingHeroes: [{ player: 0, hero, x, z }],
+  startSlots: [{ x: 0, z: 0, quarterTurns: 0, heroes: [{ hero, x, z }] }],
 });
 
 function game(map: MapDefinition = FLAT_MAP) {
-  const world = createWorld(map, { ...TOWN, startingSerfs: 0 });
+  const world = createWorld(map, { ...TOWN, startingSerfs: 0 }, [0]);
   const initial = createInitialState(world, { owner: 'alice' });
   const ctx = createSimContext(world, initial, { dev: true });
   let state: GameState = initial;

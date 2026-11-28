@@ -2,7 +2,7 @@ import { COMBAT_RULES, towerOf } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type EntityId } from '@roe/shared';
 import type { BuildingInstance } from '../state/gameState.js';
 import { isAlive, type UnitInstance } from '../state/units.js';
-import { areEnemies } from './hostility.js';
+import { areEnemies, type Teams } from './hostility.js';
 import { arrowFlight, type Projectile } from './projectiles.js';
 import type { UnitGrid } from './targeting.js';
 import { towerDamage } from './towerImpacts.js';
@@ -16,6 +16,7 @@ export type TowerCooldowns = Readonly<Record<EntityId, number>>;
  * machine picks the same one. Null when none is in range.
  */
 export function towerTarget(
+  teams: Teams,
   tower: Pick<BuildingInstance, 'x' | 'z' | 'ownerId'>,
   grid: UnitGrid,
   range: number,
@@ -30,7 +31,7 @@ export function towerTarget(
     maxZ: tower.z + range,
   });
   for (const unit of candidates) {
-    if (!isAlive(unit) || !areEnemies(tower.ownerId, unit.ownerId)) continue;
+    if (!isAlive(unit) || !areEnemies(teams, tower.ownerId, unit.ownerId)) continue;
     const sq = (unit.x - tower.x) ** 2 + (unit.z - tower.z) ** 2;
     if (sq > range * range) continue;
     const attacking = unit.activity === 'attacking';
@@ -54,6 +55,7 @@ export function towerTarget(
  * towers that no longer stand are dropped.
  */
 export function updateTowers(
+  teams: Teams,
   tick: number,
   buildings: readonly BuildingInstance[],
   grid: () => UnitGrid,
@@ -70,7 +72,7 @@ export function updateTowers(
       continue;
     }
     const { attack } = definition;
-    const target = towerTarget(tower, grid(), attack.range);
+    const target = towerTarget(teams, tower, grid(), attack.range);
     if (!target) continue;
     next ??= { ...cooldowns };
     next[tower.id] = tick + Math.max(1, Math.round(attack.cooldown * SIMULATION_TICK_RATE));

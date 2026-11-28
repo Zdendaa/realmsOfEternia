@@ -7,13 +7,14 @@ const clock = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 
 /**
- * The end of the game for the local player: Victory (camps and wave beaten) or Defeat
- * (Town Hall lost), with the time and a few numbers. "Continue watching" closes it (the
+ * The end of the game for the local player: Victory (the map's objective met, or every
+ * enemy beaten) or Defeat (their side's Town Halls lost), with the time and a few numbers. "Continue watching" closes it (the
  * game goes on, but orders are refused); "New game" reloads the page for now.
  */
 export function OutcomeOverlay() {
   const outcome = useGameStore((s) => s.state.outcome[LOCAL_PLAYER]);
   const [dismissed, setDismissed] = useState(false);
+  const cleared = useGameStore((s) => s.world.map.objective === 'clearMonsters');
   // Read once the game is decided; these don't change the panel afterwards.
   const stats = useGameStore((s) => (outcome ? s.state.stats[LOCAL_PLAYER] : undefined));
   if (!outcome) return null;
@@ -27,9 +28,11 @@ export function OutcomeOverlay() {
       <section className={`hud-panel outcome-panel ${won ? 'is-won' : 'is-lost'}`}>
         <h2>{won ? 'Victory' : 'Defeat'}</h2>
         <p className="outcome-lead">
-          {won
-            ? 'The skeleton camps are cleared and the horde is beaten.'
-            : 'Your Town Hall has fallen.'}
+          {!won
+            ? 'Your Town Hall has fallen.'
+            : cleared
+              ? 'The skeleton camps are cleared and the horde is beaten.'
+              : 'Every enemy realm has fallen.'}
         </p>
         <dl className="unit-stats outcome-stats">
           <dt>Time</dt>

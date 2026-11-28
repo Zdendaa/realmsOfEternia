@@ -9,7 +9,7 @@ import {
 import { isInPlayableArea, SIMULATION_TICK_RATE, type EntityId, type Vec2 } from '@roe/shared';
 import { approachPoint, buildingReach } from '../combat/buildings.js';
 import type { Hits } from '../combat/damage.js';
-import { areEnemies } from '../combat/hostility.js';
+import { areAllies, areEnemies, type Teams } from '../combat/hostility.js';
 import type { SimContext } from '../context/simContext.js';
 import type { BuildingInstance } from '../state/gameState.js';
 import { IDLE, isAlive, type CastTarget, type UnitInstance } from '../state/units.js';
@@ -67,6 +67,7 @@ export function abilityIssue(
 
 /** Where a cast is aimed and whether the hero is close enough to start it. */
 function aim(
+  teams: Teams,
   unit: UnitInstance,
   definition: AbilityDefinition,
   target: CastTarget | null,
@@ -78,7 +79,7 @@ function aim(
   if (!target) return null;
   if ('id' in target) {
     const building = buildings.get(target.id);
-    if (!building || !areEnemies(unit.ownerId, building.ownerId)) return null;
+    if (!building || !areEnemies(teams, unit.ownerId, building.ownerId)) return null;
     return {
       center: { x: building.x, z: building.z },
       walkTo: approachPoint(unit, building),
@@ -95,17 +96,19 @@ function aim(
  * (the same rule the casting uses; always true for self-cast ones).
  */
 export function castInRange(
+  teams: Teams,
   hero: UnitInstance,
   ability: AbilityId,
   target: CastTarget | null,
   buildings: readonly BuildingInstance[],
 ): boolean {
   const byId = new Map(buildings.map((b) => [b.id, b]));
-  return aim(hero, abilityOf(ability), target, byId)?.inRange ?? false;
+  return aim(teams, hero, abilityOf(ability), target, byId)?.inRange ?? false;
 }
 
 /** Every effect of `definition`, around `center` (or on `building`). */
 function takeEffect(
+  teams: Teams,
   caster: UnitInstance,
   definition: AbilityDefinition,
   center: Vec2,
@@ -118,8 +121,8 @@ function takeEffect(
   const inArea = units.filter(
     (u) => isAlive(u) && (u.x - center.x) ** 2 + (u.z - center.z) ** 2 <= radius * radius,
   );
-  const allies = inArea.filter((u) => u.ownerId === caster.ownerId);
-  const enemies = inArea.filter((u) => areEnemies(caster.ownerId, u.ownerId));
+  const allies = inArea.filter((u) => areAllies(teams, caster.ownerId, u.ownerId));
+  const enemies = inArea.filter((u) => areEnemies(teams, caster.ownerId, u.ownerId));
   let reveal: Reveal | null = null;
   for (const effect of definition.effects) {
     switch (effect.kind) {
@@ -169,6 +172,7 @@ export interface Magic {
  * nothing changed. Mutates the unit working copies.
  */
 export function updateAbilities(
+  teams: Teams,
   tick: number,
   units: UnitInstance[],
   buildings: readonly BuildingInstance[],
@@ -187,7 +191,7 @@ export function updateAbilities(
     }
     const definition = abilityOf(task.ability);
     byId ??= new Map(buildings.map((b) => [b.id, b]));
-    const at = aim(unit, definition, task.target, byId);
+    const at = aim(teams, unit, definition, task.target, byId);
     const giveUp = () => {
       unit.task = IDLE;
       unit.movement = null;
@@ -215,7 +219,7 @@ export function updateAbilities(
     }
     unit.activity = 'casting';
     if (tick < task.castAt) continue;
-    const reveal = takeEffect(unit, definition, at.center, at.building, units, hits, tick);
+    const reveal = takeEffect(teams, unit, definition, at.center, at.building, units, hits, tick);
     if (reveal) reveals.push(reveal);
     casts.push({
       tick,

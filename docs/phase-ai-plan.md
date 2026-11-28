@@ -1,6 +1,6 @@
 # Phase AI plan: computer opponents
 
-**Proposed 2026-11-28, waiting for approval.** Moved ahead of Phase 8 (building upgrades and technologies). Cavalry (6b.7) is deferred until a free horse model is available.
+**Approved 2026-11-28** with every recommendation, including the four open questions (teams in state with shared ally vision, the new 320×320 map, no resource cheats, waves and `clearMonsters` moved onto the mission system in AI.7). This is Phase 8 of the roadmap; building upgrades and technologies moved to Phase 9. Cavalry (6b.7) is deferred until a free horse model is available.
 
 The goal is a computer player that builds an economy and a base, trains soldiers, uses its heroes and attacks in waves, with difficulty levels. Several AI players can play in one match, each with its own team, color, difficulty and personality, and alliances are configurable. The AI runs inside the deterministic simulation (`@roe/sim`), so the client (single player) and the server (multiplayer) run exactly the same AI code and get the same result. The last milestone adds hooks for missions: a scripted start state, objectives, triggers and per-AI behavior overrides.
 
@@ -14,15 +14,15 @@ The goal is a computer player that builds an economy and a base, trains soldiers
 
 ## Milestones
 
-| #    | Scope                                                                                                                                                                                                                                                                                                                           | Status |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| AI.1 | **Match setup for N players:** `MatchSetup` (seats: human/AI, team, color, difficulty, personality), start slots on a new 2–4 player skirmish map, a settlement per slot, teams in the sim (`areEnemies` from a team table), shared team vision, team victory, seat colors. Dev setup through URL/dev panel. **Browser review** | ⬜     |
-| AI.2 | **AI framework:** `sim/ai/`, AI memory in `GameState`, staggered think schedule, the AI's commands going through `validateCommand`/`applyCommand`, knowledge from its `PlayerView`, a building-spot finder, a determinism test, a dev AI inspector. First behavior: recruit serfs, gather                                       | ⬜     |
-| AI.3 | **Economy and base:** build orders from personality data, serf allocation across wood/stone/food, housing ahead of population, the farm → mill → bakery chain, mines, rebuilding and repairing. Headless tests: economy targets at 5 and 10 minutes                                                                             | ⬜     |
-| AI.4 | **Military:** training toward a target composition, base defense (pull back, gather near the threat), attack waves (gather → march → fight → retreat or regroup), scouting, clearing camps for the mines, siege against walls, towers for defensive personalities                                                               | ⬜     |
-| AI.5 | **Heroes:** heroes join the army or defense, rule-based ability use (area spells on clusters, buffs before engaging), retreat when low, reviving fallen heroes                                                                                                                                                                  | ⬜     |
-| AI.6 | **Difficulty, personalities, balance:** Easy/Normal/Hard, three personalities, headless AI-vs-AI tournaments, performance with 3 AIs, a skirmish setup screen (opponents, teams, colors, difficulty). **Browser review**                                                                                                        | ⬜     |
-| AI.7 | **Mission hooks:** `MissionDefinition` (start state per seat, objectives, triggers, AI overrides), mission state in the sim, on-screen messages. The existing waves and `clearMonsters` are moved onto it unchanged, plus one small sample mission. **Browser review**                                                          | ⬜     |
+| #    | Scope                                                                                                                                                                                                                                                                                                                           | Status  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| AI.1 | **Match setup for N players:** `MatchSetup` (seats: human/AI, team, color, difficulty, personality), start slots on a new 2–4 player skirmish map, a settlement per slot, teams in the sim (`areEnemies` from a team table), shared team vision, team victory, seat colors. Dev setup through URL/dev panel. **Browser review** | ✅ Done |
+| AI.2 | **AI framework:** `sim/ai/`, AI memory in `GameState`, staggered think schedule, the AI's commands going through `validateCommand`/`applyCommand`, knowledge from its `PlayerView`, a building-spot finder, a determinism test, a dev AI inspector. First behavior: recruit serfs, gather                                       | ⬜      |
+| AI.3 | **Economy and base:** build orders from personality data, serf allocation across wood/stone/food, housing ahead of population, the farm → mill → bakery chain, mines, rebuilding and repairing. Headless tests: economy targets at 5 and 10 minutes                                                                             | ⬜      |
+| AI.4 | **Military:** training toward a target composition, base defense (pull back, gather near the threat), attack waves (gather → march → fight → retreat or regroup), scouting, clearing camps for the mines, siege against walls, towers for defensive personalities                                                               | ⬜      |
+| AI.5 | **Heroes:** heroes join the army or defense, rule-based ability use (area spells on clusters, buffs before engaging), retreat when low, reviving fallen heroes                                                                                                                                                                  | ⬜      |
+| AI.6 | **Difficulty, personalities, balance:** Easy/Normal/Hard, three personalities, headless AI-vs-AI tournaments, performance with 3 AIs, a skirmish setup screen (opponents, teams, colors, difficulty). **Browser review**                                                                                                        | ⬜      |
+| AI.7 | **Mission hooks:** `MissionDefinition` (start state per seat, objectives, triggers, AI overrides), mission state in the sim, on-screen messages. The existing waves and `clearMonsters` are moved onto it unchanged, plus one small sample mission. **Browser review**                                                          | ⬜      |
 
 AI.1 is a prerequisite and has no AI in it yet. It is kept separate because it changes core rules (hostility, victory, vision) that everything else builds on, and it is also what Phase 10 (multiplayer) needs.
 
@@ -124,11 +124,23 @@ _Balanced_ (the default), _Aggressive_ (early, smaller waves, few towers), _Defe
 
 ## Out of scope
 
-The Brutal (cheating) difficulty, AI diplomacy (asking for help, changing alliances on its own), AI use of upgrades and technologies (comes with Phase 8, when it needs a manager), naval or cavalry play, lobbies and matchmaking (Phase 10), a mission editor and a campaign.
+The Brutal (cheating) difficulty, AI diplomacy (asking for help, changing alliances on its own), AI use of upgrades and technologies (comes with Phase 9, when it needs a manager), naval or cavalry play, lobbies and matchmaking (Phase 10), a mission editor and a campaign.
 
-## Open questions for approval
+## Questions at approval (all answered yes, as recommended)
 
 1. Teams in state with shared ally vision (decision 9). OK?
 2. A new ~320×320 four-corner skirmish map, with the prototype kept for solo play (decision 10). OK, or should the AI first play on the prototype map with a second settlement added?
 3. Fair AI with no resource cheats at any of the three levels (decisions 5 and 11). OK?
 4. Moving the existing waves and `clearMonsters` onto the mission system in AI.7 (decision 15), instead of keeping two systems side by side. OK?
+
+## As built
+
+### AI.1: match setup for N players
+
+- **Setup** (`MatchSetup` in sim `match/setup.ts`): a seed and seats (player, start slot, team, color, human or AI with difficulty and personality). `createMatch` builds the world with a settlement on every occupied slot and the first state; `matchSetupIssue` refuses setups the map can't play.
+- **Start slots** are part of the map (`startSlots`: position, quarter turns, heroes); each has its own flat plateau. The prototype map has one, in the middle, so solo play is unchanged.
+- **Teams** are in `GameState.teams`. Allies don't fight, share vision (and what they know), pass through each other's gates and are healed and boosted by each other's abilities. Stocks, orders, storage, bounties, revival and training stay per player.
+- **Victory** is by side: a side loses when it had a Town Hall and has none left (its members play on while any ally's stands) and wins when it is the last side not defeated. The prototype map's `clearMonsters` objective works as before.
+- **Four Corners** (`SKIRMISH_MAP`, 320×320): each corner has an iron and a gold deposit with small camps along the map edges; the middle has a second gold and iron deposit under a large camp. Four lakes, no waves.
+- **Dev setup:** `?map=skirmish&teams=1,2,1,2&difficulty=hard,normal&personality=defensive&seed=7`, or the Match list in the dev panel. Only dev builds read the URL; the setup screen comes in AI.6.
+- **Not yet:** `MatchRoom` still plays the prototype map without seats. Seating network clients belongs with the lobby (Phase 10); the shared `createMatch` it will call is covered by tests.

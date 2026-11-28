@@ -1,6 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import { CHARACTER_PACK, isWall, SIEGE_MODELS, SIEGE_SIZE, type UnitKind } from '@roe/game-data';
 import {
+  areAllies,
   buildingMaxHealth,
   footprintOf,
   maxHealthOf,
@@ -8,7 +9,7 @@ import {
   reviveStatus,
   type ReviveStatus,
 } from '@roe/sim';
-import type { EntityId } from '@roe/shared';
+import type { EntityId, PlayerId } from '@roe/shared';
 import { useEffect, useMemo, useRef } from 'react';
 import {
   DynamicDrawUsage,
@@ -115,6 +116,10 @@ function createBarMaterial() {
   });
 }
 
+/** Your own and your allies' bars are drawn as friendly. */
+const friendly = (owner: PlayerId | null) =>
+  areAllies(useGameStore.getState().state.teams, LOCAL_PLAYER, owner);
+
 /** The bars' GPU objects and their per-frame update (a plain object, outside React). */
 function createHealthBars() {
   const geometry = new PlaneGeometry(1, 1);
@@ -162,7 +167,7 @@ function createHealthBars() {
       const [left, max] = health.get(unit.id) ?? [1, 1];
       if (!all && left >= max && !selected.has(unit.id)) continue;
       matrix.makeTranslation(unit.x, unit.y + heightOf(unit.type) + BAR_GAP, unit.z);
-      if (!write(left / max, unit.ownerId === LOCAL_PLAYER ? 1 : 0)) return;
+      if (!write(left / max, friendly(unit.ownerId) ? 1 : 0)) return;
     }
   }
 
@@ -184,7 +189,7 @@ function createHealthBars() {
         heights.getHeightAt(building.x, building.z) + lift,
         building.z,
       );
-      if (!write((max - damage) / max, building.ownerId === LOCAL_PLAYER ? 1 : 0)) return;
+      if (!write((max - damage) / max, friendly(building.ownerId) ? 1 : 0)) return;
     }
   }
 
@@ -199,7 +204,7 @@ function createHealthBars() {
         heights.getHeightAt(grave.x, grave.z) + GRAVE_BAR_HEIGHT,
         grave.z,
       );
-      const look = REVIVE_LOOK[reviveStatus(grave, state.units)];
+      const look = REVIVE_LOOK[reviveStatus(state.teams, grave, state.units)];
       if (!write(grave.progress / REVIVE_TICKS, look)) return;
     }
   }

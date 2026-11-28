@@ -20,7 +20,7 @@ const seconds = (s: number) => Math.round(s * SIMULATION_TICK_RATE);
 const SPOT = { x: -30, z: 30 };
 const MAP: MapDefinition = {
   ...FLAT_MAP,
-  startingHeroes: [{ player: 0, hero: 'commander', ...SPOT }],
+  startSlots: [{ x: 0, z: 0, quarterTurns: 0, heroes: [{ hero: 'commander', ...SPOT }] }],
 };
 
 /** The value, which the test expects to exist. */
@@ -150,7 +150,7 @@ describe('revival', () => {
     g.fell();
     g.run(seconds(40));
     expect(g.grave().progress).toBe(0);
-    expect(reviveStatus(g.grave(), g.state.units)).toBe('noUnit');
+    expect(reviveStatus({}, g.grave(), g.state.units)).toBe('noUnit');
     // Just out of reach.
     g.spawn('alice', 'swordsman', SPOT.x + HERO_RULES.reviveRadius + 1.5, SPOT.z);
     g.run(seconds(2));
@@ -185,7 +185,7 @@ describe('revival', () => {
     const reached = g.grave().progress;
     expect(reached).toBeGreaterThan(seconds(9));
     const enemy = g.spawn('bob', 'ram', SPOT.x + HERO_RULES.reviveClearRadius - 1, SPOT.z);
-    expect(reviveStatus(g.grave(), g.state.units)).toBe('contested');
+    expect(reviveStatus({}, g.grave(), g.state.units)).toBe('contested');
     const held = g.grave().progress;
     g.run(seconds(20));
     expect(g.grave().progress).toBe(held);

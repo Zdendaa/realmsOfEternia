@@ -7,7 +7,7 @@ import {
   type PlayerId,
   type Vec2,
 } from '@roe/shared';
-import { areEnemies } from '../combat/hostility.js';
+import { areAllies, areEnemies, type Teams } from '../combat/hostility.js';
 import { PLACEMENT_RULES } from '../rules/placement.js';
 import type { SimWorld } from '../world/createWorld.js';
 
@@ -17,7 +17,7 @@ const STATIC = 1;
 const BUILDING = 2;
 /** Blocked by a tree or rock; cleared when the node is depleted. */
 const DECORATION = 4;
-/** Covered by a finished gate: open to its owner's units only (`gateOwners`). */
+/** Covered by a finished gate: open to its owner's side only (`gateOwners`). */
 const GATE = 8;
 /** Covered by a wall segment (or an unfinished gate): enemies may break through it. */
 const WALL = 16;
@@ -47,6 +47,8 @@ export interface NavGrid {
   readonly gateOwners: Map<number, PlayerId>;
   /** The wall segment on each cell a wall covers, for breaching. */
   readonly wallCells: Map<number, WallCell>;
+  /** The match's teams: allies walk through each other's gates (set by the context). */
+  teams: Teams;
   /** Bumped whenever building or decoration cells change, so routes can be re-checked. */
   version: number;
 }
@@ -91,6 +93,7 @@ export function createNavGrid(
     flags,
     gateOwners: new Map(),
     wallCells: new Map(),
+    teams: {},
     version: 0,
   };
 
@@ -235,11 +238,11 @@ export function cellIndexAt(grid: NavGrid, x: number, z: number): number {
 export function breachableCell(grid: NavGrid, i: number, attacker: Passer): WallCell | null {
   if (((grid.flags[i] as number) & ~(WALL | GATE)) !== 0) return null;
   const wall = grid.wallCells.get(i);
-  return wall && areEnemies(attacker, wall.owner) ? wall : null;
+  return wall && areEnemies(grid.teams, attacker, wall.owner) ? wall : null;
 }
 
 /**
- * Who is asking: a player's units also walk through that player's gates. Without one
+ * Who is asking: a player's units also walk through that player's and allies' gates. Without one
  * (null), gates are closed.
  */
 export type Passer = PlayerId | null;
@@ -248,7 +251,8 @@ export function isWalkableCell(grid: NavGrid, index: number, passer: Passer = nu
   if (index < 0) return false;
   const flags = grid.flags[index];
   return (
-    flags === 0 || (flags === GATE && passer !== null && grid.gateOwners.get(index) === passer)
+    flags === 0 ||
+    (flags === GATE && areAllies(grid.teams, grid.gateOwners.get(index) ?? null, passer))
   );
 }
 

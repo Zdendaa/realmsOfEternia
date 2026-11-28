@@ -1,4 +1,4 @@
-import { SIMULATION_TICK_RATE } from '@roe/shared';
+import { SIMULATION_TICK_RATE, type WaveDefinition } from '@roe/shared';
 import { waveTick } from '@roe/sim';
 import { useGameStore } from '../state/gameStore';
 
@@ -6,6 +6,8 @@ import { useGameStore } from '../state/gameStore';
 const BANNER_SECONDS = 8;
 /** The countdown shows during the last minute before a wave. */
 const COUNTDOWN_SECONDS = 60;
+/** Stable, so the selector returns the same array on maps without waves. */
+const NO_WAVES: readonly WaveDefinition[] = [];
 
 const clock = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
@@ -16,7 +18,7 @@ const clock = (seconds: number) =>
  * once per second.
  */
 export function WaveAlert() {
-  const waves = useGameStore((s) => s.world.map.waves ?? []);
+  const waves = useGameStore((s) => s.world.map.waves ?? NO_WAVES);
   const wavesSent = useGameStore((s) => s.state.wavesSent);
   const lastWaveAt = useGameStore((s) => s.state.lastWaveAt);
   const second = useGameStore((s) => Math.floor(s.state.tick / SIMULATION_TICK_RATE));

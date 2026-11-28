@@ -228,7 +228,7 @@ function checkAttack(ctx: SimContext, state: GameState, issuer: PlayerId, comman
   const unit = state.units.find((u) => u.id === command.targetId);
   const target = unit && isAlive(unit) ? unit : findBuilding(state, command.targetId);
   if (!target) return fail('noTarget');
-  if (!areEnemies(issuer, target.ownerId)) return fail('notEnemy');
+  if (!areEnemies(state.teams, issuer, target.ownerId)) return fail('notEnemy');
   // With fog of war, only what the issuer sees right now can be attacked.
   const vision = ctx.visions.get(issuer);
   if (vision) {
@@ -614,7 +614,7 @@ function checkAbility(
     if (!target || !('id' in target)) return fail('badTarget');
     const building = findBuilding(state, target.id);
     if (!building) return fail('noTarget');
-    if (!areEnemies(issuer, building.ownerId)) return fail('notEnemy');
+    if (!areEnemies(state.teams, issuer, building.ownerId)) return fail('notEnemy');
     return vision && !buildingSeen(vision, building) ? fail('notVisible') : OK;
   }
   if (!target || 'id' in target) return fail('badTarget');

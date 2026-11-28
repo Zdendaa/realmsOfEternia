@@ -1,9 +1,10 @@
 import { Stats } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
-import { PROTOTYPE_SETTLEMENT } from '@roe/game-data';
+import { startSlotsOf } from '@roe/shared';
 import { Suspense, useMemo } from 'react';
 import { ACESFilmicToneMapping } from 'three';
 import { useGameStore } from '../state/gameStore';
+import { LOCAL_PLAYER, MATCH, seatOf } from '../state/matchConfig';
 import { useSettingsStore } from '../state/settingsStore';
 import { decorateWorld } from '../world/decorateWorld';
 import { RtsCameraControls } from './camera/RtsCameraControls';
@@ -27,8 +28,10 @@ import { UnitFrameDriver } from './units/UnitFrameDriver';
 import { Graves } from './units/Graves';
 import { Units } from './units/Units';
 
-/** Default view: about 50° pitch, 55 units from the map center. */
-const CAMERA_START: [number, number, number] = [25, 42, 25];
+/** The local player's start slot: the camera begins over its settlement. */
+const HOME = startSlotsOf(MATCH.map)[seatOf(LOCAL_PLAYER)?.slot ?? 0] ?? { x: 0, z: 0 };
+/** Default view: about 50° pitch, 55 units from the settlement. */
+const CAMERA_START: [number, number, number] = [HOME.x + 25, 42, HOME.z + 25];
 
 /** Root of the 3D viewport. Owns the renderer, camera and scene graph. */
 export function GameCanvas() {
@@ -39,7 +42,7 @@ export function GameCanvas() {
   // Changes only when a unit of wood or stone is taken.
   const resourceNodes = useGameStore((s) => s.state.resourceNodes);
   const ruins = useGameStore((s) => s.state.ruins);
-  const world = useMemo(() => decorateWorld(simWorld, PROTOTYPE_SETTLEMENT), [simWorld]);
+  const world = useMemo(() => decorateWorld(simWorld, MATCH.settlement), [simWorld]);
 
   return (
     <Canvas
@@ -84,7 +87,7 @@ export function GameCanvas() {
       <SelectionMarkers />
       <CommandMarkers />
       <PlacementPreview />
-      <RtsCameraControls bounds={world.map.size / 2} heights={heights} />
+      <RtsCameraControls bounds={world.map.size / 2} start={HOME} heights={heights} />
       <FogPass />
       {showStats && <Stats className="fps-stats" />}
     </Canvas>

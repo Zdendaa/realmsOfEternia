@@ -76,6 +76,7 @@ export function stepGame(
     let byId: Map<EntityId, UnitInstance> | null = null;
     let impactGrid: UnitGrid | null = null;
     applyTowerImpacts(
+      current.teams,
       landed,
       () => (byId ??= new Map(units.map((u) => [u.id, u]))),
       () => (impactGrid ??= createUnitGrid(units)),
@@ -83,6 +84,7 @@ export function stepGame(
       current.tick,
     );
     applySplashImpacts(
+      current.teams,
       landed,
       () => (impactGrid ??= createUnitGrid(units)),
       current.buildings,
@@ -93,12 +95,20 @@ export function stepGame(
   const released: Projectile[] = [];
   updateSerfs(ctx, current.tick, current.buildings, units, economy, current.buildingDamage);
   updateWorkers(current.tick, current.buildings, units, economy);
-  const magic = updateAbilities(current.tick, units, current.buildings, hits, current);
+  const magic = updateAbilities(
+    current.teams,
+    current.tick,
+    units,
+    current.buildings,
+    hits,
+    current,
+  );
   updateFighters(ctx, current.tick, units, current.buildings, hits, released, current.projectiles);
   // Towers shoot after the units have moved on this tick's orders (the grid is built only
   // when a tower is ready to look).
   let unitGrid: UnitGrid | null = null;
   const towerCooldowns = updateTowers(
+    current.teams,
     current.tick,
     current.buildings,
     () => (unitGrid ??= createUnitGrid(units)),
@@ -108,7 +118,7 @@ export function stepGame(
   );
   const deaths = applyHits(units, hits, current.tick);
   payBounties(economy, deaths, (player) => current.stocks[player] !== undefined);
-  grantExperience(units, deaths);
+  grantExperience(current.teams, units, deaths);
   if (ctx.nav.version !== navVersion) invalidateBlockedRoutes(ctx, units);
   planPaths(ctx, units);
   advanceUnits(units, current.tick);
@@ -145,7 +155,7 @@ export function stepGame(
   const { buildings, upgrades } = progressUpgrades(built.buildings, current.upgrades, current.tick);
 
   // Production buildings without a worker get one while their owner has free housing.
-  const hired = hireWorkers(buildings, units, current.nextEntityId);
+  const hired = hireWorkers(current.teams, buildings, units, current.nextEntityId);
   // Trained units leave their building (housing permitting, after this tick's workers).
   const trained = progressTraining(buildings, current.training, units, current.tick, hired);
   // Scripted monster waves that are due march in.

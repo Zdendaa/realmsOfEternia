@@ -112,7 +112,8 @@ describe('towers', () => {
       ...createUnit(id, 'swordsman', 'enemy', { x, z: 0 }),
       activity,
     });
-    const pick = (...units: UnitInstance[]) => towerTarget(tower, createUnitGrid(units), 11)?.id;
+    const pick = (...units: UnitInstance[]) =>
+      towerTarget({}, tower, createUnitGrid(units), 11)?.id;
     expect(pick(at(1, 3), at(2, 9, 'attacking'))).toBe(2);
     expect(pick(at(1, 9), at(2, 3))).toBe(2);
     expect(pick(at(5, -4), at(4, 4))).toBe(4);
