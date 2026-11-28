@@ -1,4 +1,4 @@
-import { AI_DIFFICULTIES, AI_PERSONALITIES, PLAYER_COLORS } from '@roe/game-data';
+import { AI_DIFFICULTIES, AI_PERSONALITIES, BUILDINGS, PLAYER_COLORS } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type PlayerId } from '@roe/shared';
 import { stockOf, type AiState, type GameState } from '@roe/sim';
 import { cameraRig } from '../../render/camera/cameraRig';
@@ -11,19 +11,55 @@ const clock = (tick: number) => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 };
 
-/** Its serfs by what they are doing: gathering wood or stone, idle, or something else. */
+const WAITING = {
+  resources: 'saving up',
+  pause: 'pausing',
+  sites: 'waiting for a free site',
+} as const;
+
+/** The building it wants next and why it isn't started yet. */
+function goalLine({ goal, search }: AiState): string {
+  if (!goal) return 'Next: nothing (build order met, or no room)';
+  const status = goal.waiting ? WAITING[goal.waiting] : search ? 'looking for a spot' : 'starting';
+  return `Next: ${BUILDINGS[goal.building].name} (${status})`;
+}
+
+/** Its buildings under construction, with how far each is. */
+function siteLine(state: GameState, player: PlayerId): string {
+  const sites = state.buildings
+    .filter((b) => b.ownerId === player && b.status === 'construction')
+    .map((b) => {
+      const progress = state.construction[b.id];
+      const done = progress ? Math.floor((100 * progress.workDone) / progress.workRequired) : 0;
+      return `${BUILDINGS[b.type].name} ${done}%`;
+    });
+  return `Building: ${sites.join(', ') || 'nothing'}`;
+}
+
+/** What it remembers of the ore deposits and of enemies. */
+function memoryLine(ai: AiState): string {
+  const { deposits } = useGameStore.getState().world;
+  const seen = Object.entries(ai.deposits).map(
+    ([i, what]) => `${deposits[Number(i)]?.kind} ${what}`,
+  );
+  return `Deposits: ${seen.join(', ') || 'none seen'} · dangers: ${ai.dangers.length}`;
+}
+
+/** Its serfs by what they are doing. */
 function serfLine(state: GameState, player: PlayerId): string {
   const { world } = useGameStore.getState();
-  const count = { wood: 0, stone: 0, idle: 0, other: 0 };
+  const count = { wood: 0, stone: 0, building: 0, idle: 0, other: 0 };
   for (const unit of state.units) {
     if (unit.ownerId !== player || unit.type !== 'serf') continue;
     if (unit.task.kind === 'gather') {
       const kind = world.decorations[unit.task.nodeId]?.kind;
       count[kind === 'rock' ? 'stone' : 'wood']++;
-    } else if (unit.task.kind === 'idle') count.idle++;
+    } else if (unit.task.kind === 'build' || unit.task.kind === 'deliver') count.building++;
+    else if (unit.task.kind === 'idle') count.idle++;
     else count.other++;
   }
-  return `Serfs: ${count.wood} wood, ${count.stone} stone, ${count.idle} idle, ${count.other} other`;
+  const parts = Object.entries(count).map(([what, n]) => `${n} ${what}`);
+  return `Serfs: ${parts.join(', ')}`;
 }
 
 function AiEntry({ player, ai }: { player: PlayerId; ai: AiState }) {
@@ -55,9 +91,13 @@ function AiEntry({ player, ai }: { player: PlayerId; ai: AiState }) {
         {outcome ? ` · ${outcome.result}` : ''}
       </p>
       <p>
-        Wood {stock.wood} · stone {stock.stone} · food {stock.food}
+        Wood {stock.wood} · stone {stock.stone} · food {stock.food} · grain {stock.grain} · flour{' '}
+        {stock.flour} · iron {stock.iron} · gold {stock.gold}
       </p>
       <p>{serfLine(state, player)}</p>
+      <p>{goalLine(ai)}</p>
+      <p>{siteLine(state, player)}</p>
+      <p>{memoryLine(ai)}</p>
       <ol>
         {ai.log
           .slice(-4)

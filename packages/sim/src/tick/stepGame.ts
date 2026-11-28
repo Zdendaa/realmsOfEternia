@@ -72,8 +72,8 @@ export function stepGame(
     return result;
   };
   const results = commands.map(apply);
-  const ai = thought.map((given) => ({ ...given, result: apply(given) }));
-  const memories = recordDecisions(current.ai, state.tick, ai);
+  const ai = thought.commands.map((given) => ({ ...given, result: apply(given) }));
+  const memories = recordDecisions(thought.players, state.tick, ai);
   if (memories !== current.ai) current = { ...current, ai: memories };
 
   // Working copies: units are shallow-copied once per tick and mutated in place below.

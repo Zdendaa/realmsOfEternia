@@ -1,12 +1,14 @@
 import {
   AI_DIFFICULTIES,
+  BUILDINGS,
   RESOURCE_IDS,
   SKIRMISH_MAP,
   SKIRMISH_SETTLEMENT,
   type ResourceAmounts,
+  type ResourceCost,
 } from '@roe/game-data';
 import { SIMULATION_TICK_RATE, type PlayerId } from '@roe/shared';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { applyCommand } from '../commands/applyCommand.js';
 import type { IssuedCommand } from '../commands/types.js';
 import { createSimContext, syncContext } from '../context/simContext.js';
@@ -20,6 +22,9 @@ import { aiKnowledge, HOME_RADIUS } from './knowledge.js';
 import { isThinkTick, thinkInterval } from './schedule.js';
 import { AI_LOG_LENGTH } from './state.js';
 import { thinkAi } from './think.js';
+
+// Whole matches are played headless here.
+vi.setConfig({ testTimeout: 60_000 });
 
 const minutes = (m: number) => m * 60 * SIMULATION_TICK_RATE;
 
@@ -133,7 +138,7 @@ describe('what a computer player knows', () => {
       const hall = knowledge.townHall;
       if (!hall) throw new Error('no Town Hall');
       for (const kind of ['tree', 'rock'] as const) {
-        const nodes = knowledge.homeNodes(kind, 4);
+        const nodes = knowledge.nodesAround(kind, hall, HOME_RADIUS, 4);
         expect(nodes.length).toBeGreaterThan(0);
         for (const node of nodes) {
           expect(Math.hypot(node.x - hall.x, node.z - hall.z)).toBeLessThanOrEqual(HOME_RADIUS);
@@ -197,7 +202,7 @@ describe('finding a building spot', () => {
   });
 });
 
-describe('the first behaviour: serfs', () => {
+describe('serfs', () => {
   const played = (() => {
     const start = match();
     return { ...start, ...run(start.ctx, start.state, minutes(5)) };
@@ -218,11 +223,17 @@ describe('the first behaviour: serfs', () => {
     }
   });
 
-  it('gathers more than it started with', () => {
+  it('gathers far more than it started with, spent or not', () => {
     const before = match().state.stocks;
     for (const player of AI_PLAYERS) {
+      // What it has, and what it paid for the buildings it started.
+      const spent = played.given.reduce((sum, { issuer, command: { command } }) => {
+        if (issuer !== player || command.type !== 'placeBuilding') return sum;
+        const cost: ResourceCost = BUILDINGS[command.building].cost;
+        return sum + (cost.wood ?? 0) + (cost.stone ?? 0);
+      }, 0);
       const stock = played.state.stocks[player];
-      expect((stock?.wood ?? 0) + (stock?.stone ?? 0)).toBeGreaterThan(
+      expect((stock?.wood ?? 0) + (stock?.stone ?? 0) + spent).toBeGreaterThan(
         (before[player]?.wood ?? 0) + (before[player]?.stone ?? 0) + 40,
       );
     }
@@ -250,7 +261,7 @@ describe('the first behaviour: serfs', () => {
   it('stops once its game is decided', () => {
     const { ctx, state } = match();
     const lost: GameState = { ...state, outcome: { 'ai-1': { result: 'lost', at: 0 } } };
-    expect(thinkAi(ctx, lost)).toEqual([]);
+    expect(thinkAi(ctx, lost).commands).toEqual([]);
   });
 });
 

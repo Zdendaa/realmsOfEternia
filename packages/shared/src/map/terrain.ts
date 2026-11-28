@@ -3,6 +3,8 @@ import { carveLakes, resolveLakes } from './water.js';
 import { startSlotsOf } from './startSlots.js';
 import type { MapDefinition } from './types.js';
 
+/** With `levelDeposits`: the flat square around a deposit (room for a mine anywhere on it). */
+const DEPOSIT_PAD = { halfSize: 9, blend: 8 } as const;
 /** Seed offsets so each noise layer is independent. */
 const MOUNTAIN_SEED = 0x3a11;
 const BORDER_JITTER_SEED = 0x7b02;
@@ -57,20 +59,32 @@ export function createBaseHeightField(map: MapDefinition): HeightField {
     return mountainHeight * (0.4 + 0.6 * smoothstep(0.3, 0.75, n));
   };
 
-  // Each settlement plateau sits at the natural ground level of its center.
-  const plateaus = startSlotsOf(map).map(({ x, z }) => ({ x, z, level: hills(x, z) }));
+  // Each plateau sits at the natural ground level of its center.
+  const plateau = (
+    { x, z }: { x: number; z: number },
+    size: { halfSize: number; blend: number },
+  ) => ({
+    x,
+    z,
+    ...size,
+    level: hills(x, z),
+  });
+  const plateaus = [
+    ...(map.levelDeposits ? (map.deposits ?? []) : []).map((d) => plateau(d, DEPOSIT_PAD)),
+    // The settlements come last, so their ground stays exactly level.
+    ...startSlotsOf(map).map((slot) => plateau(slot, { halfSize, blend })),
+  ];
 
   return {
     getHeightAt(x, z) {
       const fromCenter = distanceFromCenter(x, z);
-      // Plateaus never overlap, so at most one shapes the ground here.
+      // Where blend bands overlap, each plateau shapes what the ones before it left.
       let ground = hills(x, z);
-      for (const plateau of plateaus) {
-        const away = distanceFromCenter(x - plateau.x, z - plateau.z);
-        if (away >= halfSize + blend) continue;
-        const toSettlement = smoothstep(halfSize, halfSize + blend, away);
-        ground = plateau.level + (ground - plateau.level) * toSettlement;
-        break;
+      for (const flat of plateaus) {
+        const away = distanceFromCenter(x - flat.x, z - flat.z);
+        if (away >= flat.halfSize + flat.blend) continue;
+        const outward = smoothstep(flat.halfSize, flat.halfSize + flat.blend, away);
+        ground = flat.level + (ground - flat.level) * outward;
       }
 
       const jitter = (valueNoise2D(map.seed + BORDER_JITTER_SEED, x / 30, z / 30) - 0.5) * 2;

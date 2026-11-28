@@ -164,6 +164,10 @@ export interface MapDefinition {
   water?: WaterSettings;
   /** Ore deposits (gold, iron). */
   deposits?: readonly DepositDefinition[];
+  /**
+   * Levels the ground around every deposit, so a mine fits on it however hilly the spot.
+   */
+  levelDeposits?: boolean;
   /** Monster camps (skeletons). */
   camps?: readonly CampDefinition[];
   /** Scripted monster attacks, in time order. */

@@ -9,7 +9,7 @@ import {
 } from '@roe/shared';
 import type { PlaceBuildingCommand } from '../commands/types.js';
 import type { SimContext } from '../context/simContext.js';
-import { isWalkable } from '../nav/navGrid.js';
+import { cellIndexAt, isWalkable } from '../nav/navGrid.js';
 import { checkPlacement, quarterTurnsToRadians } from '../rules/placement.js';
 import { toPlacedFootprint, type GameState } from '../state/gameState.js';
 
@@ -24,7 +24,25 @@ export const SPOT_RULES = {
   step: 2,
   /** How far from the starting point the search goes. */
   radius: 45,
+  /** Spots a computer player looks at in one decision; the rest wait for its next ones. */
+  perDecision: 120,
 } as const;
+
+export interface SpotOptions {
+  /** Where the search starts and the entrance points (default: its Town Hall). */
+  near?: Vec2;
+  /** How far from `near` it goes. */
+  radius?: number;
+  /** A further condition on a spot, asked before the costlier placement rules. */
+  accept?: (spot: PlaceBuildingCommand) => boolean;
+}
+
+/**
+ * How a search that may stop early ended: a spot, nothing anywhere (`none`), or not done
+ * yet, to go on from candidate `next`.
+ */
+export type SpotSearch =
+  { kind: 'found'; spot: PlaceBuildingCommand } | { kind: 'none' } | { kind: 'more'; next: number };
 
 /** The quarter turn that points a building's entrance (+Z) most directly at `target`. */
 function facing(from: Vec2, target: Vec2): number {
@@ -49,6 +67,9 @@ function ring(center: Vec2, r: number, step: number): Vec2[] {
   return points;
 }
 
+/** From a footprint's center to its corners. */
+const halfDiagonal = ({ footprint }: PlacedFootprint) => Math.hypot(footprint.w, footprint.d) / 2;
+
 /**
  * Whether `area` keeps `SPOT_RULES.gap` to every one of `others` (sampled, since
  * footprints can be turned by any angle).
@@ -59,8 +80,15 @@ function keepsGap(area: PlacedFootprint, others: readonly PlacedFootprint[]): bo
     ...area,
     footprint: { w: area.footprint.w + gap * 2, d: area.footprint.d + gap * 2 },
   };
+  // Only those near enough to reach into it are looked at point by point.
+  const reach = halfDiagonal(grown);
+  const near = others.filter(
+    (other) =>
+      (other.x - area.x) ** 2 + (other.z - area.z) ** 2 <= (reach + halfDiagonal(other)) ** 2,
+  );
+  if (near.length === 0) return true;
   const samples = sampleFootprint(grown, 1);
-  return others.every((other) => samples.every((p) => distanceToFootprint(other, p.x, p.z) > 0));
+  return near.every((other) => samples.every((p) => distanceToFootprint(other, p.x, p.z) > 0));
 }
 
 /**
@@ -68,18 +96,23 @@ function keepsGap(area: PlacedFootprint, others: readonly PlacedFootprint[]): bo
  * (default: its Town Hall) that passes the same placement rules a human's does, keeps a
  * gap to its own buildings, leaves its entrance (turned toward `near`) walkable and
  * stays off the ore deposits. Mines are searched for on the deposits of their ore within
- * the radius, nearest first. Cost isn't checked. Null when nothing fits.
+ * the radius, nearest first. Cost isn't checked.
+ *
+ * Looks at no more than `limit` candidates, starting at candidate `from`: a long search
+ * is spread over several calls. The candidates come in the same order every time.
  */
-export function findBuildingSpot(
+export function searchBuildingSpot(
   ctx: SimContext,
   state: GameState,
   player: PlayerId,
   building: BuildingId,
-  options: { near?: Vec2; radius?: number } = {},
-): PlaceBuildingCommand | null {
+  options: SpotOptions = {},
+  from = 0,
+  limit = Infinity,
+): SpotSearch {
   const hall = state.buildings.find((b) => b.type === 'townHall' && b.ownerId === player);
   const near = options.near ?? hall;
-  if (!near) return null;
+  if (!near) return { kind: 'none' };
   const radius = options.radius ?? SPOT_RULES.radius;
   const center = { x: Math.round(near.x), z: Math.round(near.z) };
   const own = state.buildings.filter((b) => b.ownerId === player).map(toPlacedFootprint);
@@ -106,9 +139,23 @@ export function findBuildingSpot(
       );
       if (!clear || !keepsGap(area, own)) return null;
     }
+    if (options.accept && !options.accept(command)) return null;
     if (!checkPlacement(ctx.world, state, command, ctx.heights).ok) return null;
+    // Serfs must get to it: its entrance is on the ground connected with the rest.
     const door = entrancePoint(area, SPOT_RULES.entrance);
-    return isWalkable(ctx.nav, door.x, door.z, player) ? command : null;
+    if (!isWalkable(ctx.nav, door.x, door.z, player)) return null;
+    const regions = ctx.regions(player);
+    return regions.of[cellIndexAt(ctx.nav, door.x, door.z)] === regions.main ? command : null;
+  };
+
+  let index = 0;
+  /** The next candidate: its outcome when the search ends with it, else null. */
+  const visit = (at: Vec2): SpotSearch | null => {
+    const here = index++;
+    if (here < from) return null;
+    if (here >= from + limit) return { kind: 'more', next: here };
+    const found = tryAt(at);
+    return found && { kind: 'found', spot: found };
   };
 
   if (ore) {
@@ -120,18 +167,30 @@ export function findBuildingSpot(
       const middle = { x: Math.round(deposit.x), z: Math.round(deposit.z) };
       for (let r = 0; r <= deposit.radius; r++) {
         for (const at of ring(middle, r, 1)) {
-          const found = tryAt(at);
-          if (found) return found;
+          const end = visit(at);
+          if (end) return end;
         }
       }
     }
-    return null;
+    return { kind: 'none' };
   }
   for (let r = SPOT_RULES.step * 2; r <= radius; r += SPOT_RULES.step) {
     for (const at of ring(center, r, SPOT_RULES.step)) {
-      const found = tryAt(at);
-      if (found) return found;
+      const end = visit(at);
+      if (end) return end;
     }
   }
-  return null;
+  return { kind: 'none' };
+}
+
+/** The whole search at once: the spot, or null when nothing fits. */
+export function findBuildingSpot(
+  ctx: SimContext,
+  state: GameState,
+  player: PlayerId,
+  building: BuildingId,
+  options: SpotOptions = {},
+): PlaceBuildingCommand | null {
+  const search = searchBuildingSpot(ctx, state, player, building, options);
+  return search.kind === 'found' ? search.spot : null;
 }

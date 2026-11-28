@@ -66,6 +66,7 @@ export { SKIRMISH_MAP } from './maps/skirmish.js';
 export { PLAYER_COLOR_IDS, PLAYER_COLORS, type PlayerColorId } from './match/colors.js';
 export {
   AI_DIFFICULTIES,
+  AI_RULES,
   AI_PERSONALITIES,
   isAiDifficultyId,
   isAiPersonalityId,

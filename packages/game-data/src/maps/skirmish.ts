@@ -101,6 +101,8 @@ export const SKIRMISH_MAP = {
   border: { width: 60, mountainHeight: 34 },
   water: { lakes },
   startSlots: SLOTS,
+  // The deposits lie out in the hills: each gets level ground for its mine.
+  levelDeposits: true,
   deposits: [
     ...homeDeposits,
     { kind: 'gold', x: 0, z: -15, radius: 3, amount: 800 },

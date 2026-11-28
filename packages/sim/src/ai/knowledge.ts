@@ -1,4 +1,5 @@
-import type { Decoration, DecorationKind, PlayerId } from '@roe/shared';
+import { AI_RULES } from '@roe/game-data';
+import type { Decoration, DecorationKind, DepositDefinition, PlayerId, Vec2 } from '@roe/shared';
 import { areAllies } from '../combat/hostility.js';
 import { ensureVision, type SimContext } from '../context/simContext.js';
 import { populationOf, type Population } from '../economy/population.js';
@@ -8,9 +9,9 @@ import type { BuildingInstance, GameState } from '../state/gameState.js';
 import { gatherReach, nodeById, nodesNear } from '../state/resourceNodes.js';
 import { isAlive, type UnitInstance } from '../state/units.js';
 import { viewOf } from '../vision/view.js';
-import { buildingSeen, updateVision } from '../vision/vision.js';
+import { buildingSeen, isVisible, updateVision } from '../vision/vision.js';
 
-/** The trees and rocks this close to its Town Hall are home ground: it always knows them. */
+/** The trees and rocks this close to its Town Hall are home ground: it gathers there first. */
 export const HOME_RADIUS = 45;
 
 /**
@@ -36,13 +37,27 @@ export interface AiKnowledge {
   readonly otherBuildings: readonly BuildingInstance[];
   /** Its (first) finished Town Hall, or null when it has none. */
   readonly townHall: BuildingInstance | null;
+  /** Progress of its construction sites, and the damage of its buildings. */
+  readonly construction: GameState['construction'];
+  readonly buildingDamage: GameState['buildingDamage'];
+  /** The map's ore deposits (map knowledge: who guards them is not). */
+  readonly deposits: readonly DepositDefinition[];
+  /** Whether (x, z) is in its side's sight right now. */
+  readonly sees: (point: Vec2) => boolean;
   /** The kind of tree or rock with decoration id `id` (map knowledge). */
   readonly nodeKind: (id: number) => DecorationKind | undefined;
   /**
-   * Up to `limit` home-ground trees or rocks with something left that its serfs can walk
-   * up to, nearest to the Town Hall first.
+   * Trees or rocks with something left within `radius` of `center` that its serfs can walk
+   * up to, nearest first, up to `limit` of those `accept` lets through. Only those within
+   * `AI_RULES.farGatherRadius` of its Town Hall: its own surroundings.
    */
-  readonly homeNodes: (kind: DecorationKind, limit: number) => Decoration[];
+  readonly nodesAround: (
+    kind: DecorationKind,
+    center: Vec2,
+    radius: number,
+    limit: number,
+    accept?: (node: Decoration) => boolean,
+  ) => Decoration[];
 }
 
 /**
@@ -88,13 +103,19 @@ export function aiKnowledge(ctx: SimContext, state: GameState, player: PlayerId)
     buildings,
     otherBuildings: view.buildings.filter((b) => b.ownerId !== player && buildingSeen(vision, b)),
     townHall,
+    construction: view.construction,
+    buildingDamage: view.buildingDamage,
+    deposits: ctx.world.deposits,
+    sees: (point) => isVisible(vision, point.x, point.z),
     nodeKind: (id) => nodeById(ctx.world, id)?.kind,
-    homeNodes: (kind, limit) => {
+    nodesAround: (kind, center, radius, limit, accept = () => true) => {
       if (!townHall) return [];
+      const reach = AI_RULES.farGatherRadius ** 2;
       const found: Decoration[] = [];
-      for (const node of nodesNear(ctx.world, state.resourceNodes, kind, townHall, HOME_RADIUS)) {
+      for (const node of nodesNear(ctx.world, state.resourceNodes, kind, center, radius)) {
         if (found.length >= limit) break;
-        if (reachable(node)) found.push(node);
+        const home = (node.x - townHall.x) ** 2 + (node.z - townHall.z) ** 2 <= reach;
+        if (home && accept(node) && reachable(node)) found.push(node);
       }
       return found;
     },

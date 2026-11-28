@@ -9,7 +9,7 @@ import {
 } from '@roe/game-data';
 import { MAX_PLAYERS, startSlotsOf, type MapDefinition, type PlayerId } from '@roe/shared';
 import { mixSeed } from '../ai/schedule.js';
-import type { AiPlayers } from '../ai/state.js';
+import { freshAiState, type AiPlayers } from '../ai/state.js';
 import { MONSTER_PLAYER, type Teams } from '../combat/hostility.js';
 import { createInitialState, type GameState } from '../state/gameState.js';
 import { createWorld, type SimWorld } from '../world/createWorld.js';
@@ -76,7 +76,7 @@ export function aiPlayersOf(setup: MatchSetup): AiPlayers {
       if (controller.kind !== 'ai') return [];
       const { difficulty, personality } = controller;
       const seed = mixSeed(setup.seed, slot);
-      return [[player, { difficulty, personality, seed, order: order++, log: [] }]];
+      return [[player, freshAiState({ difficulty, personality, seed, order: order++ })]];
     }),
   );
 }

@@ -44,10 +44,25 @@ export { approachPoint, buildingMaxHealth } from './combat/buildings.js';
 export { combatTicks } from './combat/fighting.js';
 export { areAllies, areEnemies, MONSTER_PLAYER, type Teams } from './combat/hostility.js';
 export { aiKnowledge, HOME_RADIUS, type AiKnowledge } from './ai/knowledge.js';
-export { findBuildingSpot, SPOT_RULES } from './ai/buildingSpot.js';
+export {
+  findBuildingSpot,
+  searchBuildingSpot,
+  SPOT_RULES,
+  type SpotOptions,
+  type SpotSearch,
+} from './ai/buildingSpot.js';
 export { isThinkTick, thinkInterval } from './ai/schedule.js';
-export { AI_LOG_LENGTH, type AiDecision, type AiPlayers, type AiState } from './ai/state.js';
-export { thinkAi, type AiCommand } from './ai/think.js';
+export {
+  AI_LOG_LENGTH,
+  type AiDanger,
+  type AiDecision,
+  type AiDeposit,
+  type AiGoal,
+  type AiPlayers,
+  type AiSearch,
+  type AiState,
+} from './ai/state.js';
+export { thinkAi, type AiCommand, type AiThoughts } from './ai/think.js';
 export {
   aiPlayersOf,
   createMatch,
